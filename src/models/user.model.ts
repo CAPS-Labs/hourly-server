@@ -5,7 +5,7 @@ export interface User {
     lname: string;
     email: string;
     isActive: boolean;
-    created_at: Date;
+    createdAt: Date;
 }
 
 export interface CreateUserDTO {

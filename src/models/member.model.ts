@@ -1,10 +1,10 @@
 export interface Member {
     id: number | string;
-    user_id: number | string;
+    userId: number | string;
     grade: number | string;
     role: number | string;
     isHoursComplete: boolean;
-    created_at: Date;
+    createdAt: Date;
 }
 
 export interface UpdateMemberDTO {

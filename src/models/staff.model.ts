@@ -1,8 +1,8 @@
 export interface Staff {
     id: number | string;
-    user_id: number | string;
+    userId: number | string;
     role: number | string;
-    created_at: Date;
+    createdAt: Date;
 }
 
 export interface UpdateStaffDTO {

@@ -1,7 +1,7 @@
 export interface Submission {
     id: string | number;
-    submitted_by: string | number;
-    submitted_at: Date
+    submittedBy: string | number;
+    submittedAt: Date
 }
 
 //Update DTO maybe
