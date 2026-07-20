@@ -3,6 +3,7 @@ export interface Staff {
     userId: number | string;
     role: number | string;
     createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface UpdateStaffDTO {

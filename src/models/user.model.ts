@@ -6,6 +6,7 @@ export interface User {
     email: string;
     isActive: boolean;
     createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface CreateUserDTO {

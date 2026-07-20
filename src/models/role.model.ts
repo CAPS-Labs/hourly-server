@@ -3,6 +3,7 @@ export interface Role {
     title: string;
     isStaff: boolean;
     createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface CreateRoleDTO {

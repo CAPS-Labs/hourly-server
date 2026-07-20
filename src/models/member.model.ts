@@ -5,6 +5,7 @@ export interface Member {
     role: number | string;
     isHoursComplete: boolean;
     createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface UpdateMemberDTO {

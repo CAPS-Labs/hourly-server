@@ -7,6 +7,7 @@ export interface Project {
     endDate?: Date;
     isComplete: boolean;
     createdAt: Date;
+    updatedAt: Date;
 }
 
 export interface CreateProjectDTO {

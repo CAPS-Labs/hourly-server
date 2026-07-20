@@ -9,6 +9,7 @@ interface UserRow {
     email: string;
     isActive: boolean;
     created_at: Date;
+    updated_at: Date;
 }
 
 export class UserService {
