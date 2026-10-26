@@ -1146,3 +1146,312 @@ authority?**
 Once that is settled, this document can be updated with the answer and
 the remaining structural decisions can be resolved before drafting the
 final API contract.
+
+Supplement: Project Assignments, Coordinator Permissions, and Notifications
+
+Status: Supplementary design decisions
+Scope: Decisions made after the previous version of the design decision record.
+Important: This supplement records confirmed decisions separately from optional behavior, deferred enhancements, and unresolved questions. It does not finalize API endpoints, database schemas, or UI designs.
+
+1. Project coordinator model
+
+1.1 Multiple coordinators
+
+Confirmed decision: A project may have multiple coordinators assigned simultaneously.
+
+The system must support multiple coordinator-to-project assignments. No lead-coordinator role is required for the MVP.
+
+1.2 Projects without a coordinator
+
+Confirmed decision: An active project may temporarily have no coordinator.
+
+The system must warn users when an active project has no coordinator. This is an advisory warning, not a restriction on project activity.
+
+The warning's presentation and interaction belong to UI design scope. The underlying project and assignment data must allow the application to determine whether an active project has any coordinators.
+
+An organization administrator retains organization-wide authority, regardless of whether a project has an assigned coordinator.
+
+1.3 Organization administrator authority
+
+Confirmed decision: An organization administrator does not need an explicit coordinator assignment to manage a project.
+
+Organization administrators may manage projects and their assignments throughout their organization. Their administrative permissions do not automatically create coordinator assignments or make them appear in the project's coordinator list.
+
+Coordinators, by contrast, must be explicitly assigned to a project to exercise coordinator permissions on it.
+
+2. Coordinator assignment permissions
+
+2.1 Adding and removing coordinators
+
+Confirmed decisions:
+
+- Organization administrators always have permission to add and remove coordinators on any project in their organization.
+- Coordinators already assigned to a project may add and remove coordinator assignments for that project.
+- The MVP must provide an organization-wide setting controlling whether already-assigned coordinators may add and remove coordinators.
+- This setting is enabled by default.
+- Organization administrators' authority to manage coordinator assignments is not subject to this setting.
+
+The setting affects coordinator-to-project assignment management. It does not grant coordinators organization-wide authority.
+
+2.2 Coordinator self-assignment
+
+Confirmed decision: Coordinators cannot assign themselves to projects.
+
+Coordinator assignments must be created by an authorized organization administrator or an already-assigned coordinator acting within the permissions allowed by organization settings.
+
+There is no self-service coordinator assignment request workflow in the MVP.
+
+The volunteer self-assignment setting does not apply to coordinator assignments.
+
+2.3 Removing the last coordinator
+
+Confirmed decision: Removing the last coordinator from an active project requires confirmation.
+
+This applies when an authorized person removes another coordinator or when a coordinator removes themselves.
+
+After confirmation, the removal may proceed. The project remains active even though it has no coordinator.
+
+The system must warn users when the project will have no coordinator. The confirmation and warning interactions belong to UI design scope.
+
+A project with no coordinator is therefore valid, although the system should draw attention to that condition.
+
+2.4 Coordinator self-removal
+
+Confirmed decision: A coordinator may remove themselves from a project, subject to the last-coordinator confirmation rule.
+
+Ending the assignment preserves its history. If the person is subsequently assigned to the project again, a new assignment record is created.
+
+3. Volunteer assignment permissions
+
+3.1 Direct assignment by authorized people
+
+Confirmed decision: Organization administrators and coordinators assigned to the relevant project may add and remove volunteer assignments.
+
+Organization administrators may do so for any project in their organization. Coordinators may do so only for projects to which they are assigned.
+
+Direct assignment by an authorized coordinator or administrator is distinct from volunteer self-assignment. Direct assignment does not require the volunteer to submit a self-assignment request.
+
+3.2 Volunteer self-assignment
+
+Confirmed decision: Volunteers may request assignment to any active project, subject to the organization's self-assignment approval setting. Project-specific eligibility restrictions remain deferred.
+
+The organization-wide setting determines whether self-assignment requires approval:
+
+- Approval required: A volunteer submits an assignment request. The assignment remains pending until the request is approved, rejected, or withdrawn.
+- Approval not required: The volunteer joins the project directly. No assignment request is created, and the assignment becomes active immediately, subject to the applicable rules.
+
+A pending request does not authorize the volunteer to log valid project-based time.
+
+Direct assignment by an authorized coordinator or administrator remains a separate operation from self-assignment.
+
+3.3 Coordinator authority over volunteer assignments
+
+An assigned coordinator may manage volunteer assignments for their project, including adding and removing volunteers. This authority is project-scoped and does not extend automatically to other projects on which the coordinator is not assigned.
+
+Organization administrators retain organization-wide assignment authority.
+
+4. Assignment request lifecycle
+
+4.1 Pending requests
+
+Confirmed MVP decision: A pending volunteer assignment request remains pending until one of the following occurs:
+
+1. An authorized coordinator or organization administrator approves it.
+2. An authorized coordinator or organization administrator rejects it.
+3. The volunteer withdraws it.
+
+There is no automatic expiry of pending requests in the MVP. Expiry may be reconsidered in a future update.
+
+4.2 Duplicate requests
+
+Confirmed decision: A volunteer may not have multiple pending requests for the same project.
+
+The server must prevent duplicate pending requests from the same volunteer for the same project.
+
+- A duplicate request must not create another pending record.
+- A volunteer who already has an active assignment cannot submit another request to join the same project.
+- After a request has been rejected or withdrawn, the volunteer may submit a new request.
+- Repeated API calls or synchronization retries must not create duplicate records for the same operation.
+
+4.3 Approval and rejection authority
+
+Confirmed decision: Any coordinator assigned to a project may approve or reject volunteer assignment requests for that project.
+
+Organization administrators may approve or reject requests for any project in their organization.
+
+No lead-coordinator role is required. Coordinators may not approve or reject requests for projects to which they are not assigned.
+
+4.4 Rejection reasons
+
+Confirmed decision: A rejection reason is optional.
+
+When rejecting a request, an authorized coordinator or administrator may provide a written reason. If a reason is provided, it must be included in the volunteer's rejection notification.
+
+A reason is not required for rejection.
+
+4.5 Withdrawal
+
+Confirmed decision: Volunteers may withdraw their own pending assignment requests at any time before a decision is made.
+
+Withdrawal ends the pending request but does not delete its historical record. The volunteer may subsequently submit a new request, subject to the usual rules.
+
+An approved or rejected request cannot be withdrawn.
+
+5. Project assignment history
+
+5.1 Retention of assignment records
+
+Confirmed decision: Assignment records must be retained after an assignment ends.
+
+An assignment record should preserve at least:
+
+- The person assigned.
+- The project.
+- The assignment type or role, distinguishing volunteer and coordinator assignments.
+- The assignment start time.
+- The assignment end time, when applicable.
+- The assignment's current status.
+
+Ending an assignment must not delete its historical record.
+
+5.2 Reassignment
+
+Confirmed decision: Reassigning someone to a project after their previous assignment ended creates a new assignment record.
+
+The previous record must not be reactivated. Separate records preserve distinct periods of assignment and support historical reporting.
+
+These rules apply to both volunteer and coordinator assignments.
+
+5.3 Assignment audit details
+
+Deferred enhancement: The MVP does not need to record which user created or ended an assignment as a separate audit detail.
+
+Recording the actor responsible for each change, and potentially the reason for the change, remains on the table for future updates.
+
+This deferral does not remove the requirement to retain the assignment's start and end times.
+
+5.4 Historical time entries
+
+Existing rules governing historical time submissions after an assignment ends remain in force. Ending an assignment must not erase historical time entries or automatically invalidate otherwise eligible work performed during the assignment.
+
+The precise timestamp, timezone, and assignment-boundary rules remain governed by the existing design decisions.
+
+6. In-app notifications
+
+6.1 General notification requirements
+
+Confirmed MVP decisions:
+
+- Notifications are in-app only. Email notifications are out of scope for the MVP.
+- Notifications are stored persistently on the server.
+- Users can access their notifications across app restarts and devices.
+- Users can mark notifications as read.
+- Users can delete their own notifications.
+- Deleting a notification must not delete the underlying assignment, request, or other business record.
+- Notifications remain available until deleted or affected by a retention policy. The retention policy remains undecided.
+
+The exact notification API, delivery mechanics, and UI presentation are not yet specified.
+
+6.2 Volunteer assignment notifications
+
+The following rules apply to volunteer assignment changes:
+
+Event| Notification recipient
+Volunteer added directly by a coordinator or administrator| Affected volunteer
+Volunteer removed directly by a coordinator or administrator| Affected volunteer
+Self-assignment request submitted when approval is required| All coordinators assigned to the project
+Self-assignment request withdrawn while approval is required| All coordinators assigned to the project
+Assignment request approved| Volunteer who requested assignment
+Assignment request rejected| Volunteer who requested assignment; include the optional rejection reason if provided
+Volunteer self-assigns when approval is not required| Coordinators may be notified
+Volunteer removes themselves when approval is not required| Coordinators may be notified
+
+For direct additions or removals made by a coordinator or administrator, other coordinators must not receive notifications about the change.
+
+When approval is required, all coordinators assigned to the project must be notified of new requests and withdrawals. The affected volunteer must be notified of the approval or rejection outcome.
+
+When approval is not required, self-assignment and self-removal create or end assignments directly rather than creating assignment requests. Coordinator notifications for these direct self-service changes are permitted, but have not been established as mandatory.
+
+6.3 Coordinator assignment notifications
+
+The following rules apply to coordinator assignment changes:
+
+Event| Notification recipient
+Coordinator added to a project| Newly assigned coordinator
+Coordinator removed from a project| Removed coordinator
+
+Other coordinators do not need to be notified about these changes under the current requirements.
+
+6.4 Notification retention and administration
+
+Users may delete their own notifications. Whether organization administrators can manage another user's notifications remains undecided.
+
+The notification retention period and any automatic cleanup policy also remain undecided.
+
+7. Organization settings introduced or clarified
+
+The following settings and policies are relevant to this supplement:
+
+Setting or policy| Status
+Whether assigned coordinators may add and remove coordinators| Required for MVP; enabled by default
+Whether volunteer self-assignment requires approval| Existing organization-wide setting; confirmed
+Whether volunteers may leave projects without coordinator approval| Existing organization-wide setting; confirmed in the previous design record
+Whether coordinators may resolve time-entry conflicts| Still unresolved
+Whether coordinator notifications are sent for direct volunteer self-assignment and self-removal| Optional behavior; exact configuration not decided
+Notification retention period| Undecided
+
+The server must enforce authorization and applicable organization settings. UI controls alone are not sufficient to enforce permissions.
+
+8. Deferred and unresolved matters
+
+The following matters must remain open and must not be treated as accepted design decisions.
+
+8.1 Project archiving — deliberately deferred
+
+All project-archiving questions are set aside for later discussion.
+
+This includes:
+
+- Who may archive a project.
+- Whether coordinator-initiated archival requires administrator approval.
+- What happens to existing assignments when a project is archived.
+- Whether archival automatically ends assignments or changes their operational status.
+- Whether archived projects may be restored.
+
+Previously agreed constraints remain: archived projects and activities preserve historical records and do not accept new time entries. No further archival behavior is settled by this supplement.
+
+8.2 Assignment audit trail
+
+Identifying who created or ended an assignment, and recording reasons for assignment changes, are deferred beyond the MVP.
+
+8.3 Notifications
+
+The following remain undecided:
+
+- Notification retention period and automatic cleanup.
+- Whether organization administrators may manage other users' notifications.
+- Detailed notification settings and presentation.
+- Whether coordinator notifications for direct volunteer self-assignment and self-removal should be mandatory or configurable.
+
+8.4 API and database design
+
+This supplement defines behavior and requirements, not a final implementation. The following remain to be designed:
+
+- Whether volunteer and coordinator assignments use one generalized assignment resource or separate resource concepts.
+- Exact assignment status values and transition rules.
+- The API routes, request/response DTOs, and database constraints for assignments and requests.
+- Idempotency behavior for retries and offline synchronization.
+- Exact notification resource fields and API operations.
+- The implementation of last-coordinator confirmation, including how the server validates the relevant state.
+
+9. Implementation principles
+
+The following principles apply to the decisions above:
+
+1. Enforce permissions server-side. The API must validate the actor's role, organization membership, project scope, and applicable settings.
+2. Separate requests from assignments. An approval-based request is not an active assignment. When approval is not required, self-assignment creates an assignment directly.
+3. Preserve history. Ending an assignment or withdrawing a request must not erase its record.
+4. Use new records for new assignment periods. Reassignment creates a new assignment record.
+5. Keep notifications separate from business records. Notification deletion must not affect the underlying event or assignment.
+6. Avoid unnecessary notifications. Direct volunteer assignment changes notify the affected volunteer only. Coordinator notifications follow the event-specific rules above.
+7. Keep unresolved decisions open. Recommendations and optional behavior must not be converted into mandatory requirements without approval.
