@@ -1455,3 +1455,623 @@ The following principles apply to the decisions above:
 5. Keep notifications separate from business records. Notification deletion must not affect the underlying event or assignment.
 6. Avoid unnecessary notifications. Direct volunteer assignment changes notify the affected volunteer only. Coordinator notifications follow the event-specific rules above.
 7. Keep unresolved decisions open. Recommendations and optional behavior must not be converted into mandatory requirements without approval.
+
+
+# 15. Supplementary Decision Record — Updates Since 25 October 2026
+
+**Update date:** 28 October 2026  
+**Purpose:** Record decisions, accepted recommendations, deferred features, and unresolved questions from subsequent design discussions. This section supplements the existing design decision record; it does not replace earlier sections.
+
+## 15.1 Status conventions
+
+The following distinctions apply throughout this section:
+
+- **Confirmed decision:** The user explicitly selected or confirmed the behavior.
+- **Accepted recommendation:** The user accepted a proposed design recommendation.
+- **Deferred — not MVP:** The feature or decision is postponed; this does not necessarily mean it has been rejected permanently.
+- **Under consideration:** A recommendation has been discussed but has not been adopted.
+- **Open question:** The behavior remains undecided and must not be implemented as though it were settled.
+- **Future enhancement:** A potential later feature that is not part of the MVP requirements.
+
+Where this section adds detail to an existing decision, the more specific rule should be read alongside the original decision rather than as an independent replacement.
+
+---
+
+## 15.2 Membership suspension and revocation
+
+### 15.2.1 Membership suspension
+
+**Confirmed decision — Deferred from MVP.**
+
+Membership suspension will not be implemented in the MVP. It may be considered for a future update.
+
+### 15.2.2 Membership revocation
+
+**Status: Under consideration.**
+
+The following behavior has been proposed but has not been accepted:
+
+- Revoking a volunteer's organization membership would immediately remove their access to protected organizational resources.
+- Historical time entries, assignment records, and other historical records would be retained.
+- The revoked membership could no longer be used to create time entries or make project-assignment changes.
+- Data recorded offline would remain preserved on the device. The server would recheck authorization when the client subsequently synchronized that data.
+
+The following issues remain open:
+
+1. What happens to a running timer when membership is revoked?
+2. Can a revoked membership be restored, or must the user obtain a new membership?
+3. How should offline changes created before revocation be handled when the server rejects them after revocation?
+4. What happens to pending requests and approvals associated with the revoked membership?
+
+No implementation requirements should be inferred from the proposed revocation rules until they are explicitly accepted.
+
+---
+
+## 15.3 Project assignments, coordinator authority, and notifications
+
+This section records additional decisions about assignment management, request handling, and notifications.
+
+### 15.3.1 Multiple coordinators and projects without coordinators
+
+**Confirmed decisions:**
+
+- A project may have multiple coordinators.
+- The MVP does not require a designated lead coordinator.
+- An active project may temporarily have no coordinator.
+- The interface should warn when an active project has no coordinator. The precise warning and confirmation interaction belongs to UI design.
+- Removing the last coordinator from an active project requires confirmation. If confirmed, the project remains active without a coordinator.
+- A coordinator may remove themselves, subject to the same last-coordinator confirmation requirement.
+
+These rules do not settle who may archive a project; archival permissions remain an open question.
+
+### 15.3.2 Organization administrator authority
+
+**Confirmed decisions:**
+
+- Organization administrators may manage any project within their organization without being explicitly assigned as its coordinator.
+- An administrator's organization-wide authority does not automatically create a coordinator assignment or cause the administrator to appear in the project's coordinator list.
+- Organization administrators may add or remove coordinator assignments for any project in the organization.
+- Restrictions on coordinator assignment-management privileges do not limit administrators.
+
+### 15.3.3 Coordinator assignment-management permissions
+
+**Accepted recommendation:**
+
+An organization-level setting controls whether already-assigned coordinators may add or remove other coordinators from projects.
+
+- The default is enabled.
+- The permission applies only to coordinators already assigned to the relevant project.
+- Organization administrators retain their organization-wide assignment-management authority.
+- Coordinators cannot assign themselves to projects.
+- No coordinator self-assignment request workflow is required for the MVP; authorized administrators or coordinators manage coordinator assignments.
+
+### 15.3.4 Direct volunteer assignment changes
+
+**Confirmed decisions and previously accepted recommendations:**
+
+- Organization administrators may add or remove volunteers on any project.
+- Assigned coordinators may add or remove volunteers only on projects they coordinate.
+- Direct assignment by an authorized person is distinct from a volunteer's self-assignment request.
+- Any approved volunteer may request assignment to any active project. Project-specific eligibility restrictions are deferred from the MVP.
+- An organization-wide setting determines whether self-assignment takes effect immediately or requires coordinator/administrator approval.
+- If approval is not required, the volunteer joins immediately and no assignment request is created.
+- If approval is required, the request remains pending until approved, rejected, or withdrawn.
+- A pending assignment request does not authorize project-based time logging.
+
+### 15.3.5 Assignment request lifecycle
+
+**Confirmed decisions:**
+
+- Pending assignment requests do not expire automatically in the MVP.
+- A volunteer cannot create duplicate pending requests for the same project.
+- A volunteer who already has an active assignment cannot submit another request for that assignment.
+- After rejection or withdrawal, the volunteer may submit a new request.
+- Retried or repeated requests must not create duplicate records.
+- Any coordinator assigned to a project may approve or reject volunteer assignment requests for that project. Organization administrators may do so for any project.
+- Rejection reasons are optional. If provided, the reason should be included in the notification to the volunteer.
+- A volunteer may withdraw their own pending request at any time before a decision is made.
+- Withdrawal preserves the request's history. A withdrawn request may be followed by a new request.
+- Approved or rejected requests cannot subsequently be withdrawn.
+
+### 15.3.6 Assignment history
+
+**Confirmed decisions:**
+
+Assignment records are retained after an assignment ends. Records should preserve, at minimum:
+
+- The person assigned.
+- The project.
+- The assignment type, distinguishing volunteer and coordinator assignments.
+- The start time.
+- The end time, if applicable.
+- The current assignment status.
+
+Reassignment after an earlier assignment has ended creates a new assignment record rather than reactivating the old record.
+
+**Deferred consideration:** Recording who created or ended each assignment, and an associated reason, is not required as a finalized MVP requirement. This remains a potential enhancement.
+
+### 15.3.7 Assignment departure and historical time
+
+The existing rules for work performed before a volunteer leaves a project remain in force:
+
+- Historical work may be submitted after the assignment ends if it falls within the permitted assignment period.
+- Timestamp-based entries must end at or before the effective assignment end time.
+- Duration-only entries may use the departure date as their work date or an earlier date.
+- The departure date is inclusive.
+- Entries for work after the effective departure boundary must not be accepted as valid project work.
+
+The exact timestamp storage and timezone semantics remain to be specified.
+
+### 15.3.8 Notifications
+
+**Confirmed decisions:**
+
+- Notifications are in-app only for the MVP.
+- Notifications are persisted server-side.
+- Users may mark their notifications as read or delete them.
+- Deleting a notification must not delete the underlying business record.
+- Direct volunteer assignment or removal by a coordinator or administrator notifies the affected volunteer, but does not notify other coordinators.
+- When approval is required for a volunteer assignment request, all assigned coordinators are notified of the new request and its withdrawal.
+- The volunteer is notified when their request is approved or rejected. A supplied rejection reason is included.
+- A newly assigned coordinator is notified of their assignment.
+- A removed coordinator is notified of their removal.
+- Other coordinators are not notified about direct coordinator assignment changes.
+- When volunteers join or leave a project without an approval requirement, notifying coordinators may be enabled, but it is not mandatory.
+
+**Open questions:**
+
+- Notification retention policy.
+- Whether administrators may manage other users' notifications.
+- Exact notification event names, payloads, and delivery guarantees.
+
+---
+
+## 15.4 Time-entry creation and submission
+
+### 15.4.1 Timer-based entries
+
+**Confirmed decision — Hybrid submission workflow.**
+
+When a volunteer manually stops a running timer, the application presents an option to log the recorded time.
+
+The form should be quick to complete because relevant fields are pre-filled where possible, including:
+
+- Start time.
+- End time.
+- Calculated duration.
+- Project and activity, where available.
+
+The volunteer can choose either:
+
+1. **Log time:** Submit the entry under the organization's approval policy.
+2. **Save as draft:** Preserve the entry without submitting it for approval.
+
+Drafts may be submitted later.
+
+Stopping a timer and submitting a time entry are separate actions. The recorded time must not be lost merely because the volunteer does not submit the entry immediately.
+
+### 15.4.2 Manual entries
+
+**Confirmed decision:** Manual entries use the same hybrid workflow.
+
+The volunteer completes the manual entry form and chooses either **Log time** or **Save as draft**. Drafts may be submitted later.
+
+Manual entries continue to support both established formats:
+
+- Exact start and end timestamps.
+- Work date and total duration, without exact timestamps.
+
+### 15.4.3 Submission and approval are separate concepts
+
+The submission workflow does not replace the existing organization-wide approval policy.
+
+- A submitted entry follows the current organizational approval policy.
+- If approval is required, the entry enters the applicable approval workflow.
+- If approval is not required, the entry is handled under the policy that applies to entries not requiring approval.
+- Saving a draft does not constitute submission for approval.
+
+The exact lifecycle state machine, approval transitions, and handling of policy changes remain to be finalized.
+
+---
+
+## 15.5 Time-entry editing permissions and state handling
+
+### 15.5.1 Editing in place
+
+**Confirmed decision — Adopted recommendation.**
+
+Authorized users may edit an existing time entry in place rather than having to create a replacement entry.
+
+The existing record and its audit history must be preserved.
+
+### 15.5.2 Editing permissions
+
+**Accepted recommendation:**
+
+| Actor | Editing authority |
+|---|---|
+| Volunteer | May edit their own entries. |
+| Assigned coordinator | May edit entries belonging to volunteers assigned to a project they coordinate, but only when the entry relates to that project. |
+| Organization administrator | May edit any time entry in the organization. |
+
+These permissions do not automatically grant approval authority or conflict-resolution authority. Those are separate permissions governed by their respective rules.
+
+### 15.5.3 Editing by entry state
+
+**Confirmed decision — Adopted recommendation.**
+
+The editing permissions above apply across all four entry states:
+
+- **Draft:** May be edited freely.
+- **Pending approval:** May be edited. The approval workflow must reflect the latest version of the entry.
+- **Approved:** May be edited. Material changes may trigger renewed approval under the organization's policy. Previous approvals and changes remain in the audit history.
+- **Rejected:** May be corrected and resubmitted. Rejection history is retained.
+
+A coordinator editing a volunteer's pending entry does not require the volunteer to recreate it.
+
+### 15.5.4 Material changes and reapproval
+
+The existing direction remains that material changes to an approved entry may trigger reapproval when required by organizational policy.
+
+**Open questions:**
+
+- Which fields or changes are material?
+- Does a material edit immediately change the approval status, or does the entry remain approved while reapproval is pending?
+- What happens if an entry is edited repeatedly while awaiting renewed approval?
+- How should concurrent edits by multiple authorized users be detected and resolved?
+
+These details must be specified before the approval and concurrency contracts are finalized.
+
+---
+
+## 15.6 Time-entry deletion and voiding
+
+**Status: Deferred decision.**
+
+No deletion or voiding policy has been adopted.
+
+The following proposals were discussed but remain undecided:
+
+- Whether drafts may be permanently deleted or must be retained as discarded records.
+- Whether submitted entries may be marked as void or erroneous.
+- Whether voided approved entries must be excluded from valid reported hours.
+- Who may delete, discard, or void entries.
+- What reasons and audit records are required for these operations.
+
+The previous recommendation against permanent deletion must not be treated as an accepted requirement. The user explicitly deferred this decision for later.
+
+---
+
+## 15.7 Time-entry retrieval model
+
+### 15.7.1 A common filtered retrieval model
+
+**Confirmed decision — Adopted recommendation.**
+
+The MVP will use a single filtered, paginated time-entry retrieval model rather than separate list endpoints for each role or use case.
+
+The retrieval model will support filters for:
+
+- Volunteer.
+- Project.
+- Activity.
+- Work-date range.
+- Initial submission-time range.
+- Lifecycle status.
+- Approval status.
+- Conflict status.
+
+The exact endpoint paths, parameter names, request/response DTOs, and error envelope remain to be designed.
+
+### 15.7.2 Default visibility
+
+**Confirmed decision — Adopted recommendation.**
+
+By default, the API returns all time entries the caller is authorized to see, including drafts and entries awaiting approval.
+
+- Volunteers see their own entries across all states.
+- Coordinators see entries within their existing project-scoped authority.
+- Organization administrators see all entries in their organization.
+
+The client may organize results into tabs, sections, or views, but this is a UI concern rather than a requirement to create separate retrieval endpoints.
+
+### 15.7.3 Explicit `volunteerId` filter
+
+**Clarification to the retrieval model:**
+
+The client will include `volunteerId` when retrieving entries for a volunteer, including when retrieving the active user's own entries. In that case, the requested ID matches the volunteer ID associated with the active account.
+
+The server must independently enforce authorization. A client-supplied `volunteerId` is a filter, not proof of identity or permission.
+
+### 15.7.4 Cursor-based pagination
+
+**Confirmed decision — Adopted recommendation.**
+
+The MVP will use cursor-based pagination.
+
+- Default page size: **50 entries**.
+- Maximum page size: **100 entries**.
+- If the client requests a page size above 100, the server caps it at 100.
+- The response includes a cursor when another page is available.
+- The cursor format and exact response fields remain to be specified.
+
+### 15.7.5 Default ordering
+
+**Confirmed decision:**
+
+Time entries are ordered newest first by default, based on when the work occurred.
+
+- Timestamp-based entries are ordered using their work timestamps.
+- Duration-only entries are ordered using their work dates.
+- A deterministic tie-breaker, such as entry ID, will be used to make ordering predictable for cursor-based pagination.
+
+**Open detail:** The exact ordering semantics when timestamp-based and duration-only entries appear in the same result set remain to be specified.
+
+### 15.7.6 Cursor and query consistency
+
+**Confirmed decision:**
+
+A cursor is tied to the original query context, including its filters and sort order.
+
+- The client must retain the same filters and sort order when requesting subsequent pages.
+- Changing a filter or sort order requires a new query without the previous cursor.
+- The API should reject a cursor used with an incompatible query rather than silently applying unexpected pagination behavior.
+
+The cursor's encoding, integrity protection, expiration, and query-context validation remain contract-design details.
+
+### 15.7.7 Results changing during pagination
+
+**Open question — Not yet decided.**
+
+Two approaches were discussed:
+
+- **Live results:** Each page reflects data available when that page is requested. The server attempts to minimize duplicates and omissions but does not guarantee a frozen snapshot.
+- **Snapshot results:** The initial request establishes a consistent snapshot used for all subsequent pages.
+
+The recommendation was to use live results for the MVP, but the user has not yet accepted or rejected it. This must remain an open question.
+
+---
+
+## 15.8 Time-entry filters and query semantics
+
+### 15.8.1 Work-date filters
+
+**Confirmed decision:**
+
+Both timestamp-based and duration-only entries use the same work-date filter.
+
+- Timestamp-based entries derive their work date using the organization's configured time zone.
+- Duration-only entries use their stored work date.
+
+This lets clients retrieve entries for a reporting period without needing different filter semantics for each entry format.
+
+### 15.8.2 Inclusive date ranges
+
+**Confirmed decision:**
+
+Start and end dates are inclusive.
+
+For example, requesting entries from `2026-10-01` through `2026-10-31` includes entries on both dates.
+
+The server will translate these calendar-date boundaries into appropriate internal timestamp boundaries using the organization's configured time zone.
+
+### 15.8.3 Submission-time filters
+
+**Confirmed decision:**
+
+The MVP will support filtering by submission time independently of work date.
+
+The API must distinguish:
+
+- **Work date/time:** When the work occurred.
+- **Initial submission time:** When the entry was first submitted to the server.
+- **Last-modified time:** When the entry was most recently changed.
+
+Editing an entry must not overwrite its initial submission timestamp.
+
+This distinction is especially important for offline operation, where work may be recorded well before the entry reaches the server.
+
+### 15.8.4 Project and activity filters
+
+**Confirmed decision — Adopted recommendation.**
+
+Both `projectId` and `activityId` filters are supported.
+
+- A project filter returns entries associated with that project, including entries linked to its activities.
+- An activity filter returns entries associated with that activity.
+- If both are supplied, an entry must satisfy both filters.
+- If the specified activity does not belong to the specified project, the API returns a validation error.
+- Project-less entries remain retrievable without a project filter.
+
+### 15.8.5 Volunteer filter
+
+**Confirmed decision — Adopted recommendation.**
+
+The API supports filtering by `volunteerId`.
+
+- Volunteers may query their own entries.
+- Coordinators may query entries within their project-scoped authority.
+- Organization administrators may query entries for any volunteer in their organization.
+- The server enforces authorization regardless of the requested ID.
+
+### 15.8.6 Independent status filters
+
+**Confirmed decision — Adopted recommendation.**
+
+The API exposes independent filters for:
+
+1. **Lifecycle status**, such as draft or submitted.
+2. **Approval status**, such as pending, approved, rejected, or not requiring approval.
+3. **Conflict status**, representing relevant synchronization or timer conflicts.
+
+These are distinct concepts and must not be collapsed into one combined status field. The exact lifecycle and enum values remain to be finalized.
+
+### 15.8.7 Combining filters
+
+**Confirmed decision for MVP: AND semantics.**
+
+Every supplied filter must match an entry for that entry to be returned.
+
+For example, a request specifying a project, volunteer, and pending approval status returns only entries satisfying all three conditions.
+
+Project/activity intersection semantics remain as specified above.
+
+**Future enhancement:** Consider a user-selectable AND/OR mode. The future design must define whether OR applies across all filters or only within selected filter groups. OR behavior is not an MVP requirement.
+
+### 15.8.8 Invalid filters
+
+**Confirmed decision:**
+
+Invalid filters and invalid filter combinations are rejected with a structured validation error.
+
+Examples include:
+
+- `startDate` occurring after `endDate`.
+- An activity that does not belong to the specified project.
+- Invalid parameter values or unsupported filter combinations.
+
+The API must not silently ignore invalid filters and return results based on a broader query than the client intended.
+
+### 15.8.9 Unauthorized filter values
+
+**Confirmed decision:**
+
+When a caller requests entries outside their authorization scope, the API returns a consistent, generic authorization error without disclosing protected information.
+
+A valid but unauthorized volunteer ID must not reveal whether that volunteer or their entries exist outside the caller's permissions.
+
+This behavior is distinct from a valid, authorized query that returns no matching entries.
+
+The exact HTTP status code, error code, and response body remain to be specified.
+
+---
+
+## 15.9 Retrieval features deferred from MVP
+
+### 15.9.1 Filtering by editor
+
+**Confirmed decision — Deferred, with future consideration.**
+
+The MVP will not support filtering time-entry lists by the person who last modified an entry, such as an `updatedBy` filter.
+
+Audit history must still record changes and the actor responsible, according to the audit-history design. Deferring the filter does not mean deferring change tracking.
+
+### 15.9.2 Filtering by time spent in a state
+
+**Confirmed decision — Deferred, with future consideration.**
+
+The MVP will not provide dedicated state-age filters such as:
+
+- Drafts older than 30 days.
+- Entries pending approval for more than 7 days.
+
+The existing status, work-date, and submission-time filters remain available.
+
+Future versions may introduce state-age filters if organizations need stale-draft reminders, approval-backlog reporting, or similar workflows.
+
+---
+
+## 15.10 Summary of newly established retrieval requirements
+
+The following example is illustrative, not a finalized endpoint or parameter contract.
+
+A request conceptually equivalent to:
+
+```text
+GET /time-entries
+    ?volunteerId={volunteerId}
+    &projectId={projectId}
+    &activityId={activityId}
+    &startDate=2026-10-01
+    &endDate=2026-10-31
+    &approvalStatus=pending
+    &pageSize=50
+```
+
+would request entries satisfying all supplied filters, provided that:
+
+- The caller is authorized to access the requested entries.
+- The activity belongs to the specified project.
+- The date range is valid and inclusive.
+- The requested page size is within the permitted limits.
+
+The example does not establish the final route, query parameter names, enum values, cursor representation, or error schema.
+
+---
+
+## 15.11 Resource inventory additions and refinements
+
+The existing conceptual resource inventory should account for the following concepts:
+
+- **AssignmentRequest:** Represents a volunteer's pending, approved, rejected, or withdrawn request for project assignment when approval is required. No request is created for an immediately effective self-assignment.
+- **Notification:** Represents a persistent in-app notification. Deleting a notification does not delete the underlying business record.
+- **TimeEntry lifecycle:** Draft and submission workflow must be represented separately from approval and conflict state.
+- **Initial submission time:** Must be preserved independently of last-modified time.
+- **Audit history:** Must preserve relevant edits and prior approval/rejection decisions.
+- **Assignment history:** Ended assignments remain historical records; reassignment creates a new record.
+
+The exact physical data model remains open. In particular, the design has not finalized whether volunteer and coordinator assignments share one generalized assignment resource, whether conflict information is stored as a separate resource, or how audit history is represented in the database.
+
+---
+
+## 15.12 Outstanding decisions after this update
+
+The following items remain unresolved. They should be addressed before or during API contract design, according to their importance.
+
+### Priority 1 — Time-entry lifecycle and approval
+
+1. Define the complete lifecycle state machine for drafts, submitted entries, pending approval, approved entries, and rejected entries.
+2. Define the exact behavior of approval when an entry is edited, including the meaning of a material change.
+3. Decide what happens to pending entries when organizational approval settings change.
+4. Define approval authority, including the boundaries of coordinator authority for project-less entries and other entries outside their projects.
+5. Define the handling and reporting of invalid, out-of-period, or conflicting submissions that must be preserved rather than silently discarded.
+6. Decide how edits made concurrently by multiple authorized users are detected and reconciled.
+
+### Priority 2 — Retrieval and pagination
+
+7. Decide whether pagination uses live results or a consistent snapshot. The live-results approach is recommended but not yet accepted.
+8. Define the stable ordering of mixed timestamp-based and duration-only entries.
+9. Specify cursor structure, validation, expiration, and response fields.
+10. Define the exact validation and authorization error codes, HTTP status codes, and error envelope.
+
+### Priority 3 — Project lifecycle and permissions
+
+11. Decide who may archive projects and activities. The earlier recommendation that coordinators may archive their own projects while administrators retain organization-wide authority remains unaccepted.
+12. Decide how archival affects active assignments, pending requests, and historical time entry.
+13. Decide whether archived projects or activities can be restored.
+14. Confirm whether coordinators may resolve conflicts for volunteers assigned to their projects and how project-less entries are treated.
+15. Finalize whether volunteer and coordinator assignments use a generalized resource or separate resources.
+16. Define the consequences of assignment departure for pending time entries and requests, beyond the established historical-work eligibility rule.
+17. Finalize timestamp and timezone semantics for assignment boundaries.
+18. Decide the membership-revocation rules and whether revoked memberships may be restored.
+
+### Priority 4 — Entry deletion and operational details
+
+19. Decide whether drafts may be permanently deleted or must be retained as discarded records.
+20. Define whether submitted entries may be voided and the associated permissions, audit requirements, and effect on reported hours.
+21. Finalize overlap warning and review behavior.
+22. Decide whether project-less activity descriptions are stored separately from optional notes.
+23. Finalize required and optional profile fields and email-change verification behavior.
+24. Decide the effects of policy changes on pending assignment requests and other pending operations.
+25. Define notification retention and whether administrators can manage other users' notifications.
+
+### Priority 5 — API contract and implementation
+
+26. Choose the authentication method/provider and determine whether authentication is managed or self-hosted.
+27. Design the first-administrator bootstrap process.
+28. Finalize database schema, constraints, and transaction requirements.
+29. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
+30. Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses.
+31. Define API versioning, security controls, deployment, backups, and monitoring.
+
+Items may be combined or deferred where appropriate. The list is a planning aid, not a requirement to settle every item before drafting any part of the API contract.
+
+---
+
+## 15.13 Recommended next step
+
+Continue resolving the remaining lifecycle and permission questions one at a time. The immediate outstanding question from the most recent discussion is whether paginated retrieval should use live results or a consistent snapshot.
+
+Once the core lifecycle, authorization, and conflict-handling rules are sufficiently clear, begin drafting the API contract rather than attempting to resolve every implementation detail in advance.
+
+The contract should explicitly identify which behaviors are finalized, which are implementation choices, and which remain deferred.
