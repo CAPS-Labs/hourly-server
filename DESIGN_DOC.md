@@ -292,8 +292,7 @@ approval rules. - Resolve conflicts for assigned volunteers, subject to
 the eventual conflict-resolution permission model. - Manage project
 assignments within the permissions ultimately defined.
 
-**Not finalized:** Whether every coordinator can archive a project they
-manage; the project owner has not yet answered that question.
+**Resolved 18 November 2026:** within their remit, a coordinator may archive projects and activities, and an organization administrator may archive anything in the organization. No administrator approval step (§16.6, D-041).
 
 ### 4.4 Organization-administrator permissions
 
@@ -345,8 +344,9 @@ create and manage projects and activities.
 history is retained, and new entries against the archived item are
 prevented.
 
-The exact lifecycle statuses and archive/restore rules remain to be
-designed.
+Archiving is a reversible status change, not a deletion: it ends volunteer
+assignments at a dated boundary (§16.9, D-042) and can be undone by the same
+authority (§16.10, D-043). The exact status vocabulary remains to be designed.
 
 ### 5.2 Explicit project assignments
 
@@ -432,17 +432,9 @@ storage are not yet designed.
 **Confirmed decision:** Archived projects and activities retain
 historical records and do not accept new time entries.
 
-**Provisional proposal:** Archiving a project should prevent new
-assignments, close or deactivate existing assignments, and preserve
-historical entries. This is consistent with the stated archival
-direction but the exact transition rules have not been formally
-approved.
+**Resolved 18 November 2026 — authority (§16.6, D-041) and effects (§16.9, D-042):** coordinators may archive projects and activities within their remit, administrators anything in the organization, with no approval step. Archiving then ends volunteer assignments at the archival instant, cancels pending assignment requests, keeps pending time entries reviewable, accepts work dated before the instant, and stops running timers, keeping their elapsed time as a pre-filled draft on the volunteer's device (§16.11, D-044). Coordinator assignments survive so the project can be restored.
 
-**Open question:** May a coordinator archive projects they manage, or
-must project archival require organization-administrator approval? The
-recommendation was to allow coordinators to archive projects within
-their remit, while administrators retain organization-wide control. This
-recommendation is **not yet accepted or rejected**.
+**Restore resolved 18 November 2026 (§16.10, D-043):** archiving is reversible. Restoring returns the project, and the activities archived with it, to active. Volunteer assignments stay ended and must be re-established. The archived interval stays in the record, so work dated inside it remains ineligible.
 
 ### 5.7 Project-less time entries
 
@@ -454,9 +446,9 @@ association. - The server validates that the required description is
 present and meaningful according to a validation rule still to be
 defined. - The entry remains identifiable as project-less in reports. -
 A coordinator does not automatically gain authority over a project-less
-entry; organization administrators retain organization-wide access. -
-Offline clients may preserve a local draft, but the server must not
-accept an invalid project-less entry as a valid completed submission. -
+entry; organization administrators retain organization-wide access. - Unsubmitted drafts stay on the device (§16.11, D-044), but the server
+must not accept an invalid project-less entry as a valid completed
+submission. -
 The API should return a structured validation error so the user can
 correct it.
 
@@ -586,12 +578,7 @@ Material changes to approved entries that affect hours or substantive
 details should trigger reapproval when the policy requires it; prior
 approval should remain in audit history.
 
-**Open questions:** - Must volunteers explicitly submit completed
-entries for approval, or are they submitted automatically? - What
-precisely counts as a material change? - What happens to pending entries
-when the organization approval policy changes? - Who may approve which
-categories of entries, and can coordinators approve entries for work
-that is not associated with their project?
+**Open questions:** - ~~Must volunteers explicitly submit completed entries for approval, or are they submitted automatically?~~ Resolved 22 November 2026: submission is explicit — finishing work produces a draft, not a submission (§16.11, D-044). - What precisely counts as a material change? - ~~What happens to pending entries when the organization approval policy changes?~~ Resolved 22 November 2026: the policy in force at submission governs, and a change applies only to later submissions (§16.12, D-045). - Who may approve which categories of entries, and can coordinators approve entries for work that is not associated with their project?
 
 ------------------------------------------------------------------------
 
@@ -749,10 +736,7 @@ change. - A client cannot rely on an old cached permission to bypass a
 new restriction. - The system should preserve local records that cannot
 currently be accepted and provide a clear, structured result.
 
-**Open question:** For a policy change, should it apply only to new
-actions, or also alter the handling of already-pending entries,
-assignment requests, or approval requests? This needs to be decided per
-policy.
+**Partly resolved 22 November 2026 (§16.12, D-045):** for the approval policy, the rule is prospective — the policy in force when a submission is received governs it, and a later change applies only to submissions made after its effective time. Already-pending and already-approved entries keep the handling they entered. Assignment requests and other pending operations still need a per-policy answer (§15.12 item 24).
 
 ------------------------------------------------------------------------
 
@@ -892,7 +876,7 @@ time.
 }
 ```
 
-The exact error envelope, status code, and whether an out-of-period
+**Envelope resolved 15 November 2026 (§16.4, D-039).** The status code, and whether an out-of-period
 submission is represented as a rejected entry, a conflict, or a separate
 review item remain to be designed. The example illustrates the goal:
 return a stable machine-readable reason and preserve the user's
@@ -1072,6 +1056,8 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12). The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+
 ## 13. Outstanding decisions and recommended order
 
 The following items remain unresolved. They should be handled one at a
@@ -1079,11 +1065,10 @@ time rather than filled in by assumption.
 
 ### Priority 1 --- Finish project lifecycle and authority
 
-1.  **Project archival authority:** Can coordinators archive their own
-    projects, or does this require administrator approval?
-    Recommendation made: coordinators can archive projects within their
-    remit; administrators retain organization-wide authority. Not yet
-    accepted.
+1.  ~~**Project archival authority:** Can coordinators archive their own
+    projects, or does this require administrator approval?~~ **Resolved
+    18 November 2026 --- coordinators within their remit, administrators
+    organization-wide, with no approval step (§16.6, D-041).**
 2.  **Coordinator conflict resolution:** Confirm whether coordinators
     can resolve conflicts for volunteers assigned to their projects, and
     define treatment of project-less entries.
@@ -1096,14 +1081,17 @@ time rather than filled in by assumption.
 
 ### Priority 2 --- Finalize time-entry lifecycle
 
-5.  Decide whether completed entries are automatically submitted for
-    approval or require explicit volunteer submission.
+5.  ~~Decide whether completed entries are automatically submitted for
+    approval or require explicit volunteer submission.~~ **Resolved 22
+    November 2026 — explicit submission (§16.11, D-044).**
 6.  Define entry lifecycle, approval status, and conflict status as
     separate state models.
 7.  Define the exact conditions that trigger reapproval after editing an
     approved entry.
-8.  Define what happens to pending entries and requests when
-    organization settings change.
+8.  ~~Define what happens to pending entries and requests when
+    organization settings change.~~ **Entries resolved 22 November 2026
+    — the policy in force at submission governs (§16.12, D-045). Pending
+    assignment requests remain open (§15.12 item 24).**
 9.  Define how invalid but preserved submissions are surfaced,
     corrected, reviewed, or excluded from totals.
 
@@ -1116,8 +1104,9 @@ time rather than filled in by assumption.
 12. Define overlap warning/review behaviour.
 13. Define what assignment departure does to pending time entries and
     requests, beyond the already agreed historical-time rule.
-14. Define whether archived projects can ever be restored and how active
-    assignments are handled during archival.
+14. ~~Define how active assignments are handled during archival, and
+    whether archived projects can be restored.~~ **Resolved 18 November
+    2026 — assignment effects (§16.9, D-042); restore (§16.10, D-043).**
 
 ### Priority 4 --- API contract and implementation
 
@@ -1136,16 +1125,16 @@ time rather than filled in by assumption.
 
 ## 14. Suggested next step
 
-Continue with the outstanding project-lifecycle question already raised
-in the design discussion:
+Continue with the outstanding project-lifecycle questions recorded in
+§15.12.
 
-**Should coordinators be allowed to archive projects they manage, while
-organization administrators retain organization-wide archival
-authority?**
+**Superseded 18 November 2026:** the question recorded here --- whether coordinators
+may archive projects they manage --- was answered in favour of coordinator
+archival within the project remit, with organization-wide administrator
+authority and no approval step (§16.6, D-041). The current next step is recorded
+in the outstanding-decisions list at the head of §16.
 
-Once that is settled, this document can be updated with the answer and
-the remaining structural decisions can be resolved before drafting the
-final API contract.
+Archival effects and restore are now decided (§16.9, D-042; §16.10, D-043).
 
 Supplement: Project Assignments, Coordinator Permissions, and Notifications
 
@@ -1410,13 +1399,15 @@ The following matters must remain open and must not be treated as accepted desig
 
 All project-archiving questions are set aside for later discussion.
 
-This includes:
+**Resolved 18 November 2026:** every item below is answered — authority in §16.6 (D-041), assignment effects in §16.9 (D-042), restore in §16.10 (D-043). The list is kept as a record of what was deferred and when it closed.
 
-- Who may archive a project.
-- Whether coordinator-initiated archival requires administrator approval.
-- What happens to existing assignments when a project is archived.
-- Whether archival automatically ends assignments or changes their operational status.
-- Whether archived projects may be restored.
+This included:
+
+- ~~Who may archive a project.~~ Resolved (§16.6, D-041).
+- ~~Whether coordinator-initiated archival requires administrator approval.~~ Resolved: no approval step (§16.6, D-041).
+- ~~What happens to existing assignments when a project is archived.~~ Resolved (§16.9, D-042).
+- ~~Whether archival automatically ends assignments or changes their operational status.~~ Resolved: volunteer assignments end at the archival instant, coordinator assignments do not (§16.9, D-042).
+- ~~Whether archived projects may be restored.~~ Resolved: yes, by the same authority, without reviving assignments (§16.10, D-043).
 
 Previously agreed constraints remain: archived projects and activities preserve historical records and do not accept new time entries. No further archival behavior is settled by this supplement.
 
@@ -1522,7 +1513,7 @@ This section records additional decisions about assignment management, request h
 - Removing the last coordinator from an active project requires confirmation. If confirmed, the project remains active without a coordinator.
 - A coordinator may remove themselves, subject to the same last-coordinator confirmation requirement.
 
-These rules do not settle who may archive a project; archival permissions remain an open question.
+**Archival authority resolved 18 November 2026 (§16.6, D-041):** a coordinator assigned to a project may archive that project or an activity within it, and an organization administrator may archive any project or activity in the organization. The same permission governs restore, whose mechanics are fixed in §16.10 (D-043).
 
 ### 15.3.2 Organization administrator authority
 
@@ -1644,9 +1635,9 @@ The form should be quick to complete because relevant fields are pre-filled wher
 The volunteer can choose either:
 
 1. **Log time:** Submit the entry under the organization's approval policy.
-2. **Save as draft:** Preserve the entry without submitting it for approval.
+2. **Save as draft:** Keep the entry on the device without sending it anywhere.
 
-Drafts may be submitted later.
+Drafts may be submitted later. Until then they exist only on that device (§16.11, D-044).
 
 Stopping a timer and submitting a time entry are separate actions. The recorded time must not be lost merely because the volunteer does not submit the entry immediately.
 
@@ -1654,7 +1645,7 @@ Stopping a timer and submitting a time entry are separate actions. The recorded 
 
 **Confirmed decision:** Manual entries use the same hybrid workflow.
 
-The volunteer completes the manual entry form and chooses either **Log time** or **Save as draft**. Drafts may be submitted later.
+The volunteer completes the manual entry form and chooses either **Log time** or **Save as draft**. Drafts may be submitted later, and live only on the device until submitted (§16.11, D-044).
 
 Manual entries continue to support both established formats:
 
@@ -1670,7 +1661,7 @@ The submission workflow does not replace the existing organization-wide approval
 - If approval is not required, the entry is handled under the policy that applies to entries not requiring approval.
 - Saving a draft does not constitute submission for approval.
 
-The exact lifecycle state machine, approval transitions, and handling of policy changes remain to be finalized.
+The exact lifecycle state machine and approval transitions remain to be finalized. Submission is explicit rather than automatic (§16.11, D-044), and the approval policy applied to a submission is the one in force when it is received (§16.12, D-045).
 
 ---
 
@@ -1702,7 +1693,7 @@ These permissions do not automatically grant approval authority or conflict-reso
 
 The editing permissions above apply across all four entry states:
 
-- **Draft:** May be edited freely.
+- **Draft:** Exists only on the volunteer's device (§16.11, D-044) and may be edited freely there. The server-side permissions below begin at submission.
 - **Pending approval:** May be edited. The approval workflow must reflect the latest version of the entry.
 - **Approved:** May be edited. Material changes may trigger renewed approval under the organization's policy. Previous approvals and changes remain in the audit history.
 - **Rejected:** May be corrected and resubmitted. Rejection history is retained.
@@ -1732,7 +1723,7 @@ No deletion or voiding policy has been adopted.
 
 The following proposals were discussed but remain undecided:
 
-- Whether drafts may be permanently deleted or must be retained as discarded records.
+- ~~Whether drafts may be permanently deleted or must be retained as discarded records.~~ Resolved: unsubmitted drafts are device-local, so discarding one is a device action (§16.11, D-044).
 - Whether submitted entries may be marked as void or erroneous.
 - Whether voided approved entries must be excluded from valid reported hours.
 - Who may delete, discard, or void entries.
@@ -1767,7 +1758,7 @@ The exact endpoint paths, parameter names, request/response DTOs, and error enve
 
 **Confirmed decision — Adopted recommendation.**
 
-By default, the API returns all time entries the caller is authorized to see, including drafts and entries awaiting approval.
+By default, the API returns all time entries the caller is authorized to see, including rejected entries and entries awaiting approval. Unsubmitted drafts are not included, because they never reach the server (§16.11, D-044).
 
 - Volunteers see their own entries across all states.
 - Coordinators see entries within their existing project-scoped authority.
@@ -1793,7 +1784,7 @@ The MVP will use cursor-based pagination.
 - Maximum page size: **100 entries**.
 - If the client requests a page size above 100, the server caps it at 100.
 - The response includes a cursor when another page is available.
-- The cursor format and exact response fields remain to be specified.
+- The cursor format is specified in §16.2, and the list response field names are fixed in §16.5 (D-040).
 
 ### 15.7.5 Default ordering
 
@@ -1805,7 +1796,7 @@ Time entries are ordered newest first by default, based on when the work occurre
 - Duration-only entries are ordered using their work dates.
 - A deterministic tie-breaker, such as entry ID, will be used to make ordering predictable for cursor-based pagination.
 
-**Open detail:** The exact ordering semantics when timestamp-based and duration-only entries appear in the same result set remain to be specified.
+**Resolved 15 November 2026 (§16.3, D-038):** ordering is by work date, then effective start time, then entry ID; duration-only entries sort last within their date.
 
 ### 15.7.6 Cursor and query consistency
 
@@ -1817,7 +1808,7 @@ A cursor is tied to the original query context, including its filters and sort o
 - Changing a filter or sort order requires a new query without the previous cursor.
 - The API should reject a cursor used with an incompatible query rather than silently applying unexpected pagination behavior.
 
-The cursor's encoding, integrity protection, expiration, and query-context validation remain contract-design details.
+**Resolved 15 November 2026 (§16.2, D-037):** encoding, integrity protection, expiration, and query-context validation are specified as opaque signed tokens.
 
 ### 15.7.7 Results changing during pagination
 
@@ -1828,7 +1819,7 @@ Two approaches were discussed:
 - **Live results:** Each page reflects data available when that page is requested. The server attempts to minimize duplicates and omissions but does not guarantee a frozen snapshot.
 - **Snapshot results:** The initial request establishes a consistent snapshot used for all subsequent pages.
 
-The recommendation was to use live results for the MVP, but the user has not yet accepted or rejected it. This must remain an open question.
+**Resolved 15 November 2026 (§16.1, D-035):** live results confirmed. The recommendation recorded here was accepted.
 
 ---
 
@@ -1900,7 +1891,7 @@ The API supports filtering by `volunteerId`.
 
 The API exposes independent filters for:
 
-1. **Lifecycle status**, such as draft or submitted.
+1. **Lifecycle status**, such as submitted or voided. Unsubmitted drafts are not a server state (§16.11, D-044).
 2. **Approval status**, such as pending, approved, rejected, or not requiring approval.
 3. **Conflict status**, representing relevant synchronization or timer conflicts.
 
@@ -1932,6 +1923,8 @@ Examples include:
 
 The API must not silently ignore invalid filters and return results based on a broader query than the client intended.
 
+**Response shape resolved 15 November 2026 (§16.4, D-039):** `400 VALIDATION_FAILED` with one `details.errors[]` entry per failing filter, all failures returned together.
+
 ### 15.8.9 Unauthorized filter values
 
 **Confirmed decision:**
@@ -1942,7 +1935,7 @@ A valid but unauthorized volunteer ID must not reveal whether that volunteer or 
 
 This behavior is distinct from a valid, authorized query that returns no matching entries.
 
-The exact HTTP status code, error code, and response body remain to be specified.
+**Resolved 15 November 2026 (§16.4, D-039):** a supplied but out-of-scope filter value returns `403 FORBIDDEN` with the same body as a nonexistent one, so the two cannot be distinguished. A valid authorized query with no matches returns `200` with an empty list.
 
 ---
 
@@ -1962,7 +1955,7 @@ Audit history must still record changes and the actor responsible, according to 
 
 The MVP will not provide dedicated state-age filters such as:
 
-- Drafts older than 30 days.
+- Unsubmitted drafts older than 30 days; these are device-local and outside the API's view (§16.11, D-044).
 - Entries pending approval for more than 7 days.
 
 The existing status, work-date, and submission-time filters remain available.
@@ -2005,7 +1998,7 @@ The existing conceptual resource inventory should account for the following conc
 
 - **AssignmentRequest:** Represents a volunteer's pending, approved, rejected, or withdrawn request for project assignment when approval is required. No request is created for an immediately effective self-assignment.
 - **Notification:** Represents a persistent in-app notification. Deleting a notification does not delete the underlying business record.
-- **TimeEntry lifecycle:** Draft and submission workflow must be represented separately from approval and conflict state.
+- **TimeEntry lifecycle:** The submission workflow must be represented separately from approval and conflict state. There is no server-side draft resource: drafts live on the device until submitted (§16.11, D-044).
 - **Initial submission time:** Must be preserved independently of last-modified time.
 - **Audit history:** Must preserve relevant edits and prior approval/rejection decisions.
 - **Assignment history:** Ended assignments remain historical records; reassignment creates a new record.
@@ -2022,23 +2015,23 @@ The following items remain unresolved. They should be addressed before or during
 
 1. Define the complete lifecycle state machine for drafts, submitted entries, pending approval, approved entries, and rejected entries.
 2. Define the exact behavior of approval when an entry is edited, including the meaning of a material change.
-3. Decide what happens to pending entries when organizational approval settings change.
+3. ~~Decide what happens to pending entries when organizational approval settings change.~~ **Resolved 22 November 2026 — the policy in force at submission governs; later changes affect only later submissions (§16.12, D-045).**
 4. Define approval authority, including the boundaries of coordinator authority for project-less entries and other entries outside their projects.
 5. Define the handling and reporting of invalid, out-of-period, or conflicting submissions that must be preserved rather than silently discarded.
 6. Decide how edits made concurrently by multiple authorized users are detected and reconciled.
 
 ### Priority 2 — Retrieval and pagination
 
-7. Decide whether pagination uses live results or a consistent snapshot. The live-results approach is recommended but not yet accepted.
-8. Define the stable ordering of mixed timestamp-based and duration-only entries.
-9. Specify cursor structure, validation, expiration, and response fields.
-10. Define the exact validation and authorization error codes, HTTP status codes, and error envelope.
+7. ~~Decide whether pagination uses live results or a consistent snapshot.~~ **Resolved 15 November 2026 — live results confirmed (§16.1, D-035).**
+8. ~~Define the stable ordering of mixed timestamp-based and duration-only entries.~~ **Resolved 15 November 2026 — start-time anchor, duration-only entries last within their date (§16.3, D-038).**
+9. ~~Specify cursor structure, validation, expiration, and response fields.~~ **Resolved — opaque signed tokens (§16.2, D-037), with the list response body fixed as `items` / `nextCursor` / `pageSize` (§16.5, D-040).**
+10. ~~Define the exact validation and authorization error codes, HTTP status codes, and error envelope.~~ **Resolved 15 November 2026 — custom envelope with `code` as the contract, status and disclosure rules fixed (§16.4, D-039).**
 
 ### Priority 3 — Project lifecycle and permissions
 
-11. Decide who may archive projects and activities. The earlier recommendation that coordinators may archive their own projects while administrators retain organization-wide authority remains unaccepted.
-12. Decide how archival affects active assignments, pending requests, and historical time entry.
-13. Decide whether archived projects or activities can be restored.
+11. ~~Decide who may archive projects and activities.~~ **Resolved 18 November 2026 — coordinators within their project remit, administrators organization-wide, no approval step (§16.6, D-041).**
+12. ~~Decide how archival affects active assignments, pending requests, and historical time entry.~~ **Resolved 18 November 2026 — dated boundary: volunteer assignments end, pending requests cancel, pending entries stay reviewable, pre-archival work stays valid, running timers stop into pre-filled drafts on the volunteer's device (§16.9, D-042; §16.11, D-044).**
+13. ~~Decide whether archived projects or activities can be restored.~~ **Resolved 18 November 2026 — reversible by the same authority, without reviving assignments (§16.10, D-043).**
 14. Confirm whether coordinators may resolve conflicts for volunteers assigned to their projects and how project-less entries are treated.
 15. Finalize whether volunteer and coordinator assignments use a generalized resource or separate resources.
 16. Define the consequences of assignment departure for pending time entries and requests, beyond the established historical-work eligibility rule.
@@ -2047,12 +2040,12 @@ The following items remain unresolved. They should be addressed before or during
 
 ### Priority 4 — Entry deletion and operational details
 
-19. Decide whether drafts may be permanently deleted or must be retained as discarded records.
+19. ~~Decide whether drafts may be permanently deleted or must be retained as discarded records.~~ **Resolved 22 November 2026 — drafts never reach the server, so discarding one is a device action (§16.11, D-044).**
 20. Define whether submitted entries may be voided and the associated permissions, audit requirements, and effect on reported hours.
 21. Finalize overlap warning and review behavior.
 22. Decide whether project-less activity descriptions are stored separately from optional notes.
 23. Finalize required and optional profile fields and email-change verification behavior.
-24. Decide the effects of policy changes on pending assignment requests and other pending operations.
+24. **Entry submissions settled:** an approval-policy change applies only to submissions received after its effective time (§16.12, D-045). Still open: the effects of policy changes on pending assignment requests and other pending operations.
 25. Define notification retention and whether administrators can manage other users' notifications.
 
 ### Priority 5 — API contract and implementation
@@ -2070,8 +2063,443 @@ Items may be combined or deferred where appropriate. The list is a planning aid,
 
 ## 15.13 Recommended next step
 
-Continue resolving the remaining lifecycle and permission questions one at a time. The immediate outstanding question from the most recent discussion is whether paginated retrieval should use live results or a consistent snapshot.
+Continue resolving the remaining lifecycle and permission questions one at a time.
+
+**Superseded:** the immediate question recorded here — live results versus a consistent snapshot — was resolved on 15 November 2026 in favour of live results (§16.1, D-035). The current next step is recorded in the outstanding-decisions list at the head of §16.
 
 Once the core lifecycle, authorization, and conflict-handling rules are sufficiently clear, begin drafting the API contract rather than attempting to resolve every implementation detail in advance.
 
 The contract should explicitly identify which behaviors are finalized, which are implementation choices, and which remain deferred.
+
+------------------------------------------------------------------------
+
+# 16. Supplementary Decision Record — Updates Since 28 October 2026
+
+**Update date:** 15 November 2026  
+**Purpose:** Record decisions taken after §15, and register follow-up decisions that were explicitly deferred. Decision IDs continue from the §12 register; decisions recorded in §15 were not assigned IDs and remain unnumbered there.
+
+**Numbering convention (18 November 2026):** the numbered sections here are append-only. A new decision takes the next unused number at the end of §16, so no existing section number, and no reference to one, changes when a decision is recorded. Numbers are never reused: §16.8 was the outstanding-decisions list before it became the unnumbered list below. That list is the only part of §16 rewritten as decisions land.
+
+## Outstanding decisions (maintained in place)
+
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11).
+
+Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
+
+1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
+2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
+
+All other items in §15.12 remain unchanged and unresolved. The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+
+## 16.1 Retrieval consistency: live results
+
+**Confirmed decision (D-035) — 15 November 2026.**
+
+Time-entry retrieval uses **live results**. Each page reflects server state at the time that page is requested. The server does not hold a snapshot, materialise a result set, or freeze membership across a client's scroll session.
+
+**Guarantee the API provides:**
+
+- Keyset ordering is total and deterministic, so entries inserted during a scroll do not cause an entry to appear on two pages.
+- An entry may be **repeated or omitted** within a scroll session if its ordering key changes mid-session — for example, an edited work date moving the entry across the cursor frontier.
+- An entry may **appear late** on a later page if it synchronises in with a work date older than the cursor frontier. This follows from offline capture (§7.1, §7.3) and is expected behaviour, not a defect.
+
+**Client obligations:**
+
+- Deduplicate displayed or acted-on entries by entry ID.
+- Treat a scroll session as a view of current state; refresh rather than assume completeness.
+
+**Considered and rejected:**
+
+- **Consistent snapshot.** Requires per-session server state — materialised ID lists with TTL, cleanup, and a cap on concurrent sessions — and cannot hold a database transaction open across stateless HTTP requests. Freezing contents as well as membership would additionally require historical row versions.
+- **Live results with an `asOf` submission-time watermark.** Cheap, and implementable from the initial-submission timestamp already required by §15.8.3, but it dampens only insert churn: in-place edits (§15.5.1) still change rows inside the window. The guarantee would be partial while appearing to be a snapshot.
+
+**Forward compatibility:** cursors remain opaque and query-bound (§15.7.6), so an optional explicit-consistency parameter can be added later without breaking the contract.
+
+**Rationale:** the reporting need that would justify snapshots is distinct from interactive listing, and is addressed by the deferred import/export decision in §16.7 rather than by adding snapshot semantics to list pagination.
+
+## 16.2 Cursor encoding: opaque signed tokens
+
+**Confirmed decision (D-037) — 15 November 2026.**
+
+Time-entry cursors are opaque, stateless, signed tokens. A cursor is not stored server-side, has no expiry, and conveys only a position in a result set.
+
+**Format:** `kid.payload.signature` — a key identifier, a base64url-encoded JSON payload, and a base64url HMAC-SHA256 signature over the exact payload bytes. The key identifier is emitted first so the server can select a verification key before parsing anything.
+
+**Payload fields:**
+
+- `v` — format version (integer), so the payload can change without breaking clients holding older cursors.
+- `k` — the ordering tuple of the last row returned, fixed in §16.3: `[work date, effective time, entry ID]`. It is a total-order tuple ending in the entry ID tie-breaker.
+- `q` — fingerprint of the normalised filter set and sort order, HMAC-SHA256 truncated to 16 bytes.
+
+**Rules:**
+
+- The fingerprint covers filters and sort order only. `pageSize` is excluded, so a client may change page size mid-scroll without an error.
+- Tokens longer than 1 KiB are rejected before parsing.
+- Cursors have no expiry. Because retrieval is live (§16.1) and a cursor is only a keyset position, an old cursor remains valid and resumes from that position after any length of time.
+- Cursors are signed but not encrypted. Their contents — entry ID, sort value, and a fingerprint of filters the caller itself supplied — are not secret.
+- Integrity is for diagnosability, not access control. A malformed or tampered token produces a clean error instead of a surprising page. Authorization is re-evaluated on every request (§4.5); a cursor never conveys or widens access.
+- Key rotation uses the `kid` prefix: the previous key is accepted during rotation, and cursors minted before rotation fail cleanly as `INVALID_CURSOR`, after which the client restarts pagination. The signing key is a 32-byte secret from configuration, never from source.
+- Implementation is a self-contained module — encode, decode, fingerprint — with no database or HTTP dependency, called from the HTTP layer. This follows the layering principle in §11.
+
+**Error behaviour (codes fixed here; envelope deferred to the error-envelope decision):**
+
+- `400 INVALID_CURSOR` — undecodable, bad signature, unknown version, or oversize. Remedy: restart pagination.
+- `400 CURSOR_QUERY_MISMATCH` — fingerprint does not match the supplied filters or sort order (§15.7.6). Remedy: a client bug or a filter change without a reset; it must not be silently accepted.
+
+**Considered and rejected:**
+
+- **Transparent parameters** such as `afterId`, `afterSortValue`, and `sort=…`. Readable in transport and trivial to debug, but they expose ordering internals as public contract, prevent query-mismatch detection, and couple existing app versions to current sort semantics.
+- **Encrypted cursors.** Hides non-secret contents at the cost of additional key management, with no confidentiality benefit.
+
+**Resolved:** the representation of `k` is fixed by the ordering decision in §16.3.
+
+## 16.3 Entry ordering: mixed timestamp and duration-only
+
+**Confirmed decision (D-038) — 15 November 2026.**
+
+Time-entry lists are ordered newest first by work date, then time within the day, then entry ID:
+
+```sql
+ORDER BY work_date DESC,
+         COALESCE(local_start_time, '00:00:00') DESC,
+         entry_id DESC
+```
+
+- `work_date` and `local_start_time` are derived from the entry's start instant in the organisation's configured time zone, using the same derivation §15.8.1 requires for filtering. Deriving both the same way is part of the decision: filtering and ordering must never disagree about which date an entry belongs to.
+- Timestamped entries are anchored at their **start**, not their end.
+- Duration-only entries sort **after** every timed entry on the same date, because they make the least precise claim about when the work happened. The server does not invent a time of day (§6.5).
+- The entry ID terminates the ordering, making it total and stable — the property D-035's guarantee depends on.
+
+**Cursor tuple.** D-037's `k` is therefore:
+
+```
+k = [ "YYYY-MM-DD", "HH:MM:SS.mmm", "<entry-id>" ]
+```
+
+Duration-only entries encode the start-of-day sentinel value used in the ordering expression, never a null, so cursor comparison stays a plain row comparison and cannot be tripped by NULL semantics.
+
+**Consequences for schema and indexing (§15.12 item 28):** ordering and date filtering both need the derived date and effective time, so the schema must support generated columns or functional indexes over `COALESCE(work_date, (start_at AT TIME ZONE org_tz)::date)` and the matching time expression. This is a schema constraint, not a query-time detail.
+
+**Accepted consequences:**
+
+- "Newest first" means newest **started**. A session beginning at 16:00 and ending at 20:00 sorts below a ten-minute entry at 19:00.
+- Duration-only entries cluster at the bottom of their date group.
+- Ordering is derived at query time from the organisation's time zone, so a change of zone reinterprets history. Storing a derived local date was rejected: it duplicates the source of truth and can drift from the instant it came from.
+
+**Considered and rejected:**
+
+- **End-time anchor.** Requires a special case for running timers ("as if it ended now"), which makes an entry jump position the moment the timer stops — movement across the cursor frontier that D-035 exists to limit.
+- **Work date only, with entry ID as the sole tie-break.** Cheapest to index and immune to time-of-day edits, but same-day entries would order arbitrarily, and "what happened today" is the common review case.
+- **Submission-time ordering.** Decouples order from work time, so an entry syncing from an offline device a week late appears at the top; contradicts §15.7.5.
+
+**Deferred:** client-selectable sort orders, including approval-age ordering ("oldest pending first"), which belongs with the state-age filters deferred in §15.9.
+
+## 16.4 Error envelope
+
+**Confirmed decision (D-039) — 15 November 2026.**
+
+Errors use the envelope already illustrated in §10.5, now confirmed as the contract shape:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "One or more filters are invalid.",
+    "requestId": "b3f1c0de-…",
+    "details": {
+      "errors": [
+        { "path": "startDate", "code": "DATE_RANGE_INVERTED", "message": "startDate must not be after endDate." }
+      ]
+    }
+  }
+}
+```
+
+**Envelope rules:**
+
+- `code` is the contract. Clients branch on `code` and never parse `message`; `message` is human-facing and may change without notice.
+- `requestId` appears on every error and is echoed in server logs and audit records.
+- `details` is optional. For validation failures it carries `errors[]`, one level deep, each entry exactly `{path, code, message}`. Unconstrained `details` that differs per endpoint is rejected.
+- Content type is `application/json`.
+- `message` never echoes identifiers, internal exception text, or stack traces.
+
+**Status and code mapping:**
+
+| Status | Codes | Trigger |
+|---|---|---|
+| `400` | `VALIDATION_FAILED` (with field codes), `INVALID_CURSOR`, `CURSOR_QUERY_MISMATCH`, `MALFORMED_REQUEST` | Invalid filters or combinations (§15.8.8), cursor failures (D-037), unparseable body |
+| `401` | `UNAUTHENTICATED` | Missing or expired credentials |
+| `403` | `FORBIDDEN` (with field codes) | Authenticated, but a supplied **filter value** lies outside the caller's scope (§15.8.9) |
+| `404` | `NOT_FOUND` | Addressed resource absent **or** outside scope — identical status and body either way |
+| `409` | `CONFLICT`, `VERSION_MISMATCH` | State conflicts, including the in-place edit path of §15.5 |
+| `500`, `503` | `INTERNAL_ERROR`, `SERVICE_UNAVAILABLE` | No internals, no identifiers |
+
+**Disclosure rules:**
+
+- Identifiers supplied as **filters** return `403 FORBIDDEN` whether the value does not exist or merely lies outside scope. A filter is a scope claim by the caller.
+- Identifiers addressed in the **path** return `404 NOT_FOUND` in both cases. Addressing an object already asserts something about it.
+- Both collapse existence, as §15.8.9 requires. The real reason goes to the server log and audit record under `requestId`, never into the response.
+- A valid authorized query with no matches returns `200` with an empty item list. This is the distinction §15.8.9 insists on.
+
+**Code governance:**
+
+- One `code` has one meaning permanently. Retiring a code means deprecating it, never reusing it. The code inventory therefore depends on the API versioning decision (§15.12 item 31), and the full per-endpoint inventory belongs to contract drafting (§15.12 item 29).
+- All failing fields are reported together, not first-failure-only: round trips are expensive for a device that has been offline for a week.
+- Validation errors are raised only for fields the caller actually supplied.
+- One validation status (`400`). A `400`/`422` split is rejected as a distinction clients routinely get wrong.
+- No `retryable` flag yet. It belongs with retry semantics in the sync design (§15.12 item 30), where it can be defined per code.
+
+**Considered and rejected:**
+
+- **RFC 9457 `application/problem+json`.** More conventional, and tooling exists, but its canonical dispatch key is a `type` URI that must be hosted and kept stable forever, it would require rewriting the §10.5 illustration, and sync-conflict detail would land in extension members at the least prescriptive part of the specification. Adopting it later is additive: `type` and `title` can be added alongside `code` without breaking clients.
+- **Bare `{ "code": … }`.** Smallest response, but no room for field-level errors or correlation.
+- **`403` for out-of-scope addressed resources.** Discloses existence, contradicting §15.8.9.
+- **`200` with an empty list for out-of-scope filter values.** Indistinguishable from a legitimate no-match, which §15.8.9 explicitly rejects.
+
+**Open:** the per-endpoint code inventory, and the status representation of an out-of-period submission (§10.5, §15.12 item 29).
+
+## 16.5 Paginated list response body
+
+**Confirmed decision (D-040) — 18 November 2026.**
+
+Every paginated list endpoint returns a flat body with exactly three members:
+
+```json
+{
+  "items": [ … ],
+  "nextCursor": "<opaque token>",
+  "pageSize": 50
+}
+```
+
+**Field rules:**
+
+- `items` — the array of resource representations. An empty array is a valid, successful result (§16.4); the member is never omitted.
+- `nextCursor` — always present. `null` on the final page; otherwise the opaque token defined in §16.2, returned unchanged by the client as the `cursor` query parameter. No `hasMore` companion: `nextCursor !== null` means more rows exist, and a second flag could only ever disagree with it.
+- `pageSize` — the **effective** page size applied to this page, not the requested one. It can be lower than the request because of the default of 50 or the 100-row cap (§15.7.4), so echoing the applied value tells the client how wide the page actually was.
+- Flat shape, no nesting under `pagination`, `meta`, or `data`. These names become part of the contract: renaming them is a breaking change (API versioning, §15.12 item 31).
+
+**Deliberately absent:**
+
+- **No total count.** Counting — unread notifications, pending requests, and other badge figures — is computed in the API business layer and served by the endpoints that ask for it; it is not page metadata. Deferred rather than rejected (§16.7).
+- **No page number, and therefore no "page 3 of 25".** A page label needs three things the contract does not provide: a total to divide, a page size fixed for the session, and a set that does not change between requests. "Of 25" is only honest under a stable snapshot, which D-035 rules out for interactive listing, so the denominator would drift mid-scroll and pages could overlap. Position is different and free: "rows 101–150" needs no server support, because the client already knows how many rows it has received.
+- **No navigation links**, no per-page `requestId` (errors carry one, §16.4), no `meta` object.
+
+**Considered and rejected:**
+
+- **Namespaced `pagination: { nextCursor, pageSize, hasMore }`.** Groups related fields, but adds a level of nesting for three members and invites unrelated metadata to accumulate in a response that should be a page of data.
+- **`hasMore` beside `nextCursor`.** Two representations of one fact, which can drift apart.
+- **`data` or `results` instead of `items`.** `data` collides with payload naming used elsewhere, and `results` reads as a report or aggregate rather than a page.
+
+**Accepted consequences:**
+
+- One response shape for every paginated list, so a client writes one loop and reuses it.
+- "How many pages are there?" is unanswerable from this response by design (§16.1). A UI that must show a denominator brings its own snapshot semantics through the deferred export/aggregate path (§16.7).
+
+## 16.6 Project and activity archive authority
+
+**Confirmed decision (D-041) — 18 November 2026.**
+
+Archiving is part of managing a project, not a separate privilege, and it does not require administrator approval.
+
+| Actor | May archive |
+|---|---|
+| Organization administrator | Any project or activity in the organization |
+| Coordinator assigned to the project | That project, and any activity within it |
+| Coordinator not assigned to the project | Nothing — the project is outside their scope (D-009) |
+| Volunteer | Nothing |
+
+**Rules:**
+
+- Authorization is evaluated against the project assignment, not the role alone (§4.5). It is the same remit that lets a coordinator create and manage a project (§5.1) and remove its last coordinator (§15.3.1).
+- Restore uses the same permission; its mechanics are fixed in §16.10 (D-043).
+- A project outside the caller's scope returns `404 NOT_FOUND`, indistinguishable from one that does not exist (D-039, §15.8.9).
+- Archival is idempotent: archiving an already-archived project leaves it archived rather than raising an error, because an offline client resends a queue the server may already have applied (§15.12 item 30).
+- Archival writes an audit event recording actor, project, timestamp, and any reason supplied. A reason is optional in the MVP; the event is not.
+- Archiving a project the coordinator is assigned to changes their own access in the same request. Like self-removal (§15.3.1) it is permitted, with a confirmation prompt.
+- Administrators can reverse any coordinator's archival, so no coordinator action is final.
+
+**Considered and rejected:**
+
+- **Administrator-only archiving.** Tightest control, but makes administrators a bottleneck at the routine end of every project, leaves ended projects active and still accepting entries while approval waits, and contradicts coordinators managing the projects they run.
+- **Coordinator initiates, administrator approves.** Would require a pending-archive state to design, notify, expire, and display, and two people to close one project.
+- **An organization-level setting**, like the assignment-approval setting in §5.3. Additive later if an approval step is ever wanted above the default permission; rejected for the MVP as an unnecessary settings surface.
+
+**Accepted consequences:**
+
+- The actions requiring administrator sign-off stay few: roles, memberships, organization settings.
+- The interface must confirm before archiving, because restoring does not bring back the assignments that archival ends (§16.10, D-043).
+- A project with no coordinator can be archived only by an administrator.
+
+## 16.7 Follow-up decision deferred: import/export mechanism
+
+**Deferred — not designed (D-036). Status: open.**
+
+A dedicated import/export mechanism is required for reporting and data portability, and is the proper home for consistent, reproducible totals. It is deliberately not part of MVP retrieval-pagination design.
+
+The later decision must cover at least:
+
+- Export scope and formats (for example CSV and/or JSON), including whether the output is stable enough to cite in external audit.
+- Whether totals and detail rows come from a single consistent read, and how that consistency is achieved without snapshot pagination.
+- Whether large ranges need job-style asynchronous exports, and how results are delivered, retained, and expired.
+- Permission model: who may export whose data, and whether coordinator exports are restricted to their project scope.
+- Whether an import path exists in the MVP at all; if so, how imported records are validated, attributed, and audited.
+- Audit recording of who exported or imported what, and when.
+
+Nothing in this section should be implemented before the decision is taken.
+
+## 16.9 Effects of archival on assignments, requests, and timers
+
+**Confirmed decision (D-042) — 18 November 2026.**
+
+Archiving is a dated boundary, not a deletion. The project is stamped with an archival instant, and everything in flight is judged against that instant.
+
+| Item | On archival |
+|---|---|
+| Volunteer assignments | End with an effective end time equal to the archival instant, using the existing assignment-end field (§5.5). Rows are retained, never deleted |
+| Coordinator assignments | Not ended. They remain the project's management relationship, which is what lets the coordinator who archived it restore it (§16.6) |
+| Pending assignment requests | Cancelled with outcome `cancelled: project archived`; the requester is notified; the request record is retained |
+| Pending time entries | Unchanged, and still reviewable and approvable. Archival blocks new entries, not decisions about existing ones |
+| Drafts and offline queues | Accepted when the work falls before the archival instant |
+| Running timers | Stopped server-side at the archival instant; the elapsed time is held and offered to the volunteer's device as a pre-filled draft awaiting confirmation (§16.11, D-044) |
+| Activities | Archiving an activity blocks entries against that activity only; volunteer assignments belong to the project and are unaffected |
+
+**Rules:**
+
+- Eligibility is judged by date, not by current status. An entry whose work time falls before the archival instant remains valid however late it is submitted or synced; work in the archival instant's future is refused (D-011).
+- Archival is one transaction. A half-archived project — assignments ended, timers still running — is worse than either end state.
+- The confirmation names what will happen: how many assignments end, how many pending requests will be cancelled, and how many running timers will be stopped.
+- Stopped timers produce a pre-filled draft on the volunteer's device and a notification, never an auto-submitted entry. The server holds the stopped session's elapsed time until one of that volunteer's clients collects it, because unsubmitted drafts are not server objects (§16.11, D-044). The volunteer decides whether to keep the time.
+- An entry submitted for work after the archival instant is refused as a validation failure with the submitted data preserved (D-039), not silently discarded.
+- Administrators keep their organization-wide access. Archival removes assignment-based access, not administrative authority (§15.3.2).
+- Archiving a project whose activities are all already archived is allowed with a warning, not blocked — the same posture as the no-coordinator warning (§15.3.1).
+
+**Considered and rejected:**
+
+- **Soft close** — block new assignments and entries but leave assignments active until their own end dates. Avoids a sudden change, but leaves assignments pointing at a dead project, still requires a project-status check on every entry, and pushes the cleanup onto someone who will forget it.
+- **Hard close** — delete the assignments. Simple state, but destroys the eligibility record and contradicts D-011's retention of history.
+- **Reject all in-flight work** — refuse pending entries and discard running timers. The cleanest boundary, and the worst outcome for trust: it destroys work volunteers actually did.
+- **Auto-submit the stopped timer.** Saves the volunteer a decision, but creates an approval item they never reviewed.
+
+**Accepted consequences:**
+
+- Archival fans out across assignments, requests, timers, and notifications, so it must be implemented as a single transaction rather than a status write.
+- Volunteers can be interrupted mid-session; the notification on their next sync is the mitigation and must name the project and the instant.
+- Ended assignments stay in history, so "why did my assignment end?" has an answer tied to the audit event from §16.6.
+
+**Open:** the volunteer's window for confirming a stopped timer, and what happens if they never answer. Notification delivery and retention remain with §6.1 and §15.12 item 25.
+
+## 16.10 Restoring archived projects and activities
+
+**Confirmed decision (D-043) — 18 November 2026.**
+
+Archiving is reversible. Restoring reverses the project's status only; it does not reverse the passage of time, nor the access decision taken at the archival instant.
+
+| Element | On restore |
+|---|---|
+| **Authority** | An assigned coordinator, or any administrator — the same rule as archival (§16.6) |
+| **Project** | Returns to active; appears in pickers; accepts new entries |
+| **Activities archived with the project** | Return to their previous state |
+| **Activities archived separately** | Stay archived. Only activities archived as part of the project's archival follow it back |
+| **Volunteer assignments** | Stay ended. Volunteers re-request, or a coordinator assigns them, under the normal approval setting (§5.3) |
+| **Coordinator assignments** | Already intact, so there is nothing to restore (D-042) |
+| **Requests cancelled at archival** | Stay cancelled |
+| **Historical entries** | Untouched |
+| **The archived interval** | Stays in the record; work dated inside it stays ineligible |
+
+**Rules:**
+
+- Each archive event records its cause — an activity archived by itself, or archived along with its project — because that cause decides what restore brings back. Without it, a cascade cannot be told from a deliberate individual archive.
+- Eligibility stays date-based (D-042). A restored project has two active windows with an ineligible gap between them; an entry backdated into the gap is refused, not accepted.
+- Restoring an already-active project returns the current state, matching archival's idempotency (D-042).
+- Restoring an activity whose parent project is still archived returns `409 CONFLICT`. An active activity under an archived project is a state nobody can act on.
+- The confirmation before restore names what returns and what does not: "The project and the activities archived with it will be active again. Volunteer assignments ended in December are not restored; volunteers will need to request access."
+- Former assignees are notified once: the project is active again and they may request access.
+- The restore is recorded in the audit trail with actor, timestamp, and the archived period it closed.
+
+**Worked example:** Priya archives the Saturday Food Bank in December. The pantry restarts in March and she restores it. The project and the three activities archived with it return; Tom, whose timer was stopped at 14:20 in December, gets one notification and re-requests in a minute, because his assignment history is still visible to him and to Priya. Hours for a February shift — after the archive, before the restore — are still refused if he tries to backdate them, because the project was not running then.
+
+**Considered and rejected:**
+
+- **Archive as a terminal state.** Cleanest model, no restore path to guard, but a mistaken archive or a returning programme forces a duplicate project with a different ID, splitting history and every report that spans the two. Mistakes are certain.
+- **Restore with assignment resurrection.** Volunteers are working again with no action, but access is silently re-granted after months, assignments can return for revoked or departed memberships, and a deliberate access decision is reversed by a status change.
+- **Restore as a clone** — a new project copying the activities. Separates the two eras cleanly, but splits history across two project IDs, so "the same project" becomes two rows.
+- **Restore requires an administrator.** A second pair of eyes on reopening, at the cost of contradicting D-041's same-authority rule and making a coordinator wait on someone else to undo their own mistake.
+
+**Accepted consequences:**
+
+- Archiving is no longer a one-way door, which is the intent: a cheap mistake to fix is a cheap decision to make, so stale projects get closed rather than left active.
+- Reopening is not a time machine. The interruption, the cancelled requests and the archived gap all survive it.
+- Reports must show the gap rather than presenting the two active windows as continuous. Totals by work date are unaffected, because entries carry their own dates.
+- The archive event carries its cause for the lifetime of the record, which is extra state every archive path must populate.
+
+**Deferred:** whether restore records a reason (archival's is optional); how long archived projects are kept and whether anything is ever purged; whether a volunteer whose assignment ended by archival may re-request without approval when the organization normally requires it.
+
+## 16.11 Submission is explicit
+
+**Confirmed decision (D-044) — 22 November 2026.**
+
+Finishing work does not submit it. A volunteer completes an entry and submits it; until then it is a draft. Nothing enters an approval queue on the volunteer's behalf.
+
+**Drafts live on the device (clarified 22 November 2026).** An unsubmitted draft is not a server object. It is stored on the volunteer's device, is never transmitted, and cannot be retrieved from the server.
+
+**Rules:**
+
+- Stopping a timer, or saving a manual entry with all its required fields, produces a draft on that device. The entry reaches the server only when the volunteer submits it.
+- The server has no draft state, no draft identifier and no draft endpoint. A time entry's first server-side existence is its submission (§15.11).
+- Drafts do not travel between a volunteer's devices, and losing the device loses the drafts. This is accepted rather than worked around with server-side draft storage.
+- Clients validate drafts locally, because the server cannot reject a draft it never sees. An invalid submission is refused as a whole with structured errors (D-039), and the draft stays on the device for correction.
+- The offline queue carries submissions only (§7.1). Drafts are not queued for transmission.
+- Submission is an action taken by the entry's owner. Coordinators and administrators may approve, reject, or return entries, but they do not submit on a volunteer's behalf — that would attest to hours the volunteer has not claimed.
+- A draft is invisible to approval queues, approval counts and coordinator workloads; it does not exist at all for those purposes.
+- Bulk submission is allowed as a repeated explicit act, not as a background sweep.
+- A timer stopped by archival is server-side session state, not a server draft: the elapsed time is held by the server and offered to the volunteer's device as a pre-filled draft on its next sync (D-042).
+- Submission is a state transition on the entry, not a new record; the submission instant is stored with it (§15.11).
+
+**Considered and rejected:**
+
+- **Automatic submission when work is saved.** Fewer taps, but every mistake becomes an approval item, the volunteer never gets to review what they are claiming, and "submitted" stops meaning anything.
+- **Submission implied by the first sync.** Convenient for offline clients, but it submits work the volunteer may still be editing and makes the offline and online paths behave differently.
+- **Automatic submission only where approval is not required.** Removes a step in the easy case, at the cost of two different submission rules that users must learn.
+- **Server-side drafts.** Syncing drafts so they survive a lost device and appear on every device is the obvious convenience, but it makes the server host hours nobody has claimed, duplicates the lifecycle in two places, and undercuts the rule that nothing is submitted on the volunteer's behalf.
+
+**Accepted consequences:**
+
+- Approval queues contain only entries someone deliberately sent, so a rejection is always a response to a claim.
+- Work can sit unsubmitted indefinitely; the mitigation is visibility (device-side draft indicators and ageing), not auto-submission.
+- Clients must distinguish "finished" from "submitted" in their UI, including offline, and only the submitted form is ever sent.
+- The server never sees a draft, so it cannot support draft recovery, draft analytics, or a coordinator asking about an unsubmitted entry — by design. Device loss, reinstall and device switching all lose drafts.
+- Every submitted entry arrives complete enough to validate in one request, because there is no earlier server-side copy to amend.
+
+**Deferred:** how long a device keeps an unsubmitted draft and whether a device-side reminder is shown. Both are client policy; the server has no view of either.
+
+## 16.12 Approval policy applies at submission
+
+**Confirmed decision (D-045) — 22 November 2026.**
+
+An approval-setting change governs submissions received after it takes effect. Anything already submitted keeps the handling it entered, and nothing already decided is reopened.
+
+**Rules:**
+
+- The policy in force when a submission is received decides whether that entry needs approval.
+- A pending entry is not auto-approved or auto-rejected when the organization switches approval off or on. It continues under the rules it entered.
+- An approved entry is not un-approved by a later change.
+- A change effective at time T splits the queue by submission instant — not by work date, not by when the volunteer opened the app.
+- The instant is when the server accepts the submission. A client that submitted while offline before the change but syncs afterwards is judged by the policy at sync — the server checks current policy on receipt (§8.2).
+- This rule covers time entries only. Pending assignment requests and other pending operations still need their own per-policy answer (§15.12 item 24).
+
+**Worked example:** approval is switched off on 1 March. An entry submitted 28 February stays in the approval queue and is decided by a coordinator; entries submitted 2 March are accepted directly. A volunteer who wrote their entry on 27 February but synced on 3 March is judged by the March policy, because that is when the submission arrived.
+
+**Considered and rejected:**
+
+- **Apply changes retroactively to everything pending.** Consistent with "the current policy" read literally, but it empties or floods a queue without anyone acting, and reverses decisions people already made.
+- **Freeze the policy at draft creation.** Protects a volunteer's expectation, but lets a draft saved months ago bypass a restriction introduced since — a cached permission doing exactly what §8.2 forbids.
+- **Grandfather approvals permanently.** Avoids surprises, but makes the policy history, rather than the current rule, determine today's behaviour.
+
+**Accepted consequences:**
+
+- Each entry stores the policy applied at its submission, so "why was this accepted without review?" is answerable later.
+- Two entries with identical work dates can be handled differently; the submission instant, not the work date, is the explanation, and the API should expose it.
+- Retiring an approval policy never strands existing items, because their handling is already fixed.
+
+**Deferred:** what happens to a pending entry when the last available approver loses their role, and the per-policy answer for assignment requests and other pending operations (§15.12 item 24).
