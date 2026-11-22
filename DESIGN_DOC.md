@@ -1058,7 +1058,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -1103,7 +1103,8 @@ time rather than filled in by assumption.
     verification behaviour.
 11. Decide whether project-less activity description is separate from
     optional notes.
-12. Define overlap warning/review behaviour.
+12. ~~Define overlap warning/review behaviour.~~ **Resolved 22 November
+    2026 — definition of an overlap (§16.14, D-047).**
 13. Define what assignment departure does to pending time entries and
     requests, beyond the already agreed historical-time rule.
 14. ~~Define how active assignments are handled during archival, and
@@ -2084,14 +2085,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11) and backlog item B1 (time and duration model, §16.13).
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11) and backlog items B1 (time and duration model, §16.13) and B2 (definition of an overlap, §16.14).
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B2 (definition of an overlap). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B3 (timer semantics). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2553,6 +2554,55 @@ An entry's length is stored as a **whole number of seconds**. A timestamp entry 
 
 **Deferred:** how far back an entry may be dated or submitted (B16), any daily or weekly maximum (B17), whether a break field is ever added (B18), and how exported hours are rounded (B19).
 
+## 16.14 Definition of an overlap
+
+**Confirmed decision (D-047) — 22 November 2026.**
+
+A conflict is any **positive overlap in absolute time** between two **submitted timestamp entries belonging to the same volunteer**, regardless of project or activity. Touching endpoints do not overlap. A conflict is **advisory**: the entry is accepted, stored and flagged, never rejected.
+
+**Rules:**
+
+- **Scope.** One volunteer, across every project and activity. Time is one person's resource; dividing it between two projects does not create a second hour.
+- **Membership.** Only submitted entries participate. Device-local drafts never reach the server (D-044), and rejected entries are out.
+- **Definition.** Intervals are half-open: an overlap exists when `a.startedAt < b.endedAt` and `b.startedAt < a.endedAt`. Equality at either end is not an overlap.
+- **Tolerance.** None. Any shared instant of one second or more is a conflict.
+- **Duration-only entries.** Excluded. They carry a date and a length but no position within the day, so there is nothing to compare.
+- **Timing of the check.** At submission, against the entries that exist at that moment (D-045's boundary). An edit that changes either instant re-runs it. The earlier entry is never retroactively re-judged.
+- **Across volunteers.** Never.
+- **Response.** A conflict is not an error. The submission succeeds with its normal status and carries `conflicts: [{ entryId, startedAt, endedAt }]`, naming the other entry so both can be shown. Duration is not adjusted.
+- **Resolution.** A volunteer or coordinator resolves it by editing or discarding one of the two entries. Conflict status stays separate from approval status: resolving a conflict does not approve hours (§15.5.4).
+
+**Why advisory rather than blocking.** The cases that produce overlaps are the cases where blocking does damage: two devices capture the same shift offline and sync without seeing each other; a timer is left running and the shift is logged again; a shared device is left signed in. A rejection in an offline queue is a dead end — the client cannot resolve it without the volunteer, who may not return — so the entry is lost rather than corrected. Accepting with a flag keeps the record and puts the question where a human already is: D-045's review queue. The decision becomes "which of these two is wrong" instead of "nothing was recorded".
+
+**Worked examples:**
+
+| Case | Result |
+|---|---|
+| 09:00–12:00 and 10:00–14:00, same project | Conflict |
+| 09:00–12:00 community and 10:00–14:00 admin | Conflict — different projects, same person |
+| 09:00–12:00 then 12:00–14:00 | No conflict |
+| 09:00–12:00 then 12:00:01–14:00 | No conflict |
+| Volunteer A 09:00–12:00, volunteer B 09:00–12:00 | No conflict |
+| "90 minutes on 25 October" against a 09:00–12:00 shift that day | No conflict detectable — the duration-only entry has no position |
+
+**Considered and rejected:**
+
+- **Per-project scope.** Would allow a volunteer to be in two places at once whenever the projects differ, which is the commonest way hours are double-counted.
+- **Blocking rejection (409).** Keeps contradictory time out of the record but strands offline submissions and treats a stuck-timer duplicate as the volunteer's fault to fix.
+- **A tolerance window.** Hides genuine short overlaps behind a constant that must be justified; exact comparison is free at second precision. If clock skew ever produces phantom conflicts, B3 settles it there, not silently here.
+- **Treating touching endpoints as an overlap.** Flags the ordinary stop-then-start pattern of a timer and teaches reviewers to ignore the flag.
+- **Cross-volunteer or team-wide detection.** Constant, meaningless flags; several volunteers legitimately work the same hours.
+- **Detecting overlaps from the work date and a total.** Wrong in both directions: two entries on one date with no shared instant are not a conflict, and a shared instant cannot fall on two dates.
+
+**Accepted consequences:**
+
+- Duration-only entries are invisible to detection, so a volunteer who records only totals can never be flagged. The aggregate case belongs to a daily maximum (B17), which does not pretend to know clock times.
+- A conflict is a **pair**, so the API must answer "what does this entry conflict with", not merely "is this entry conflicted"; a bare flag cannot be resolved.
+- Because the earlier entry is not re-judged, the two sides of a conflict can reach different approval outcomes, each correct on the evidence at its own arrival.
+- Conflicts are information, not a gate; nothing waits on resolution unless a later decision makes approval depend on it.
+
+**Deferred:** whether an unresolved conflict should block final approval, whether a resubmission shortly after a timer stop is merged instead of flagged (the duplicate-timer half of B4), and whether clock skew needs a grace window (B3).
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -2568,7 +2618,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | ID | Gap | Flag | Why it matters |
 |---|---|---|---|
 | **B1** | Time and duration model: storage precision, rounding, minimum and maximum length, breaks, entries spanning midnight, daylight-saving handling, which time zone interprets local times | **Contract** | **Resolved — D-046 (§16.13).** Decides column types, validation, ordering derived in D-038, date filters in §15.8 and every total |
-| **B2** | Definition of an overlap: same volunteer across all projects or one, tolerance in minutes, blocking or advisory | **Contract** | Entry validation, conflict fields and approval rules all reference it; §15.12 item 21 assumes it |
+| **B2** | Definition of an overlap: same volunteer across all projects or one, tolerance in minutes, blocking or advisory | **Contract** | **Resolved — D-047 (§16.14).** Entry validation, conflict fields and approval rules all reference it; §15.12 item 21 assumes it |
 | **B3** | Timer semantics: one running timer or several, timer spanning midnight, server-authoritative start, clock skew, idle timeout, start/stop payloads | **Contract** | Timer routes and D-042's stopped-timer handover cannot be specified without it |
 | **B4** | Concurrency and idempotency for mutations: `Idempotency-Key` on create, timer start/stop and archival; optimistic concurrency by version or `updatedAt` | **Contract** | Every write endpoint. Offline replay (§15.12 item 30) is unusable without it, and duplicate timers are the likeliest production bug |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | Every table, query and permission check; retrofitting tenancy is a rewrite |
@@ -2593,4 +2643,4 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **What must land before contract drafting.** B1, B2, B3, B4, B5, B6, B12 and B16 are unavoidable. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B7, B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after.
 
-**Order proposed:** B2, then B3, B4, B5, B6 — the sequence in which each constrains the next, with B1 already closed — followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
+**Order proposed:** B3, then B4, B5, B6 — the sequence in which each constrains the next, with B1 and B2 already closed — followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
