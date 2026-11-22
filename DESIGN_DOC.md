@@ -58,12 +58,21 @@ not replace server-side enforcement.
 organizations. A mobile app records time and synchronizes records with a
 central server for the relevant organization.
 
-The MVP supports: - Timer-based time entries. - Manual time entries. -
-Project and activity categorization. - Project-less time entries under a
+The MVP supports: - Manual time entries, in both established forms:
+exact start and end timestamps, or a work date plus total duration. - A
+device-local stopwatch that times work and pre-fills a timestamp entry,
+which the volunteer may edit and submit. - Project and activity
+categorization. - Project-less time entries under a
 description requirement. - Offline recording and later
 synchronization. - Volunteer, coordinator, and
 organization-administrator roles. - Configurable organization-level
 policies for selected workflows.
+
+**Amended 22 November 2026 (D-048, §16.15):** timer-based entries are
+out of the MVP. There is no server-side running timer, no timer start or
+stop route, and no timer state on the server. The stopwatch runs on the
+device and produces a pre-filled manual entry; everything the server
+receives is a submitted manual entry.
 
 ### 2.2 Server and database per organization
 
@@ -432,7 +441,7 @@ storage are not yet designed.
 **Confirmed decision:** Archived projects and activities retain
 historical records and do not accept new time entries.
 
-**Resolved 18 November 2026 — authority (§16.6, D-041) and effects (§16.9, D-042):** coordinators may archive projects and activities within their remit, administrators anything in the organization, with no approval step. Archiving then ends volunteer assignments at the archival instant, cancels pending assignment requests, keeps pending time entries reviewable, accepts work dated before the instant, and stops running timers, keeping their elapsed time as a pre-filled draft on the volunteer's device (§16.11, D-044). Coordinator assignments survive so the project can be restored.
+**Resolved 18 November 2026 — authority (§16.6, D-041) and effects (§16.9, D-042):** coordinators may archive projects and activities within their remit, administrators anything in the organization, with no approval step. Archiving then ends volunteer assignments at the archival instant, cancels pending assignment requests, keeps pending time entries reviewable, accepts work dated before the instant, and stops running timers, keeping their elapsed time as a pre-filled draft on the volunteer's device (§16.11, D-044); the timer half is superseded by D-048 (§16.15), the MVP having no server timer. Coordinator assignments survive so the project can be restored.
 
 **Restore resolved 18 November 2026 (§16.10, D-043):** archiving is reversible. Restoring returns the project, and the activities archived with it, to active. Volunteer assignments stay ended and must be re-established. The archived interval stays in the record, so work dated inside it remains ineligible.
 
@@ -495,6 +504,12 @@ designed.
 **Confirmed decision:** The MVP supports both timer-based and manual
 time entries.
 
+**Superseded in part 22 November 2026 (D-048, §16.15):** the MVP has no
+timer-based entries and no server timer. Entry creation is manual only,
+in the two forms below, optionally pre-filled by a device-local
+stopwatch. "Both" no longer describes the MVP; the two manual forms
+stand unchanged.
+
 Manual entry supports two forms: 1. Exact start and end timestamps. 2. A
 date plus total duration, without exact timestamps.
 
@@ -526,6 +541,13 @@ remain to be designed.
 
 **Confirmed decision:** A volunteer may have only one accepted running
 timer at a time.
+
+**Superseded 22 November 2026 (D-048, §16.15):** with no server timer in
+the MVP there is no running timer to constrain, so nothing here is
+implemented — no constraint, no timer row, no route. The rule and its
+atomicity requirement are kept for a release that adds server-side
+timers. The reconciliation of competing offline timers it describes
+belongs with §7.4, which is deferred with it.
 
 The server must enforce this atomically using a database constraint or
 transaction-safe equivalent. An application-layer "check then insert"
@@ -622,6 +644,13 @@ A client-side validation result is not sufficient because the device may
 have stale data.
 
 ### 7.4 Concurrent offline timers
+
+**Deferred 22 November 2026 (D-048, §16.15):** there are no server
+timers in the MVP, so this section does not describe MVP behaviour. What
+remains is the duplicate: the same shift timed on two devices and
+submitted twice, which is an overlap and is handled as an advisory
+conflict (D-047). This section applies again only if server timers
+return.
 
 **Confirmed decision:** If two competing timers are created offline, the
 first timer accepted by the server wins. The competing timer is
@@ -1058,7 +1087,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part. Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -1492,7 +1521,7 @@ The following behavior has been proposed but has not been accepted:
 
 The following issues remain open:
 
-1. What happens to a running timer when membership is revoked?
+1. What happens to a running timer when membership is revoked? (Moot in the MVP: no server timer exists — D-048, §16.15.)
 2. Can a revoked membership be restored, or must the user obtain a new membership?
 3. How should offline changes created before revocation be handled when the server rejects them after revocation?
 4. What happens to pending requests and approvals associated with the revoked membership?
@@ -1623,6 +1652,13 @@ The exact timestamp storage and timezone semantics remain to be specified.
 ## 15.4 Time-entry creation and submission
 
 ### 15.4.1 Timer-based entries
+
+**Deferred 22 November 2026 (D-048, §16.15):** the timer described here
+is a server-side running timer, which the MVP does not have. The section
+is retained for a later release and does not describe MVP behaviour. In
+the MVP the stopwatch runs on the device and pre-fills the manual
+timestamp form; the hybrid rule below still holds, applied to that form —
+finish the work, then choose Log time or Save as draft.
 
 **Confirmed decision — Hybrid submission workflow.**
 
@@ -2085,14 +2121,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11) and backlog items B1 (time and duration model, §16.13) and B2 (definition of an overlap, §16.14).
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11) and backlog items B1 (time and duration model, §16.13) and B2 (definition of an overlap, §16.14). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B4.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B3 (timer semantics). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B4 (concurrency and idempotency), B3 having been deferred by scope (D-048, §16.15). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2364,15 +2400,17 @@ Archiving is a dated boundary, not a deletion. The project is stamped with an ar
 | Pending assignment requests | Cancelled with outcome `cancelled: project archived`; the requester is notified; the request record is retained |
 | Pending time entries | Unchanged, and still reviewable and approvable. Archival blocks new entries, not decisions about existing ones |
 | Drafts and offline queues | Accepted when the work falls before the archival instant |
-| Running timers | Stopped server-side at the archival instant; the elapsed time is held and offered to the volunteer's device as a pre-filled draft awaiting confirmation (§16.11, D-044) |
+| Running timers | ~~Stopped server-side at the archival instant; the elapsed time is held and offered to the volunteer's device as a pre-filled draft awaiting confirmation (§16.11, D-044)~~ Superseded — there is no server timer in the MVP (D-048, §16.15). A device-local stopwatch is the volunteer's own state, untouched by archival |
 | Activities | Archiving an activity blocks entries against that activity only; volunteer assignments belong to the project and are unaffected |
+
+**Superseded in part 22 November 2026 (D-048, §16.15):** everything here about running timers — the row above, the timer count in the confirmation, and the server-held elapsed time offered to a device — describes a server-side timer, which the MVP does not have. The effects on assignments, requests, entries, activities and eligibility are unchanged. A device-local stopwatch is not server state and archival does not touch it; the entry it would produce is refused if its work falls after the archival instant, like any other submission.
 
 **Rules:**
 
 - Eligibility is judged by date, not by current status. An entry whose work time falls before the archival instant remains valid however late it is submitted or synced; work in the archival instant's future is refused (D-011).
 - Archival is one transaction. A half-archived project — assignments ended, timers still running — is worse than either end state.
-- The confirmation names what will happen: how many assignments end, how many pending requests will be cancelled, and how many running timers will be stopped.
-- Stopped timers produce a pre-filled draft on the volunteer's device and a notification, never an auto-submitted entry. The server holds the stopped session's elapsed time until one of that volunteer's clients collects it, because unsubmitted drafts are not server objects (§16.11, D-044). The volunteer decides whether to keep the time.
+- The confirmation names what will happen: how many assignments end and how many pending requests will be cancelled. ~~How many running timers will be stopped~~ is dropped from the MVP's confirmation (D-048).
+- ~~Stopped timers produce a pre-filled draft on the volunteer's device and a notification, never an auto-submitted entry. The server holds the stopped session's elapsed time until one of that volunteer's clients collects it, because unsubmitted drafts are not server objects (§16.11, D-044). The volunteer decides whether to keep the time.~~ Superseded (D-048, §16.15) — there is no server-held timer session to hand over.
 - An entry submitted for work after the archival instant is refused as a validation failure with the submitted data preserved (D-039), not silently discarded.
 - Administrators keep their organization-wide access. Archival removes assignment-based access, not administrative authority (§15.3.2).
 - Archiving a project whose activities are all already archived is allowed with a warning, not blocked — the same posture as the no-coordinator warning (§15.3.1).
@@ -2456,7 +2494,7 @@ Finishing work does not submit it. A volunteer completes an entry and submits it
 - Submission is an action taken by the entry's owner. Coordinators and administrators may approve, reject, or return entries, but they do not submit on a volunteer's behalf — that would attest to hours the volunteer has not claimed.
 - A draft is invisible to approval queues, approval counts and coordinator workloads; it does not exist at all for those purposes.
 - Bulk submission is allowed as a repeated explicit act, not as a background sweep.
-- A timer stopped by archival is server-side session state, not a server draft: the elapsed time is held by the server and offered to the volunteer's device as a pre-filled draft on its next sync (D-042).
+- ~~A timer stopped by archival is server-side session state, not a server draft: the elapsed time is held by the server and offered to the volunteer's device as a pre-filled draft on its next sync (D-042).~~ Superseded 22 November 2026 (D-048, §16.15): the MVP has no server timer, and therefore no server-side timer session.
 - Submission is a state transition on the entry, not a new record; the submission instant is stored with it (§15.11).
 
 **Considered and rejected:**
@@ -2603,6 +2641,106 @@ A conflict is any **positive overlap in absolute time** between two **submitted 
 
 **Deferred:** whether an unresolved conflict should block final approval, whether a resubmission shortly after a timer stop is merged instead of flagged (the duplicate-timer half of B4), and whether clock skew needs a grace window (B3).
 
+## 16.15 Stopwatch instead of a server timer
+
+**Confirmed decision (D-048) — 22 November 2026.**
+
+The MVP has **no server-side timer**. Timing happens on the volunteer's
+device in a stopwatch, and the stopwatch's only output is a pre-filled
+manual timestamp entry. There is no timer resource, no timer state on the
+server, and no timer route.
+
+**Rules:**
+
+- **Manual only.** Every entry the server holds is a manual submission:
+exact start and end instants, or a work date plus a duration (D-046).
+- **The stopwatch is client state.** Starting, running and stopping happen
+entirely on the device. Elapsed time is measured against the device's own
+clock, and nothing about it is transmitted while it runs.
+- **Output is a draft.** Stopping the stopwatch opens the manual timestamp
+form with `startedAt`, `endedAt` and the duration pre-filled: `endedAt` is
+the instant the volunteer stopped it, and `startedAt` is that instant minus
+the elapsed time. The result is a draft on that device (D-044), not a
+submission.
+- **Submission is unchanged.** The volunteer edits if needed, then chooses
+Log time or Save as draft exactly as for a hand-typed entry (§15.4.2).
+Nothing is submitted on their behalf.
+- **No server surface.** No timer row, no running-timer flag, no start,
+stop or current-timer endpoint, no idle timeout, no server-authoritative
+start. A client that has never used a stopwatch calls exactly the same API
+as one that only types entries.
+- **Clock skew is an ordinary entry problem.** The instants are the
+device's claim, like any typed range, and are validated as one. A wrong
+device clock produces a wrong entry the volunteer can correct; it is not a
+timer-specific risk.
+- **Long-running stopwatch.** A stopwatch left running past 24 hours
+produces a range above the per-entry maximum (D-046). The client warns and
+caps the form; the server refuses an over-length submission with the data
+preserved, like any other validation failure.
+- **Two devices.** Two stopwatches may run for the same volunteer at once.
+Nothing detects it, because there is nothing to detect it against; if both
+are submitted, they overlap and D-047 flags the pair as advisory. No merge
+or deduplication is attempted.
+- **Archival does not reach it.** Archival has no timer to stop (§16.9, as
+amended). The entry the stopwatch produces is refused if its work falls
+after the archival instant, exactly like any other entry about archived
+work.
+
+**Why a stopwatch and not simply dropping the timer.** A volunteer who
+wants to time work needs a start button; without one they use a phone
+stopwatch and type the range from memory. Keeping that convenience inside
+the app costs the contract nothing: no new resource, no second entry
+lifecycle, no concurrency, no server state to reconcile, and no trust in
+a clock beyond what manual entries already concede. The whole feature is
+client work against the manual entry the API already has, which is why it
+fits a tight MVP deadline.
+
+**Considered and rejected:**
+
+- **Duration-only MVP** (a date and a number of minutes, no instants).
+Smallest possible server surface, but it forfeits the overlap model
+(D-047), the `local_start_time` ordering (D-038), and any ability to
+reconstruct what was recorded when hours are disputed — and instants that
+were never captured cannot be recovered later, so the loss is permanent
+rather than deferred.
+- **A timer resource with start and stop routes.** The design already
+written in §§6.3, 7.4 and 15.4.1, at the cost of a second entry lifecycle,
+server-held running state, a uniqueness constraint with concurrency
+handling, a clock-skew policy, and a stopped-timer handover that only
+archival ever uses.
+- **A stopwatch that submits on stop.** Removes the confirmation step, and
+with it the volunteer's chance to cut off a forgotten stopwatch before it
+becomes a claim (D-044).
+- **Reusing a manual entry as the running-timer record.** Saves a table,
+but writes a server row for work nobody has claimed, which is the
+server-side draft D-044 rejects.
+
+**Accepted consequences:**
+
+- Elapsed time is only as good as the device clock, and the server cannot
+distinguish a corrected entry from an invented one. Manual entries already
+conceded this.
+- An unsubmitted stopwatch result lives and dies with the device; it does
+not follow the volunteer to another phone.
+- No coordinator can see who is working right now. That view was never in
+the MVP scope, and it is the first thing a server timer would restore.
+- §§6.3, 7.4 and 15.4.1 remain in the record as written, marked deferred:
+they are the starting point if the timer returns, not contradictions of
+this decision.
+
+**Supersedes:** D-012 (§6.1) in part — entry creation is manual only;
+D-014 (§6.3) entirely — no server timer exists to constrain; the
+running-timer branch of D-042 (§16.9) and the matching bullet in D-044
+(§16.11); §7.4 and §15.4.1, deferred rather than decided. §2.1's MVP scope
+is amended.
+
+**Deferred:** B3 is deferred with the feature rather than decided; each
+sub-question it lists — one running timer or several, a timer spanning
+midnight, server-authoritative start, clock skew, idle timeout, start and
+stop payloads — re-opens only if a server timer returns. Whether a
+submission shortly after a stopwatch stop is merged rather than flagged
+stays with B4.
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -2619,8 +2757,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 |---|---|---|---|
 | **B1** | Time and duration model: storage precision, rounding, minimum and maximum length, breaks, entries spanning midnight, daylight-saving handling, which time zone interprets local times | **Contract** | **Resolved — D-046 (§16.13).** Decides column types, validation, ordering derived in D-038, date filters in §15.8 and every total |
 | **B2** | Definition of an overlap: same volunteer across all projects or one, tolerance in minutes, blocking or advisory | **Contract** | **Resolved — D-047 (§16.14).** Entry validation, conflict fields and approval rules all reference it; §15.12 item 21 assumes it |
-| **B3** | Timer semantics: one running timer or several, timer spanning midnight, server-authoritative start, clock skew, idle timeout, start/stop payloads | **Contract** | Timer routes and D-042's stopped-timer handover cannot be specified without it |
-| **B4** | Concurrency and idempotency for mutations: `Idempotency-Key` on create, timer start/stop and archival; optimistic concurrency by version or `updatedAt` | **Contract** | Every write endpoint. Offline replay (§15.12 item 30) is unusable without it, and duplicate timers are the likeliest production bug |
+| **B3** | Timer semantics: one running timer or several, timer spanning midnight, server-authoritative start, clock skew, idle timeout, start/stop payloads | **Contract** — deferred | **Deferred — not decided (D-048, §16.15).** The MVP has no server timer, so no timer route, constraint or payload needs specifying; this row re-opens if that feature returns in a later release |
+| **B4** | Concurrency and idempotency for mutations: `Idempotency-Key` on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | Every write endpoint. Offline replay (§15.12 item 30) is unusable without it, and duplicate submissions are the likeliest production bug |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | Every table, query and permission check; retrofitting tenancy is a rewrite |
 | **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | §15.3.2 fixes administrator authority in prose, not as an enforceable matrix |
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | D-043 leaves retention deferred; erasure may conflict with the audit trail the decisions require |
@@ -2639,8 +2777,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 feeds B6 and B14. B4 and B8 are one-off conventions that every later endpoint inherits. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 feeds B6 and B14. B4 and B8 are one-off conventions that every later endpoint inherits. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2, B3, B4, B5, B6, B12 and B16 are unavoidable. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B7, B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after.
+**What must land before contract drafting.** B1, B2, B4, B5, B6, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B7, B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after.
 
-**Order proposed:** B3, then B4, B5, B6 — the sequence in which each constrains the next, with B1 and B2 already closed — followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
+**Order proposed:** B4, then B5, B6 — the sequence in which each constrains the next, with B1 and B2 already closed and B3 deferred by scope (D-048) — followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
