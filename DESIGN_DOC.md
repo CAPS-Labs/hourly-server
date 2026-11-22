@@ -829,6 +829,8 @@ trusting contradictory client-supplied relationships.
 
 This example intentionally does not invent start and end timestamps.
 
+> **Refinement (D-046, §16.13):** `durationMinutes` is the request field for a duration-only entry; the stored record carries it as whole seconds. A timestamp entry sends `startTime` and `endTime` only, and the server derives the duration.
+
 ### 10.3 A project-less entry
 
 ``` json
@@ -1056,7 +1058,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12). The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -2082,14 +2084,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11).
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11) and backlog item B1 (time and duration model, §16.13).
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B2 (definition of an overlap). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2503,3 +2505,92 @@ An approval-setting change governs submissions received after it takes effect. A
 - Retiring an approval policy never strands existing items, because their handling is already fixed.
 
 **Deferred:** what happens to a pending entry when the last available approver loses their role, and the per-policy answer for assignment requests and other pending operations (§15.12 item 24).
+
+## 16.13 Time and duration model
+
+**Confirmed decision (D-046) — 22 November 2026.**
+
+An entry's length is stored as a **whole number of seconds**. A timestamp entry stores two absolute instants and the server derives the duration from them; a duration-only entry stores a work date and a duration, and has no instants at all. Nothing is stored in minutes, and nothing is stored as local wall-clock time.
+
+**Rules:**
+
+- **Instants.** `startedAt` and `endedAt` are absolute instants in UTC at second precision, with no fractional seconds. They are stored as given, never shifted into a zone.
+- **Canonical duration.** `durationSeconds`, a positive integer, is the length of every entry. Totals, date filters, overlap checks and any export all measure in it.
+- **Derived, not supplied.** A timestamp entry's client sends the two instants only. The server computes `durationSeconds = endedAt − startedAt` in the API business layer, at creation and again whenever either instant changes. The result is persisted, not recomputed on read.
+- **Duration-only entries.** The client sends a work date and `durationMinutes`; the server stores the date and `durationMinutes × 60`. There are no instants to subtract, which is precisely why duration is a stored field rather than a computed one.
+- **Consistency invariant.** Where both instants exist, `durationSeconds` must equal their difference. A check flags any row where the two diverge; divergence is a defect, not an accepted state.
+- **Limits.** An entry must be at least 60 seconds and at most 86,400 seconds (24 hours). Below the minimum it is not work worth recording; above it, it is a timer left running. Out-of-range entries are rejected at validation, never truncated to fit.
+- **Midnight.** An entry may cross midnight. It remains one entry and is attributed in full to the date of its start; it is never split into two.
+- **Time zone.** One organisation time zone interprets local times — for work dates, display, the `local_start_time` ordering in D-038, and the date filters in §15.8. Elapsed time never depends on it.
+- **Daylight saving.** Because length comes from the instants, a shift across a change is measured correctly. A local time that is ambiguous or does not exist is displayed as such and is not blocked.
+- **Validation, not policy.** These are field-level rules. Whether a backdated entry is allowed, whether an edit needs reapproval (§13 item 2), and any daily cap are decided elsewhere.
+
+**Worked examples:**
+
+| Case | Client sends | Stored | Reported |
+|---|---|---|---|
+| Ordinary shift | `09:00:00`–`13:15:00`, same day | 15,300 s | 4 h 15 m |
+| Overnight shift | `22:30`–`01:30`, ending the next morning | 10,800 s; work date is the first day | 3 h |
+| Duration-only | work date plus `durationMinutes: 90` | 5,400 s | 1 h 30 m |
+| Clock change | `22:00`–`06:00` across a spring-forward night | 25,200 s | 7 h, though the clock advanced 8 h |
+
+**Considered and rejected:**
+
+- **Store local wall-clock times.** Matches how a volunteer describes their day, but makes every duration depend on a zone and a daylight-saving lookup, and leaves ambiguity twice a year that no schema can resolve.
+- **Minutes as the canonical unit.** Rounds on every entry, and rounding each entry before summing is not the same as summing first: small losses accumulate into totals nobody can account for.
+- **Accept a client-supplied duration for timestamp entries.** Convenient, but it lets a client claim hours its own instants contradict, and an offline client may compute against a stale clock.
+- **A per-project or per-volunteer time zone.** Allows distributed teams, but makes "the hours for this date" depend on which project the time is attributed to, and multiplies the daylight-saving edge cases.
+- **Split every entry at midnight.** Simplifies daily totals, but doubles the records, breaks the entry as an object the volunteer recognises, and creates two rows that must stay in step through every edit.
+- **A break field in the MVP.** A derived quantity that can disagree with the instants; a volunteer who takes a break records two entries instead.
+- **Reject ambiguous or non-existent local times.** Enforces correctness at the cost of refusing an entry that happened. The instants are unambiguous even when the local label is not.
+
+**Accepted consequences:**
+
+- Clients format seconds for display, and any decimal-hour export rounds once, at the boundary (B19).
+- A two-hour overnight entry is one row with one work date, so a per-day total is "hours attributed to that date", not "hours worked inside that calendar day".
+- Duration is available to every read path without arithmetic, so totals over a range do not recompute subtraction per row.
+- The stored duration is what was claimed at submission, so an approval, an audit entry and a dispute all refer to the same number.
+
+**Deferred:** how far back an entry may be dated or submitted (B16), any daily or weekly maximum (B17), whether a break field is ever added (B18), and how exported hours are rounded (B19).
+
+------------------------------------------------------------------------
+
+# 17. Decision backlog: gaps not yet raised
+
+**Status:** planning register, 22 November 2026. Not decisions.
+
+These nineteen gaps were found by reviewing the record against what an API contract and an implementation will actually need. They are not listed in §13 or §15.12. None has been decided; B16–B19 were surfaced while taking up B1 and left open with it. They are recorded here so they are not discovered later, during build, when the cost is a schema migration or a breaking change.
+
+Backlog items carry **B** identifiers, not **D** identifiers, because nothing has been decided. When one is taken up it becomes a numbered decision in §16 and the row records the decision ID and section. Rows are never deleted: a closed item stays, marked resolved, so the backlog also shows what was nearly missed.
+
+**Reading the flag.** *Contract* — the API contract cannot be written consistently without it, because it fixes a field type, route shape, enum or validation rule other parts depend on. *Feature* — contract-blocking only if that feature ships in the MVP. *Launch* — does not shape the contract, but must be settled before real data exists. *Implementation* — internal choice with no contract surface.
+
+| ID | Gap | Flag | Why it matters |
+|---|---|---|---|
+| **B1** | Time and duration model: storage precision, rounding, minimum and maximum length, breaks, entries spanning midnight, daylight-saving handling, which time zone interprets local times | **Contract** | **Resolved — D-046 (§16.13).** Decides column types, validation, ordering derived in D-038, date filters in §15.8 and every total |
+| **B2** | Definition of an overlap: same volunteer across all projects or one, tolerance in minutes, blocking or advisory | **Contract** | Entry validation, conflict fields and approval rules all reference it; §15.12 item 21 assumes it |
+| **B3** | Timer semantics: one running timer or several, timer spanning midnight, server-authoritative start, clock skew, idle timeout, start/stop payloads | **Contract** | Timer routes and D-042's stopped-timer handover cannot be specified without it |
+| **B4** | Concurrency and idempotency for mutations: `Idempotency-Key` on create, timer start/stop and archival; optimistic concurrency by version or `updatedAt` | **Contract** | Every write endpoint. Offline replay (§15.12 item 30) is unusable without it, and duplicate timers are the likeliest production bug |
+| **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | Every table, query and permission check; retrofitting tenancy is a rewrite |
+| **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | §15.3.2 fixes administrator authority in prose, not as an enforceable matrix |
+| **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | D-043 leaves retention deferred; erasure may conflict with the audit trail the decisions require |
+| **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | D-037 and D-040 fix the entry list only; divergent collection shapes are a later contract rewrite |
+| **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | The record discusses totals throughout but never defines a reported hour |
+| **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery |
+| **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | Four decisions already name it as an output without specifying it |
+| **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | Small but pervasive; D-042's confirmation shows counts before the act, never after |
+| **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | D-039 introduces `requestId` without defining its origin |
+| **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | The half of authentication (§15.12 item 26) that shapes the client |
+| **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires | **Implementation** | §15.12 item 28 names the schema; the operational half is unlisted |
+| **B16** | Backdating window: how far in the past an entry may be dated or submitted | **Contract** | Surfaced while taking up B1 and set aside; §16.9 only forbids work after an archived instant |
+| **B17** | Daily or weekly maximum hours, separate from the per-entry ceiling | **Feature** | Surfaced while taking up B1 and set aside; affects validation and reporting, not the record shape |
+| **B18** | Break deduction: whether a shift records a break that is subtracted, rather than net time as two entries | **Feature** | Surfaced while taking up B1 and set aside; a break field is a derived quantity that can disagree with the timestamps |
+| **B19** | Payroll rounding: whether exported hours are decimal, and the rule applied at the boundary | **Feature** | Surfaced while taking up B1 and set aside; the API stays exact and any rounding happens once, at export |
+
+**Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
+
+**Dependencies between them.** B1 feeds B2, B3 and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 feeds B6 and B14. B4 and B8 are one-off conventions that every later endpoint inherits. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+
+**What must land before contract drafting.** B1, B2, B3, B4, B5, B6, B12 and B16 are unavoidable. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B7, B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after.
+
+**Order proposed:** B2, then B3, B4, B5, B6 — the sequence in which each constrains the next, with B1 already closed — followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
