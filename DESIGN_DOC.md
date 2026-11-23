@@ -88,6 +88,11 @@ automated per organization. - A central identity provider, if one is
 chosen later, would be a separate design decision and would not
 eliminate the need for organization-specific authorization checks.
 
+**Confirmed from the client side 23 November 2026 (D-050, §16.17):** the app
+ships with no built-in server address. A new installation asks for the
+person's email address and the organisation's Hourly web address, and that
+address is how the connection is established and maintained.
+
 ### 2.3 Multi-organization accounts
 
 **Confirmed decision:** Multi-organization account support is postponed
@@ -101,6 +106,12 @@ leaves a path to future multi-organization support.
 **Implication:** The MVP can still enforce one organization membership
 per person in practice, without collapsing user identity and membership
 into one resource.
+
+**Clarified 23 November 2026 (D-050, §16.17):** an account exists on
+exactly one instance. The same person at two organisations holds two
+unrelated accounts — separate credentials, separate memberships, separate
+histories — with no linking, no shared login and no cross-instance lookup
+in the MVP.
 
 ### 2.4 Client/server boundary
 
@@ -1089,7 +1100,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -2093,12 +2104,12 @@ The following items remain unresolved. They should be addressed before or during
 
 ### Priority 5 — API contract and implementation
 
-26. Choose the authentication method/provider and determine whether authentication is managed or self-hosted.
-27. Design the first-administrator bootstrap process.
+26. Choose the authentication method/provider and determine whether authentication is managed or self-hosted. **Hosting resolved 23 November 2026 — each organisation runs its own instance, so authentication is self-hosted per instance (§16.17, D-050). The method itself remains open (§3.1, B14).**
+27. Design the first-administrator bootstrap process. **Now a per-instance installation step (§16.17, D-050); the process is still undesigned.**
 28. Finalize database schema, constraints, and transaction requirements.
 29. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
 30. Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses. **Retry and idempotency resolved 23 November 2026 — the entry id is the deduplication record and `version` guards writes (§16.16, D-049). Change tracking and conflict responses remain open.**
-31. Define API versioning, security controls, deployment, backups, and monitoring.
+31. Define API versioning, security controls, deployment, backups, and monitoring. **Deployment is per instance (§16.17, D-050), so API version skew between an installed app and an instance that upgrades on its own schedule is a supported state rather than a hypothetical. Versioning is contract-blocking, not operational polish.**
 
 Items may be combined or deferred where appropriate. The list is a planning aid, not a requirement to settle every item before drafting any part of the API contract.
 
@@ -2125,14 +2136,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11) and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14) and B4 (mutation identity and concurrency, §16.16). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B5.
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11) and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16) and B5 (organisation model, §16.17). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B6.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B5 (organisation model), with B3 deferred by scope (D-048, §16.15) and B4 settled (§16.16, D-049). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B6 (role and permission matrix), with B3 deferred by scope (D-048, §16.15) and B4 and B5 settled (§16.16, §16.17). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2998,6 +3009,143 @@ no longer duplicate anything, so that is now a merge-UI question alone.
 Also deferred: whether `version` is exposed as `If-Match`, and idempotent
 creation for resources whose ids the server assigns.
 
+## 16.17 Identity is scoped to the organisation's own instance
+
+**Confirmed decision (D-050) — 23 November 2026.**
+
+Each organisation runs its own instance of Hourly, on its own server with
+its own database (§2.2). Identity is scoped to that instance: Ann's account
+*is* her account at the food bank, and it exists nowhere else.
+
+**Onboarding.**
+
+- The app ships with no server address and no directory of servers.
+- A new installation asks for two things: the person's email address, and
+  the web address of the organisation's Hourly instance.
+- The app contacts that address to establish the connection, and stores the
+  address with the account. The address is how the connection is
+  established and maintained, for the life of the account.
+- Everything afterwards is addressed to that instance: every request, every
+  token, every notification. There is no fallback address, no discovery by
+  email domain, and no central service in the path.
+
+**Siloing.**
+
+- Instances share no data, no configuration and no trust. One instance
+  cannot see, address, or be made to answer for another's records.
+- A token minted by one instance is meaningless to another; sessions never
+  cross instances.
+- The same person at two organisations holds two accounts, two sets of
+  credentials and two histories, with no link between them (§2.3).
+- Because identity is tied to the instance, no organisation identifier
+  appears anywhere in the API. No route, body field or query parameter
+  names an organisation: the instance is the organisation, and the caller's
+  token already says which one.
+- There is consequently no tenancy predicate to forget. One organisation
+  row per instance, no `organisation_id` columns on scoped tables, and no
+  cross-instance authorization check anywhere.
+
+**What follows for the contract.**
+
+- B5's first question is answered in its strongest form: not "single tenant
+  by default" but "the deployment is the tenant".
+- The organisation row holds the settings that D-046 and D-045 already
+  require — the time zone and the submission approval policy — and nothing
+  else needs to carry an organisation reference.
+- Errors cannot disclose across instances, because there is no second
+  instance to disclose.
+- This also settles the "what attaches to the organisation" half of B5: the
+  one row carries the settings already decided, plus the display name and
+  the membership-approval setting.
+
+**Consequences for the client.**
+
+- The address is a trust anchor, not a preference. The app must show the
+  host it is about to contact before any credentials are sent, use HTTPS
+  only (with an explicit `http://localhost` exception for development),
+  refuse to follow a redirect to a different host on authenticated
+  requests, and keep the address in the same protected store as the token.
+  Without that, an instance can be swapped underneath a stored session and
+  the token goes to a host the person never typed.
+- An address that does not answer, or answers but is not Hourly, is an
+  onboarding failure, not an authentication failure. "We could not reach
+  that address" and "that password is wrong" are different facts and must
+  not be conflated, in the interface or in logs.
+- More than one account on a device is possible in principle, and accounts
+  must be keyed by address rather than by person. Their offline queues are
+  separate (D-049): signing in to a second instance must never strand,
+  merge, or discard the first instance's queued submissions.
+- The person cannot discover the address from inside the app. The
+  organisation communicates it out of band — its website, an invitation, a
+  QR code — which makes the address a piece of onboarding copy the
+  organisation owns.
+
+**Consequences for the instance.**
+
+- Each instance has its own first administrator, created by its own
+  installation step. The bootstrap issue in §3.2 and §15.12 item 27 is a
+  per-instance problem, not a single global one.
+- Each instance upgrades on its own schedule, while the app updates through
+  an app store on another. **Version skew between client and instance is
+  therefore normal**, not exceptional: the app must fail cleanly against an
+  instance whose API it does not speak, and say so plainly rather than
+  surfacing a parse error.
+- Backups, monitoring and recovery are per instance (§2.2). An instance's
+  disappearance is that organisation's data loss, not a platform incident.
+
+**Considered and rejected.**
+
+- **One hosted, multi-tenant service with the organisation chosen inside
+  the app.** The usual way to run software for many organisations from one
+  deployment, and it would remove the address field entirely, but it pools
+  every organisation's hours in one operator's database and puts the
+  tenancy predicate back on every query.
+- **Discovery from the email domain** (`ann@foodbank.org` →
+  `hourly.foodbank.org`). Saves a field where the domain happens to match,
+  and fails for every organisation using a shared mailbox domain, a
+  different subdomain, or a hosted address. The address stays explicit.
+- **A central directory of instances.** Turns a self-hosted product into a
+  federated one, with a registry to operate, a privacy question about who
+  is listed, and an availability dependency inside the sign-in path.
+- **An organisation picker in an app pointed at one shared server.** Only
+  coherent if the servers are not the organisations' own, which is the
+  thing being rejected.
+
+**Accepted consequences.**
+
+- Nobody can use Hourly without knowing their organisation's address.
+  Losing it means asking the organisation, not resetting an account.
+- A person who moves between organisations starts again on the new
+  instance: new account, new membership approval, no history carried over.
+- There is no cross-instance reporting, no pooled volunteer list, and no
+  way for one organisation to learn that a volunteer also records hours
+  somewhere else.
+- The app carries a first-run flow that the API contract does not
+  participate in beyond the address it is handed.
+- No part of the API may assume a stable hostname. Every instance is a
+  different origin, so any absolute URL the server emits must be built from
+  its own configuration, never from a constant.
+
+**Open, to be taken next — not decided here.**
+
+- **The handshake.** Whether the app confirms an address before asking for
+  credentials, and what an unauthenticated request to that address returns
+  — organisation name, API version, minimum client version — so that a
+  typo and an incompatible instance are distinguishable before a password
+  is typed.
+- **Version negotiation.** What the app does with an instance older or
+  newer than it understands, and what an instance does with a client too
+  old to serve.
+- **Address changes.** How an account follows its instance to a new host
+  without losing its queued submissions.
+- **Registration scope.** Whether an address at that instance may register
+  itself, given §3.2's self-registration and administrator approval.
+
+**Resolves:** backlog item B5 (§17) — single versus multi-tenant, whether
+one volunteer belongs to several organisations, and what organisation-level
+settings attach to. It confirms §2.2 from the client's side, clarifies
+§2.3, and narrows §15.12 items 26, 27 and 31 without closing them.
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -3016,7 +3164,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B2** | Definition of an overlap: same volunteer across all projects or one, tolerance in minutes, blocking or advisory | **Contract** | **Resolved — D-047 (§16.14).** Entry validation, conflict fields and approval rules all reference it; §15.12 item 21 assumes it |
 | **B3** | Timer semantics: one running timer or several, timer spanning midnight, server-authoritative start, clock skew, idle timeout, start/stop payloads | **Contract** — deferred | **Deferred — not decided (D-048, §16.15).** The MVP has no server timer, so no timer route, constraint or payload needs specifying; this row re-opens if that feature returns in a later release |
 | **B4** | Concurrency and idempotency for mutations: client-generated ids on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | **Resolved — D-049 (§16.16).** A client-generated UUID per record plus an integer `version`; no `Idempotency-Key`; state-setting operations idempotent by outcome. Offline replay (§15.12 item 30) depends on it |
-| **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | Every table, query and permission check; retrofitting tenancy is a rewrite |
+| **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | **Resolved — D-050 (§16.17).** The deployment is the tenant: each organisation runs its own instance, identity is scoped to it, and no organisation identifier appears in the API. One organisation row carries the time zone, approval policy and membership setting; no `organisation_id` columns |
 | **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | §15.3.2 fixes administrator authority in prose, not as an enforceable matrix |
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | D-043 leaves retention deferred; erasure may conflict with the audit trail the decisions require |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | D-037 and D-040 fix the entry list only; divergent collection shapes are a later contract rewrite |
@@ -3034,8 +3182,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 feeds B6 and B14. B4 is now the convention every later endpoint inherits (§16.16); B8 is the other one-off convention, still open. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14. B4 is now the convention every later endpoint inherits (§16.16); B8 is the other one-off convention, still open. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2, B5, B6, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B7, B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after.
+**What must land before contract drafting.** B1, B2, B6, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B7, B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after.
 
-**Order proposed:** B5, then B6 — the sequence in which each constrains the next, with B1, B2 and B4 already closed and B3 deferred by scope (D-048) — followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
+**Order proposed:** B6, with B1, B2, B4 and B5 already closed and B3 deferred by scope (D-048), followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
