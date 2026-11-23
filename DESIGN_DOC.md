@@ -619,17 +619,19 @@ not only uploading local changes.
 
 ### 7.2 Stable identifiers and idempotency
 
-**Established design direction:** Client-created records should use
-stable client-generated UUIDs. The API should make retrying a sync
-operation idempotent so that a network retry does not create duplicate
+**Confirmed decision (D-049, §16.16) — 23 November 2026:** Client-created
+records use stable client-generated UUIDs, and the API makes retrying a
+sync operation idempotent so that a network retry does not create duplicate
 entries.
 
 This is especially important because mobile requests can fail after the
 server has committed a change but before the client receives the
 response.
 
-The exact idempotency mechanism, retention window, and request contract
-remain open.
+The mechanism is fixed in §16.16: the entry's own id is the deduplication
+record, and an integer `version` guards concurrent edits. There is no
+`Idempotency-Key`, no retention window, and no request contract beyond the
+resource body itself.
 
 ### 7.3 Sync validation
 
@@ -1054,8 +1056,8 @@ This is the compact record of major decisions and their current status.
                           later synchronization are  
                           required                   
 
-  D-027                   Stable client-generated    Established design
-                          IDs and idempotent retries direction
+  D-027                   Stable client-generated    Confirmed decision
+                          IDs and idempotent retries
 
   D-028                   First server-accepted      Confirmed decision
                           concurrent timer wins;     
@@ -1087,7 +1089,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part. Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -1463,7 +1465,9 @@ This supplement defines behavior and requirements, not a final implementation. T
 - Whether volunteer and coordinator assignments use one generalized assignment resource or separate resource concepts.
 - Exact assignment status values and transition rules.
 - The API routes, request/response DTOs, and database constraints for assignments and requests.
-- Idempotency behavior for retries and offline synchronization.
+- ~~Idempotency behavior for retries and offline synchronization.~~
+  **Resolved 23 November 2026 — client-generated ids and version-guarded
+  writes (§16.16, D-049).**
 - Exact notification resource fields and API operations.
 - The implementation of last-coordinator confirmation, including how the server validates the relevant state.
 
@@ -2057,7 +2061,7 @@ The following items remain unresolved. They should be addressed before or during
 3. ~~Decide what happens to pending entries when organizational approval settings change.~~ **Resolved 22 November 2026 — the policy in force at submission governs; later changes affect only later submissions (§16.12, D-045).**
 4. Define approval authority, including the boundaries of coordinator authority for project-less entries and other entries outside their projects.
 5. Define the handling and reporting of invalid, out-of-period, or conflicting submissions that must be preserved rather than silently discarded.
-6. Decide how edits made concurrently by multiple authorized users are detected and reconciled.
+6. Decide how edits made concurrently by multiple authorized users are detected and reconciled. **Detection resolved 23 November 2026 — optimistic concurrency on an integer `version`, with `409 VERSION_MISMATCH` carrying the current representation (§16.16, D-049). The reconciliation interface for a detected edit remains open.**
 
 ### Priority 2 — Retrieval and pagination
 
@@ -2093,7 +2097,7 @@ The following items remain unresolved. They should be addressed before or during
 27. Design the first-administrator bootstrap process.
 28. Finalize database schema, constraints, and transaction requirements.
 29. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
-30. Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses.
+30. Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses. **Retry and idempotency resolved 23 November 2026 — the entry id is the deduplication record and `version` guards writes (§16.16, D-049). Change tracking and conflict responses remain open.**
 31. Define API versioning, security controls, deployment, backups, and monitoring.
 
 Items may be combined or deferred where appropriate. The list is a planning aid, not a requirement to settle every item before drafting any part of the API contract.
@@ -2121,14 +2125,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11) and backlog items B1 (time and duration model, §16.13) and B2 (definition of an overlap, §16.14). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B4.
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11) and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14) and B4 (mutation identity and concurrency, §16.16). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B5.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B4 (concurrency and idempotency), B3 having been deferred by scope (D-048, §16.15). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B5 (organisation model), with B3 deferred by scope (D-048, §16.15) and B4 settled (§16.16, D-049). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2639,7 +2643,7 @@ A conflict is any **positive overlap in absolute time** between two **submitted 
 - Because the earlier entry is not re-judged, the two sides of a conflict can reach different approval outcomes, each correct on the evidence at its own arrival.
 - Conflicts are information, not a gate; nothing waits on resolution unless a later decision makes approval depend on it.
 
-**Deferred:** whether an unresolved conflict should block final approval, whether a resubmission shortly after a timer stop is merged instead of flagged (the duplicate-timer half of B4), and whether clock skew needs a grace window (B3).
+**Deferred:** whether an unresolved conflict should block final approval, whether a resubmission shortly after a timer stop is merged instead of flagged — the duplicate itself no longer needs an answer, since a repeat of one draft replays into one entry (§16.16, D-049) — and whether clock skew needs a grace window (B3).
 
 ## 16.15 Stopwatch instead of a server timer
 
@@ -2739,7 +2743,260 @@ sub-question it lists — one running timer or several, a timer spanning
 midnight, server-authoritative start, clock skew, idle timeout, start and
 stop payloads — re-opens only if a server timer returns. Whether a
 submission shortly after a stopwatch stop is merged rather than flagged
-stays with B4.
+remains open, but only as a merge-UI question: a repeat of the same draft
+cannot duplicate anything (§16.16, D-049).
+
+## 16.16 Mutation identity and concurrency
+
+**Confirmed decision (D-049) — 23 November 2026.**
+
+A client-created record is born with an **id the client chooses**, before
+its first request, and every time entry carries an **integer `version`**
+the server increments. The id prevents a repeated request from creating a
+second record; the version prevents a stale request from overwriting a
+newer one. There is no `Idempotency-Key` in the MVP.
+
+Two failures are being separated. A request can commit and still fail to
+reach the client, so the client retries work the server has already done —
+that is **repetition**. A client can hold a copy that another person has
+since changed and write over it — that is a **lost update**. One mechanism
+cannot answer both, which is why this decision has two parts and no third.
+
+**Identity.**
+
+- **Minted offline, once.** The client generates the `id` when the draft is
+  created, persists it with the draft, and reuses it for every attempt,
+  including a retry after a restart. An id generated at send time is a new
+  id on every attempt and defeats the mechanism completely.
+- **Format.** A canonical lowercase hyphenated UUID (RFC 9562), 36
+  characters. UUIDv4 is accepted; UUIDv7 is preferred because a
+  time-ordered key indexes better. The server validates the shape and
+  rejects anything else as `400 VALIDATION_FAILED` with
+  `{ "path": "id", "code": "INVALID_ID" }`.
+- **Placement.** A top-level `id` in the create body, not in the path.
+  Creation is a collection action, and the id is the client's claim about
+  the record it is creating, not an address the server resolved.
+- **Scope.** Globally unique, client-owned, never sequential and never
+  scoped to an organisation. The server does not assign ids to time
+  entries at all.
+- **The row is the deduplication record.** Creation is
+  `INSERT … ON CONFLICT (id) DO NOTHING RETURNING *`. Zero rows returned
+  means the id already exists and the request is a replay. There is no key
+  table, no request fingerprint, no cleanup job and **no expiry window** —
+  the interval in which a late retry could duplicate does not exist, which
+  is the property a time-limited key cannot offer.
+- **Replay is decided by id alone.** The server never compares bodies to
+  decide whether a request is a repeat. Identity is the fact; comparing
+  payloads would need a canonical hash and normalisation rules to answer a
+  question the primary key already answers.
+- **Replay response.** `201 Created` with `Location: /time-entries/{id}` on
+  first application; `200 OK` with `Idempotency-Replay: true` and the
+  identical body shape on every later attempt. The status distinguishes
+  them in a log without a header; the header names it for clients and
+  tests. Either response may be adopted as truth, including its `version`.
+- **Ids are never regenerated.** Not on edit, not on resubmission after
+  rejection (D-024), not on a new device taken over from a sync. A
+  corrected entry is the same entry under optimistic concurrency, so the
+  id is what carries its history.
+
+**Create request and first response.**
+
+```http
+POST /time-entries
+Content-Type: application/json
+```
+
+```json
+{
+  "id": "6f1c9a3e-1b77-4b0e-9a2c-5d0f6c1e8b41",
+  "projectId": "…",
+  "activityId": "…",
+  "startedAt": "2026-11-21T14:00:00Z",
+  "endedAt": "2026-11-21T17:00:00Z",
+  "note": "Sorting donations"
+}
+```
+
+```http
+HTTP/1.1 201 Created
+Location: /time-entries/6f1c9a3e-1b77-4b0e-9a2c-5d0f6c1e8b41
+```
+
+```json
+{
+  "id": "6f1c9a3e-1b77-4b0e-9a2c-5d0f6c1e8b41",
+  "version": 1,
+  "volunteerId": "…",
+  "projectId": "…",
+  "activityId": "…",
+  "startedAt": "2026-11-21T14:00:00Z",
+  "endedAt": "2026-11-21T17:00:00Z",
+  "durationSeconds": 10800,
+  "approvalStatus": "pending",
+  "submittedAt": "2026-11-21T12:00:08Z",
+  "conflicts": []
+}
+```
+
+A repeat of that request answers `200 OK`, `Idempotency-Replay: true`, and
+the same body — with `version` at whatever it is now, not necessarily `1`.
+
+**Id reuse.** Two cases, deliberately different:
+
+- **The id exists but the caller cannot see it** returns `404 NOT_FOUND`,
+  byte-identical to an entry that does not exist, so a reused or colliding
+  id cannot be used to probe for another volunteer's records (§16.4,
+  §15.8.9).
+- **The id exists and the caller owns it** is a replay by definition,
+  whatever the body says: the stored entry is returned and the incoming
+  values are not applied. If a client has genuinely reused an id for a
+  different draft, the second draft's values are silently dropped.
+
+The second case is accepted rather than detected. Detecting it requires a
+stored payload hash and a definition of "the same request" that survives
+normalisation, and it protects against none of the failures this decision
+exists for — a real repeat sends the same bytes. Clients must treat the id
+as an identity, not a request label.
+
+**Version.**
+
+- `version` is a positive integer, `1` at creation, incremented by the
+  server on every accepted mutation of the entry: an edit, approval,
+  rejection, return, conflict resolution. It is never supplied by the
+  client on create.
+- Every request that mutates an existing entry sends the `version` it
+  read, as a body field beside the changed fields. A header (`If-Match` /
+  `ETag`) was considered and rejected below.
+- The comparison is inside the write —
+  `UPDATE … WHERE id = $1 AND version = $2 RETURNING *` — so there is no
+  read-then-write window and no transaction held across requests.
+- Zero rows updated sends the server back to the row to distinguish
+  `404 NOT_FOUND` (absent, or outside the caller's scope) from
+  `409 VERSION_MISMATCH`.
+- A `409 VERSION_MISMATCH` carries a fixed `details` object for that code:
+  `{ "currentVersion": 2, "updatedAt": "…", "current": { …entry… } }`.
+  `details` varies by code, not by endpoint (§16.4), and `current` saves a
+  second round trip for a device that has been offline for hours.
+- A client must not retry a `409` unchanged. It reapplies the change to
+  `currentVersion`, or shows the conflict to the person who is editing.
+- The version is entry-wide, not per field. Per-field merging is a
+  reconciliation feature; detecting that two writers diverged is the
+  contract's job, and this is it.
+
+**State-setting operations are idempotent by outcome.** `approve`,
+`reject`, `return`, `archive` and `restore` are idempotent by outcome
+rather than by key: if the target state already holds, the call returns
+`200` with the current representation, the `version` unchanged, no error
+and no second audit event. This is the rule D-042 and D-043 already apply
+to archival and restore, extended to the rest of the write surface.
+Server-created resources — notifications, audit events — have no
+client-chosen id and therefore no replay problem of their own; they rely on
+this rule and on never being created implicitly by a retried request.
+
+**Retry classification.**
+
+| Outcome | Client action |
+|---|---|
+| Network error, timeout, `500`, `503` | Retry with the **same** id and version. A create replays; a repeated transition is a no-op |
+| `201`, `200` | Commit locally and adopt the returned `version` |
+| `409 VERSION_MISMATCH` | Do not retry. Reapply against `currentVersion`, or surface `details.current` |
+| `409 CONFLICT` | Resolve the named state conflict; the same request fails again |
+| `400`, `403`, `404` | Do not retry. The queued item is invalid, out of scope, or already invisible |
+
+**Worked example.** Marisol records a food-bank shift with no signal in
+the basement, and every attempt to record that one shift follows.
+
+| Event | Server |
+|---|---|
+| Draft created offline; `id` minted and stored with it | — |
+| First submit at 12:00:08 reaches the server and commits as `version: 1`; the response is lost when the connection resets | Row exists; the client believes nothing happened |
+| Retry at 12:00:38, same body, same id | `200`, `Idempotency-Replay: true`; nothing new written |
+| The app is killed before its "job done" marker is flushed; on relaunch the outbox re-enqueues the draft at 14:02 | `200` replay again; still one row |
+| She fixes the note: `PATCH` with `version: 1` | `200`, `version: 2` |
+| The pre-restart edit flushes at 18:10 with `version: 1` | `409 VERSION_MISMATCH` carrying `current`; the typo fix is not reverted |
+
+Five requests, one row, no lost correction. Nothing downstream catches
+this instead: an overlap is advisory (D-047), so a duplicate submission
+does not fail — it lands in the approval queue as two pending entries that
+conflict with each other, and if both are approved the hours are counted
+twice. D-047 explains a duplicate after the fact; the id is what stops it
+from existing.
+
+**Why not `Idempotency-Key`.**
+
+- **It duplicates a durable record the client already keeps.** The key has
+  to be minted at enqueue time and persisted with the draft, because a key
+  generated at send time differs on every retry. The entry id has that
+  requirement anyway.
+- **It needs an expiry, and expiry is where it fails.** The retention
+  window must outlive the longest offline queue — a phone in a drawer for a
+  week — or duplicates return exactly when the queue is oldest. Row
+  identity has no window.
+- **It cannot answer the second failure.** A key stops a repeated create
+  and does nothing about an edit derived from a stale copy. `version` is
+  not an optional companion to a key; it answers a different question.
+- **Two queued jobs for one draft produce two requests.** With a shared
+  stored key they collapse, but the key store is a second durable record
+  that can desync from the outbox in the same way the job marker did. The
+  id cannot desync, because the row itself is the record.
+
+**Considered and rejected.**
+
+- **`Idempotency-Key` plus `updatedAt` concurrency.** Conventional and
+  well understood, but the key needs a table, a retention decision, a
+  cleanup job and a documented duplicate window, and a timestamp
+  comparison treats two writes in the same second as concurrent when they
+  are merely close.
+- **Both an id and an idempotency key.** Belt and braces: two mechanisms
+  to implement and two to explain, where the id alone covers create, and
+  covers it without expiry.
+- **Last-write-wins.** Smallest surface, but silently discards a
+  coordinator's correction when a volunteer's stale device syncs, and
+  nobody ever learns it happened.
+- **`PUT /time-entries/{id}` for creation.** Naturally idempotent and
+  arguably more honest about the client-chosen identity, but `PUT` implies
+  a full replacement of an existing resource, which is not what submission
+  is, and it would make partial edits a second verb and a second set of
+  rules.
+- **`If-Match` / `ETag` instead of a body field.** Splits the contract
+  across transport and body, needs strong-versus-weak comparison semantics,
+  and reports worse field-level errors than `details` already does. The
+  version is in every representation, so an `ETag` mapping is additive
+  later.
+- **Comparing request bodies to detect a repeated create.** Needs a
+  canonical hash, a normalisation rule and a column, and it makes a
+  legitimate retry of the same draft with a corrected typo look like a
+  different request — which is exactly the case the id handles by returning
+  the stored row and letting the client `PATCH`.
+
+**Accepted consequences.**
+
+- Client ids appear in URLs and audit records and are chosen by a client.
+  They carry no meaning and grant nothing: authorization is re-evaluated
+  per request (§4.5).
+- The server never assigns a time-entry id, so it cannot mint entries for a
+  volunteer — consistent with D-044, where the server holds no draft.
+- An accidental id reuse is silent. The rule that prevents it is a client
+  obligation, stated here because the server deliberately does not check.
+- Every mutating request carries a version, so a client that has not read
+  the entry cannot write to it. That is the intent, and it makes "read,
+  then write" the only path — which offline clients already follow.
+- A genuine conflict costs one extra response body (`details.current`) in
+  exchange for avoiding a second round trip on a bad connection.
+- Recording the same work twice on purpose, for two activities, requires
+  two ids. The id distinguishes them; no field of the payload does.
+
+**Resolves:** §7.2 and the D-027 register row, which were established
+direction and this fixes into a mechanism. §15.12 item 6's detection half
+and item 30's retry/idempotency half. Backlog item B4 (§17). It also
+constrains B12: a create returns the created representation.
+
+**Deferred:** the reconciliation interface for a detected concurrent edit
+(item 6's other half), and whether a submission shortly after a stopwatch
+stop is merged rather than flagged — a repeated submission of one draft can
+no longer duplicate anything, so that is now a merge-UI question alone.
+Also deferred: whether `version` is exposed as `If-Match`, and idempotent
+creation for resources whose ids the server assigns.
 
 ------------------------------------------------------------------------
 
@@ -2758,7 +3015,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B1** | Time and duration model: storage precision, rounding, minimum and maximum length, breaks, entries spanning midnight, daylight-saving handling, which time zone interprets local times | **Contract** | **Resolved — D-046 (§16.13).** Decides column types, validation, ordering derived in D-038, date filters in §15.8 and every total |
 | **B2** | Definition of an overlap: same volunteer across all projects or one, tolerance in minutes, blocking or advisory | **Contract** | **Resolved — D-047 (§16.14).** Entry validation, conflict fields and approval rules all reference it; §15.12 item 21 assumes it |
 | **B3** | Timer semantics: one running timer or several, timer spanning midnight, server-authoritative start, clock skew, idle timeout, start/stop payloads | **Contract** — deferred | **Deferred — not decided (D-048, §16.15).** The MVP has no server timer, so no timer route, constraint or payload needs specifying; this row re-opens if that feature returns in a later release |
-| **B4** | Concurrency and idempotency for mutations: `Idempotency-Key` on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | Every write endpoint. Offline replay (§15.12 item 30) is unusable without it, and duplicate submissions are the likeliest production bug |
+| **B4** | Concurrency and idempotency for mutations: client-generated ids on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | **Resolved — D-049 (§16.16).** A client-generated UUID per record plus an integer `version`; no `Idempotency-Key`; state-setting operations idempotent by outcome. Offline replay (§15.12 item 30) depends on it |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | Every table, query and permission check; retrofitting tenancy is a rewrite |
 | **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | §15.3.2 fixes administrator authority in prose, not as an enforceable matrix |
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | D-043 leaves retention deferred; erasure may conflict with the audit trail the decisions require |
@@ -2777,8 +3034,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 feeds B6 and B14. B4 and B8 are one-off conventions that every later endpoint inherits. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 feeds B6 and B14. B4 is now the convention every later endpoint inherits (§16.16); B8 is the other one-off convention, still open. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2, B4, B5, B6, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B7, B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after.
+**What must land before contract drafting.** B1, B2, B5, B6, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B7, B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after.
 
-**Order proposed:** B4, then B5, B6 — the sequence in which each constrains the next, with B1 and B2 already closed and B3 deferred by scope (D-048) — followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
+**Order proposed:** B5, then B6 — the sequence in which each constrains the next, with B1, B2 and B4 already closed and B3 deferred by scope (D-048) — followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
