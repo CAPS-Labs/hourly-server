@@ -65,7 +65,9 @@ which the volunteer may edit and submit. - Project and activity
 categorization. - Project-less time entries under a
 description requirement. - Offline recording and later
 synchronization. - Volunteer, coordinator, and
-organization-administrator roles. - Configurable organization-level
+organization-administrator roles. **Amended 23 November 2026 (D-051,
+§16.18):** the roles are volunteer and administrator only; coordination is
+a per-project grant, not a role. - Configurable organization-level
 policies for selected workflows.
 
 **Amended 22 November 2026 (D-048, §16.15):** timer-based entries are
@@ -611,7 +613,7 @@ Material changes to approved entries that affect hours or substantive
 details should trigger reapproval when the policy requires it; prior
 approval should remain in audit history.
 
-**Open questions:** - ~~Must volunteers explicitly submit completed entries for approval, or are they submitted automatically?~~ Resolved 22 November 2026: submission is explicit — finishing work produces a draft, not a submission (§16.11, D-044). - What precisely counts as a material change? - ~~What happens to pending entries when the organization approval policy changes?~~ Resolved 22 November 2026: the policy in force at submission governs, and a change applies only to later submissions (§16.12, D-045). - Who may approve which categories of entries, and can coordinators approve entries for work that is not associated with their project?
+**Open questions:** - ~~Must volunteers explicitly submit completed entries for approval, or are they submitted automatically?~~ Resolved 22 November 2026: submission is explicit — finishing work produces a draft, not a submission (§16.11, D-044). - What precisely counts as a material change? - ~~What happens to pending entries when the organization approval policy changes?~~ Resolved 22 November 2026: the policy in force at submission governs, and a change applies only to later submissions (§16.12, D-045). - Who may approve which categories of entries, and can coordinators approve entries for work that is not associated with their project? **Resolved 23 November 2026 (D-051, §16.18):** no. A coordinator's authority is confined to projects they coordinate, an entry is reviewed by an active coordinator of its project other than its author or by an administrator, nobody approves their own entry, and project-less entries are administrator-only.
 
 ------------------------------------------------------------------------
 
@@ -1100,7 +1102,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -1194,6 +1196,8 @@ Important: This supplement records confirmed decisions separately from optional 
 Confirmed decision: A project may have multiple coordinators assigned simultaneously.
 
 The system must support multiple coordinator-to-project assignments. No lead-coordinator role is required for the MVP.
+
+**Storage confirmed 23 November 2026 (D-051, §16.18):** a grant is a row in `project_coordinators` with `granted_by`, `granted_at` and `ended_at`, never a field on `projects`. Membership roles are `volunteer` and `administrator`; coordinator is not a role. Ending a grant preserves the row, which is what makes §4.2.4's "a new assignment record is created" possible.
 
 1.2 Projects without a coordinator
 
@@ -2070,7 +2074,7 @@ The following items remain unresolved. They should be addressed before or during
 1. Define the complete lifecycle state machine for drafts, submitted entries, pending approval, approved entries, and rejected entries.
 2. Define the exact behavior of approval when an entry is edited, including the meaning of a material change.
 3. ~~Decide what happens to pending entries when organizational approval settings change.~~ **Resolved 22 November 2026 — the policy in force at submission governs; later changes affect only later submissions (§16.12, D-045).**
-4. Define approval authority, including the boundaries of coordinator authority for project-less entries and other entries outside their projects.
+4. ~~Define approval authority, including the boundaries of coordinator authority for project-less entries and other entries outside their projects.~~ **Resolved 23 November 2026 (D-051, §16.18):** approval authority is an active coordinator grant on the entry's project, excluding the entry's author, or the administrator role; project-less entries are administrator-only. Which categories of entry require approval at all remains open.
 5. Define the handling and reporting of invalid, out-of-period, or conflicting submissions that must be preserved rather than silently discarded.
 6. Decide how edits made concurrently by multiple authorized users are detected and reconciled. **Detection resolved 23 November 2026 — optimistic concurrency on an integer `version`, with `409 VERSION_MISMATCH` carrying the current representation (§16.16, D-049). The reconciliation interface for a detected edit remains open.**
 
@@ -2136,14 +2140,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11) and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16) and B5 (organisation model, §16.17). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B6.
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17) and B6 (role and permission matrix, §16.18). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B7.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B6 (role and permission matrix), with B3 deferred by scope (D-048, §16.15) and B4 and B5 settled (§16.16, §16.17). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), approval authority (item 4), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B7 (retention and erasure), with B3 deferred by scope (D-048, §16.15) and B4, B5 and B6 settled (§16.16–§16.18). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -3146,6 +3150,187 @@ one volunteer belongs to several organisations, and what organisation-level
 settings attach to. It confirms §2.2 from the client's side, clarifies
 §2.3, and narrows §15.12 items 26, 27 and 31 without closing them.
 
+## 16.18 Roles are membership-level; coordination is a project grant
+
+**Confirmed decision (D-051) — 23 November 2026.**
+
+A membership holds exactly one role: `volunteer` or `administrator`.
+Coordination is not a role. It is a grant on a project, held as a row in
+`project_coordinators`, and it confers authority over that project and
+nothing else. Roles are fixed in code and are not configurable; the only
+organisation-wide authority setting remains the one §4.2.1 already defines.
+
+This replaces the shape proposed for B6 — coordinator as a third role with
+assignment-scoped powers. That proposal was never recorded, so no
+supersession note is needed; the §17 row records the change of shape.
+
+**Roles.**
+
+- `volunteer` — the role of an approved membership by default. Records and
+  submits own time; reads own entries, assignments and notifications.
+- `administrator` — organisation-wide authority within the instance (§4.4).
+  An administrator does not acquire coordinator grants by virtue of the
+  role, and does not appear in a project's coordinator list because of it
+  (§4.1.3).
+- Promotion and demotion are administrator operations. A role change takes
+  effect on the next request and never revisits a decision already taken
+  under the previous role.
+- No role is inferred from work. Coordinating a project is not a promotion,
+  and losing a grant is not a demotion.
+- The last administrator cannot be demoted or removed by another
+  administrator. Without that guard an instance can be left with no one able
+  to administer it.
+
+**Grants.**
+
+```
+project_coordinators
+  id          uuid        primary key
+  project_id  uuid        not null → projects(id)
+  user_id     uuid        not null → users(id)
+  granted_by  uuid        not null → users(id)
+  granted_at  timestamptz not null
+  ended_at    timestamptz null      -- null means active
+  ended_by    uuid        null
+unique (project_id, user_id) where ended_at is null
+```
+
+- A grant requires an active membership when it is made, and §4.2.2 still
+  forbids a coordinator adding themselves to a project that already exists.
+- Ending a grant sets `ended_at` and `ended_by`; the row is never deleted
+  (§4.2.4). Re-granting inserts a new row, which the partial unique index
+  permits because the old row is no longer active.
+- A grant ends at once when the membership itself ends. Reinstatement
+  requires a new grant; nothing is restored implicitly.
+- `granted_by` is the authenticated caller, never a field the client sends.
+- Removing the last active grant from an active project requires the
+  confirmation §4.2.3 already defines. A project may still end up with no
+  coordinator (§4.1.2).
+- A project may hold any number of active grants, and the record requires no
+  lead or primary coordinator (§4.1.1).
+
+**Effective permission.**
+
+    capabilities(member, project) = role(member) ∪ active grant on that project
+
+Every project-scoped check uses one predicate, and no endpoint reads a
+coordinator field from `projects`:
+
+```sql
+SELECT 1 FROM project_coordinators
+WHERE project_id = $1 AND user_id = $2 AND ended_at IS NULL
+```
+
+The supporting index is `(project_id, user_id) WHERE ended_at IS NULL`.
+
+**Permission matrix.** "Coordinator" means an active grant on the project in
+question, not a status the person holds generally.
+
+| Capability | Volunteer | Coordinator | Administrator |
+|---|---|---|---|
+| Create, edit and submit own entries | yes | yes | yes |
+| Read own entries, assignments and notifications | yes | yes | yes |
+| Create a project | yes | yes | yes |
+| Read entries on that project | no | yes | yes |
+| Read entries of volunteers assigned to that project | no | yes | yes |
+| Approve, reject or return an entry on that project | no | yes, except their own | yes, except their own |
+| Edit that project and manage its activities | no | yes | yes |
+| Add and remove volunteer assignments on that project | no | yes | yes |
+| Add and remove coordinator grants on that project | no | yes, if the §4.2.1 setting is enabled, never for themselves | yes |
+| Archive and restore that project and its activities (D-041) | no | yes | yes |
+| Read or approve project-less entries | own only | no | yes |
+| Manage memberships, roles and organisation settings | no | no | yes |
+| Read the audit trail | no | no | yes (B11 may widen) |
+
+**No self-approval.** Nobody approves their own entry. On a coordinated
+project the reviewer is another active coordinator of that project or an
+administrator. Where neither exists the entry stays pending, the project's
+no-coordinator warning (§4.1.2) is the signal, and the remedy is a second
+grant or an administrator — not a self-approval flag. The rule applies to
+administrators too: a single-administrator organisation with approval
+switched on cannot approve that administrator's own entries, and the fix is
+a second administrator. If that turns out to be unacceptable in practice it
+becomes a deliberate, recorded exception, not a quiet one.
+
+**Project-less entries.** Administrator only, for reading and for approving;
+the author reads their own. A grant is scoped to a project object and these
+entries have none, so this is exclusion rather than a separate rule. It
+answers §15.12 item 4's question about the boundaries of coordinator
+authority over project-less entries, and repeats the answer already given in
+§15.3.2's neighbourhood: a coordinator who needs them needs the
+administrator role.
+
+**Project creation.** Any member with an active membership may create a
+project. In the same transaction the creator is granted as its first
+coordinator, unless the creator is an administrator — an administrator's
+authority needs no grant, and §4.1.3 keeps them out of the coordinator list
+unless granted through the ordinary path. This is not a breach of §4.2.2:
+that rule forbids adding oneself to a project that already exists, whereas
+this grant is part of creating a new one, recorded with `granted_by` set to
+the creator so the audit trail shows it for what it is.
+
+**Project-creation approval.** An organisation-wide setting,
+`projectCreationRequiresApproval`, default off. When it is on:
+
+- the project is created in a `pending` state, visible to its creator and to
+  administrators only;
+- the creator's grant is recorded but exercises no authority over
+  assignments, entries or other members until the project is active;
+- the creator may edit the project or withdraw it; withdrawal retains the
+  record rather than deleting it;
+- an administrator approves it, making it `active`, or rejects it;
+- a pending project accepts no assignments, assignment requests or time
+  entries.
+
+This is the first project state beyond active and archived. The naming and
+the full transition set belong to the state machine (§15.12 item 1); this
+decision fixes only that creation may require approval and what stays shut
+until it is given.
+
+**Accepted costs.**
+
+- Two sources of authority instead of one, so every project-scoped check
+  joins the grant table rather than reading a column.
+- Coordinator status is derived. The API never returns "coordinator" as a
+  role value, and the client cannot label someone a coordinator without
+  asking which projects.
+- A one-coordinator project cannot approve that coordinator's own hours
+  without an administrator or a second grant.
+- An administrator is not automatically in a coordinator list, so "who runs
+  this project?" is answered by grants, never by roles.
+- Creation approval adds a project state the client must render and the
+  state machine must incorporate.
+
+**Rejected alternatives.**
+
+- **Coordinator as a third role** (the withdrawn B6 proposal). It cannot
+  express "volunteer everywhere, coordinator on one project" without
+  granting instance-wide coordinator affordances, and it invents a
+  coordinator who coordinates nothing.
+- **A single `coordinator_id` column on `projects`.** One coordinator per
+  project contradicts §4.1.1; overwriting the column destroys the history
+  §4.2.4 preserves; and the last-coordinator confirmation in §4.2.3 becomes
+  meaningless. A coordinator's own entries would have no reviewer but an
+  administrator, permanently.
+- **Role sets** (a membership holding several roles). Every check becomes a
+  union, the common case needs two roles kept in step, and "may this person
+  approve this entry?" stops having one answer.
+- **Per-permission grants.** Every permission becomes data to seed,
+  migrate and audit; a small organisation administers a permission system
+  instead of its projects.
+- **Self-approval as an escape hatch** for the single-coordinator or
+  single-administrator case. It removes review precisely where review is
+  thinnest, and leaves an audit trail that cannot distinguish a checked
+  entry from an unchecked one.
+
+**Resolves:** backlog item B6 (§17), and §15.12 item 4. It supplies the
+representation the §4 supplement describes: §4.1–§4.3 keep their confirmed
+behaviour, now backed by one table rather than a role. It leaves open the
+project state machine (item 1), the categories of entry that require
+approval at all, and who besides an administrator may read the audit trail
+(B11).
+
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -3165,7 +3350,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B3** | Timer semantics: one running timer or several, timer spanning midnight, server-authoritative start, clock skew, idle timeout, start/stop payloads | **Contract** — deferred | **Deferred — not decided (D-048, §16.15).** The MVP has no server timer, so no timer route, constraint or payload needs specifying; this row re-opens if that feature returns in a later release |
 | **B4** | Concurrency and idempotency for mutations: client-generated ids on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | **Resolved — D-049 (§16.16).** A client-generated UUID per record plus an integer `version`; no `Idempotency-Key`; state-setting operations idempotent by outcome. Offline replay (§15.12 item 30) depends on it |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | **Resolved — D-050 (§16.17).** The deployment is the tenant: each organisation runs its own instance, identity is scoped to it, and no organisation identifier appears in the API. One organisation row carries the time zone, approval policy and membership setting; no `organisation_id` columns |
-| **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | §15.3.2 fixes administrator authority in prose, not as an enforceable matrix |
+| **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator |
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | D-043 leaves retention deferred; erasure may conflict with the audit trail the decisions require |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | D-037 and D-040 fix the entry list only; divergent collection shapes are a later contract rewrite |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | The record discusses totals throughout but never defines a reported hour |
@@ -3182,8 +3367,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14. B4 is now the convention every later endpoint inherits (§16.16); B8 is the other one-off convention, still open. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B4 is now the convention every later endpoint inherits (§16.16); B8 is the other one-off convention, still open. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2, B6, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B7, B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after.
+**What must land before contract drafting.** B1, B2, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B7, B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after.
 
-**Order proposed:** B6, with B1, B2, B4 and B5 already closed and B3 deferred by scope (D-048), followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
+**Order proposed:** B7, with B1, B2, B4, B5 and B6 already closed and B3 deferred by scope (D-048), followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
