@@ -1102,7 +1102,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -2140,14 +2140,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18) and B7 (retention and erasure, §16.19). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B8.
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18) B7 (retention and erasure, §16.19) and B13 (request identity and load control, §16.20). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B8.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B8 (the list contract for every other collection), with B3 deferred by scope (D-048, §16.15) and B4–B7 settled (§16.16–§16.19). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B8 (the list contract for every other collection), with B3 deferred by scope (D-048, §16.15), B4–B7 settled (§16.16–§16.19) and B13 settled (§16.20). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2290,6 +2290,8 @@ Errors use the envelope already illustrated in §10.5, now confirmed as the cont
 | `403` | `FORBIDDEN` (with field codes) | Authenticated, but a supplied **filter value** lies outside the caller's scope (§15.8.9) |
 | `404` | `NOT_FOUND` | Addressed resource absent **or** outside scope — identical status and body either way |
 | `409` | `CONFLICT`, `VERSION_MISMATCH` | State conflicts, including the in-place edit path of §15.5 |
+| `413` | `PAYLOAD_TOO_LARGE` | Body over the 1 MiB cap, refused before it is parsed (D-053, §16.20) |
+| `429` | `RATE_LIMITED` | Token bucket exhausted; carries `Retry-After` (D-053, §16.20) |
 | `500`, `503` | `INTERNAL_ERROR`, `SERVICE_UNAVAILABLE` | No internals, no identifiers |
 
 **Disclosure rules:**
@@ -2305,7 +2307,7 @@ Errors use the envelope already illustrated in §10.5, now confirmed as the cont
 - All failing fields are reported together, not first-failure-only: round trips are expensive for a device that has been offline for a week.
 - Validation errors are raised only for fields the caller actually supplied.
 - One validation status (`400`). A `400`/`422` split is rejected as a distinction clients routinely get wrong.
-- No `retryable` flag yet. It belongs with retry semantics in the sync design (§15.12 item 30), where it can be defined per code.
+- No `retryable` flag yet. It belongs with retry semantics in the sync design (§15.12 item 30), where it can be defined per code. **Answered:** D-049 (§16.16) classifies by status rather than by a per-code flag, and D-053 (§16.20) puts `429` in the retry class while every other `4xx` is terminal for that request.
 
 **Considered and rejected:**
 
@@ -3452,6 +3454,183 @@ must survive anonymisation and must record the erasure itself.
 
 
 
+## 16.20 Request identity and load control: server ids, token buckets, size caps
+
+**Confirmed decision (D-053) — 23 November 2026.**
+
+Every response already carries a `requestId` (D-039), and nothing said where
+that id comes from. Three questions sit in that gap: who names a request, how
+fast a caller may repeat one, and how large one request may be. They are
+answered together because all three protect the same thing — the instance's
+ability to answer the next volunteer correctly.
+
+**The case this protects.** Saturday, 09:05. Twenty volunteers arrive for the
+pantry shift and sign in over the pantry's single wi-fi connection. Dee has
+fourteen entries queued from a week offline and her phone releases them the
+moment it sees the network. One phone, still on an old build, has a retry bug
+that fires the same submission every 400 milliseconds. Without a convention
+the third event is indistinguishable from the first two: the instance spends
+its morning absorbing retries, and when someone reports "it didn't save at
+09:05" the only available answer is that it was slow around nine. With one,
+each request has a name, the runaway phone is told to wait, and the report is
+answered from a log line.
+
+**Rules.**
+
+1. **The server mints the request id.** Every response — success or failure —
+   carries `X-Request-Id`: a UUIDv7 generated on arrival, before the body is
+   parsed. Version 7 rather than 4 because its leading bytes are a millisecond
+   timestamp, so log entries sort and range-query by id with no second index
+   and two requests in the same second still order deterministically.
+2. **An inbound `X-Request-Id` is never adopted.** If a caller sends one it is
+   ignored — not merged, not echoed. Otherwise any client could write
+   arbitrary text into the log, reuse another request's identity, or make
+   eleven different attempts share one name and destroy its only use.
+3. **A client may attach its own reference.** `X-Client-Request-Id` is
+   optional, matched against `^[A-Za-z0-9._:-]{1,64}$`, written to the request
+   log line and echoed in the response under the same name. A value that does
+   not match is dropped silently, never rejected: a tracing nicety must not
+   fail a legitimate write. It is a second identifier, never a replacement,
+   and it is what the app sends when it wants to recognise its own queue item.
+4. **Signed-in traffic is limited per user.** A token bucket of 300 requests
+   per minute with a burst of 60, keyed by the authenticated user id. Dee's
+   fourteen queued entries are fourteen tokens from a bucket that starts full;
+   a runaway loop is eventually stopped; and neither can touch anyone else's
+   allowance.
+5. **Unauthenticated traffic is limited per address.** 60 per minute, burst
+   10, keyed by the address the connection came from. Only sign-in,
+   registration and token refresh live here. The bucket's purpose is to make
+   password guessing slow, not to ration a room: twenty sign-ins in a minute
+   fit inside 60.
+6. **The bucket is a token bucket, not a fixed window.** Tokens refill
+   continuously and a caller that idles accumulates up to the burst. A fixed
+   window would allow 60 requests at 11:59:59 and another 60 at 12:00:00 —
+   exactly the double burst the limit exists to prevent.
+7. **Every response reports the bucket state**, on `429` as well as on success:
+   `RateLimit-Limit` (the bucket's capacity), `RateLimit-Remaining` (tokens
+   left, floored at zero) and `RateLimit-Reset` (seconds until at least one
+   token is available again). A client that reads them can slow down before it
+   is refused rather than after.
+8. **Exhaustion is a `429 RATE_LIMITED`, never a dropped connection and never
+   a silent delay.** `Retry-After` carries the wait in seconds, and
+   `details.retryAfterSeconds` repeats the same number for clients that read
+   only the envelope. Nothing about the request is stored or half-applied.
+9. **A request body over 1 MiB is refused with `413 PAYLOAD_TOO_LARGE`**,
+   before parsing and without buffering the whole body: a declared
+   `Content-Length` over the cap is rejected on the header alone, and a chunked
+   body is counted and cut at the limit. Authentication is decided from
+   headers, so an unauthenticated oversized body gets `401` and is never read.
+   A single entry is a few hundred bytes; 1 MiB is roughly four thousand of
+   them. Batch submission is not in the MVP, which is the cost of the cap.
+10. **`details.errors` is capped at 100 entries**, in discovery order, with
+    `truncated: true` when more were found. Silently returning the first
+    hundred would let a client fix everything listed and still fail with no
+    explanation; the flag is what makes the cap honest.
+11. **Strings are never truncated at write time.** An over-length field is
+    rejected with its own field code. Cutting a value to fit stores something
+    the person did not write, and nothing downstream can detect it.
+12. **A query string over 8 KiB is `400 MALFORMED_REQUEST`**, using the code
+    D-039 already assigns to an unparseable request: at that size the request
+    is malformed rather than merely large. `pageSize` stays capped at 100
+    (D-040); list bodies are server-shaped and need no separate ceiling.
+
+```http
+HTTP/1.1 201 Created
+Location: /v1/entries/0f6a…
+X-Request-Id: 0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a20
+X-Client-Request-Id: dee-queue-14
+RateLimit-Limit: 300
+RateLimit-Remaining: 287
+RateLimit-Reset: 1
+```
+
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: 12
+RateLimit-Limit: 300
+RateLimit-Remaining: 0
+RateLimit-Reset: 12
+X-Request-Id: 0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a20
+```
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Too many requests. Retry after 12 seconds.",
+    "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a20",
+    "details": { "retryAfterSeconds": 12 }
+  }
+}
+```
+
+```json
+{
+  "error": {
+    "code": "PAYLOAD_TOO_LARGE",
+    "message": "Request body exceeds the 1 MiB limit.",
+    "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a21",
+    "details": { "limitBytes": 1048576 }
+  }
+}
+```
+
+| Option | What happens on the support call | What it costs |
+|---|---|---|
+| **Server-minted UUIDv7, with an optional client reference (recommended)** | The reported id resolves to one log line; the client's own reference is there beside it | Two headers to explain, though the second is optional |
+| Adopt a client-supplied `X-Request-Id` when present | One id end to end, when clients cooperate | The log becomes caller-controlled: duplicate and invented ids make it untrustworthy exactly when it matters |
+| Require the client to send the id | Strong correlation for well-behaved clients | A client that crashes before generating one cannot be traced at all, and the server cannot refuse the request on that basis |
+| No id on successful responses | Nothing to explain | A report about a reply that *looked* successful has nothing to search for; D-039's promise becomes half true |
+
+| Bucket key | Effect on the Saturday rush | Cost |
+|---|---|---|
+| **Per user when signed in, per address when not (recommended)** | Twenty sign-ins and one large queue are both accommodated; only the runaway phone is stopped | Two rules and two sets of numbers |
+| Per address for every route | One rule | Twenty volunteers on one connection share 60 requests a minute; the twelfth person is locked out by the first eleven and reads it as an outage |
+| Per user and per address combined, signed-in included | Tightest | A shared pantry connection throttles people who did nothing wrong, and the bucket that binds is never the one the error message describes |
+
+**Accepted costs.**
+
+- `Retry-After` and `details.retryAfterSeconds` are two renderings of one
+  number, so they can disagree. A test asserts equality; the duplication buys
+  generic HTTP clients and envelope-only clients each the field they read.
+- Buckets live in process memory, so a restart forgives an exhausted caller
+  and two processes mean two allowances. Correct for the single-process
+  deployment the MVP ships; a shared store is the fix if the instance is ever
+  scaled out, and `Remaining` is approximate until then.
+- The address bucket treats a household, a pantry and a carrier-grade NAT as
+  one caller. Sixty a minute is chosen to sit above a room full of sign-ins;
+  a room of sixty arriving in the same seconds will see `429`, and the message
+  has to be phrased so that reads as "wait a moment" rather than "broken".
+- The address is taken from the connection, not from `X-Forwarded-For`. Behind
+  a reverse proxy every request shares the proxy's address until the proxy is
+  configured, which is an operator step the deployment notes must carry.
+- Limits are deployment configuration, not an administrator setting: there is
+  no toggle to raise or disable them from the app. An organisation that needs
+  a different ceiling needs whoever deployed the instance.
+- Three extra headers on every response, including list responses where they
+  are least interesting.
+
+**Rejected alternatives.** A fixed per-minute window (double burst at the
+boundary), a per-address limit on authenticated routes (punishes shared
+connections), a `429` without `Retry-After` (the client guesses), dropping the
+connection instead of answering (indistinguishable from a network fault, and
+invisible in the log), truncating over-length strings (stores data the person
+did not enter), returning every validation error without a cap (a response
+larger than the request), and making `X-Request-Id` client-supplied (a log any
+caller can forge).
+
+**Left open.** Whether the three `RateLimit-*` headers should later add the
+IETF combined `RateLimit` field — additive, and a client that reads either
+keeps working; whether the audit trail stores `X-Client-Request-Id` (it does
+not in the MVP: the request log does, which keeps audit rows small); whether
+an operator-facing switch should exist at all (tuning is enough if the numbers
+are wrong); and whether `429` timing on sign-in needs to be made uniform with
+`401` to avoid revealing which addresses are real, which belongs to B14.
+
+**Resolves:** backlog item B13 (§17). It also closes D-039's "no `retryable`
+flag yet" note: `429` is the one retryable status, by D-049's classification
+(§16.16), and every other `4xx` is terminal for that request.
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -3478,7 +3657,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery |
 | **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | Four decisions already name it as an output without specifying it |
 | **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | Small but pervasive; D-042's confirmation shows counts before the act, never after |
-| **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | D-039 introduces `requestId` without defining its origin |
+| **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
 | **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | The half of authentication (§15.12 item 26) that shapes the client |
 | **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires | **Implementation** | §15.12 item 28 names the schema; the operational half is unlisted |
 | **B16** | Backdating window: how far in the past an entry may be dated or submitted | **Contract** | Surfaced while taking up B1 and set aside; §16.9 only forbids work after an archived instant |
@@ -3488,8 +3667,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B8 is the other one-off convention, still open. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is the other one-off convention, still open. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
+**What must land before contract drafting.** B1, B2, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 has left that list (§16.20), fixed as a single convention pass. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** B13 next, as the single convention pass over rate limits, payload caps and `requestId`, then B8 (list contract for other collections) and B12 (mutation response shapes), then B14 and B16 — with B1, B2, B4, B5, B6 and B7 already closed and B3 deferred by scope (D-048), followed by the feature-conditional items as each feature is scheduled.
+**Order proposed:** B8 next (list contract for other collections) and B12 (mutation response shapes), then B14 and B16 — with B1, B2, B4, B5, B6, B7 and B13 already closed and B3 deferred by scope (D-048), followed by the feature-conditional items as each feature is scheduled.
