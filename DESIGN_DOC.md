@@ -1102,7 +1102,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -2140,14 +2140,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17) and B6 (role and permission matrix, §16.18). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B7.
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18) and B7 (retention and erasure, §16.19). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B8.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B7 (retention and erasure), with B3 deferred by scope (D-048, §16.15) and B4, B5 and B6 settled (§16.16–§16.18). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B8 (the list contract for every other collection), with B3 deferred by scope (D-048, §16.15) and B4–B7 settled (§16.16–§16.19). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -3233,7 +3233,7 @@ question, not a status the person holds generally.
 | Create a project | yes | yes | yes |
 | Read entries on that project | no | yes | yes |
 | Read entries of volunteers assigned to that project | no | yes | yes |
-| Approve, reject or return an entry on that project | no | yes, except their own | yes, except their own |
+| Approve, reject or return an entry on that project | no | yes, except their own | yes, including their own (amended 23 November 2026) |
 | Edit that project and manage its activities | no | yes | yes |
 | Add and remove volunteer assignments on that project | no | yes | yes |
 | Add and remove coordinator grants on that project | no | yes, if the §4.2.1 setting is enabled, never for themselves | yes |
@@ -3242,15 +3242,22 @@ question, not a status the person holds generally.
 | Manage memberships, roles and organisation settings | no | no | yes |
 | Read the audit trail | no | no | yes (B11 may widen) |
 
-**No self-approval.** Nobody approves their own entry. On a coordinated
-project the reviewer is another active coordinator of that project or an
-administrator. Where neither exists the entry stays pending, the project's
-no-coordinator warning (§4.1.2) is the signal, and the remedy is a second
-grant or an administrator — not a self-approval flag. The rule applies to
-administrators too: a single-administrator organisation with approval
-switched on cannot approve that administrator's own entries, and the fix is
-a second administrator. If that turns out to be unacceptable in practice it
-becomes a deliberate, recorded exception, not a quiet one.
+**Self-approval.** A coordinator may not approve their own entry: on a
+coordinated project the reviewer is another active coordinator of that
+project or an administrator. Where neither exists the entry stays pending,
+the project's no-coordinator warning (§4.1.2) is the signal, and the remedy
+is a second grant or an administrator — not a self-approval flag.
+
+**Amended 23 November 2026:** for the MVP, an administrator *may* approve
+their own work. The coordinator rule stands, because a coordinator's own
+entries are exactly the case where a second pair of eyes exists cheaply
+(another coordinator, or an administrator). An administrator has no reviewer
+above them short of another administrator, so forbidding self-approval would
+leave a single-administrator organisation with unreviewable hours and no
+remedy but staffing. The exception is narrow and explicit: it applies to the
+administrator role only, it does not extend to coordinators, and the audit
+trail records the reviewer either way, so a self-approved entry is visible as
+one.
 
 **Project-less entries.** Administrator only, for reading and for approving;
 the author reads their own. A grant is scoped to a project object and these
@@ -3295,7 +3302,12 @@ until it is given.
   role value, and the client cannot label someone a coordinator without
   asking which projects.
 - A one-coordinator project cannot approve that coordinator's own hours
-  without an administrator or a second grant.
+  without an administrator or a second grant; an administrator can, and the
+  audit trail shows that they did.
+- Administrators may approve their own entries, so an organisation that wants
+  independent review of an administrator's hours needs a second administrator.
+  The setting is visibility, not prevention: the reviewer field makes a
+  self-approved entry obvious after the fact.
 - An administrator is not automatically in a coordinator list, so "who runs
   this project?" is answered by grants, never by roles.
 - Creation approval adds a project state the client must render and the
@@ -3318,10 +3330,10 @@ until it is given.
 - **Per-permission grants.** Every permission becomes data to seed,
   migrate and audit; a small organisation administers a permission system
   instead of its projects.
-- **Self-approval as an escape hatch** for the single-coordinator or
-  single-administrator case. It removes review precisely where review is
-  thinnest, and leaves an audit trail that cannot distinguish a checked
-  entry from an unchecked one.
+- **Self-approval for coordinators.** It removes review where review is
+  cheapest to arrange (another coordinator, or an administrator). The
+  administrator case is the only exception, adopted 23 November 2026 and
+  limited to that role.
 
 **Resolves:** backlog item B6 (§17), and §15.12 item 4. It supplies the
 representation the §4 supplement describes: §4.1–§4.3 keep their confirmed
@@ -3329,6 +3341,115 @@ behaviour, now backed by one table rather than a role. It leaves open the
 project state machine (item 1), the categories of entry that require
 approval at all, and who besides an administrator may read the audit trail
 (B11).
+
+## 16.19 Retention and erasure: keep the record, anonymise the person
+
+**Confirmed decision (D-052) — 23 November 2026.**
+
+Deleting hours and honouring an erasure request pull in opposite directions
+until the objects are separated. The hours are the organisation's record of
+work performed. The identity is the person's. Retaining one and destroying
+the other answers both.
+
+**The case this protects.** Marisol volunteered 340 hours across two years,
+coordinated the Saturday Pantry for six months and approved 61 entries. She
+moves away and asks the organisation to delete everything about her, three
+weeks before a funder's audit samples the Saturday Pantry hours. Deleting her
+entries would destroy reported hours; deleting her user row would orphan
+`createdBy`, `reviewedBy` and `grantedBy` on every one of those records;
+doing neither would ignore her request. Anonymising her row settles all
+three: the hours still count, the approval trail still points at a stable
+principal, and nothing left in the instance says who Marisol was.
+
+**Rules.**
+
+1. **A membership ends; the account persists.** The role closes, every
+   `project_coordinators` grant ends at that instant (D-051), and pending
+   assignment requests cancel under the existing departure rules. The person
+   can no longer authenticate into anything operational. Re-joining creates a
+   new membership and needs a new grant.
+2. **Erasure anonymises the user row in place.** `email` is replaced with a
+   placeholder that no longer satisfies the uniqueness rule for real
+   addresses, `displayName` becomes "Former volunteer", credentials, tokens
+   and profile fields are destroyed, and `anonymisedAt` is set. The `id`
+   survives, so entries, reviews and grants keep a coherent but
+   unidentifiable author.
+3. **Entries are never deleted as part of erasure.** The work they record
+   belongs to the organisation, not to the person who performed it. This has
+   to be said plainly in whatever the organisation tells its volunteers,
+   because it is the part people are surprised by.
+4. **Archived projects have no expiry.** They are restorable by design
+   (D-043), and an audit three years later is exactly when restore matters.
+   No automatic purge and no retention timer in the MVP.
+5. **Personal export is synchronous and self-service.** `GET /v1/me/export`
+   returns the caller's own profile, membership, entries, grants and
+   notifications as one document, built from the same scoped queries the
+   lists already use. No job queue and no email delivery.
+6. **There is no organisation-purge endpoint.** With one instance per
+   organisation (D-050), decommissioning is an operational act: whoever can
+   drop the database already holds the credentials to do it. A button that
+   erases every hour the organisation ever recorded is a worse hazard than a
+   missing feature. If one is demanded later it needs an export-first step
+   and a typed confirmation, never a normal administrator action.
+7. **The API never promises deletion of hours.** Nothing in a consent flow,
+   an export response or an error message may imply that an erasure request
+   removes the organisation's time records.
+
+```json
+{
+  "exportedAt": "2026-11-23T10:02:11Z",
+  "apiVersion": "v1",
+  "profile": { "id": "9c21…", "displayName": "Marisol Vega", "email": "m.vega@…" },
+  "membership": { "role": "volunteer", "status": "active", "joinedAt": "2024-02-11T09:00:00Z" },
+  "entries": [
+    { "id": "…", "startedAt": "2026-03-07T14:00:00Z", "durationSeconds": 14400,
+      "status": "approved", "projectId": "a3f1…" }
+  ],
+  "coordinatorOf": [
+    { "projectId": "a3f1…", "grantedAt": "2025-10-04T08:12:00Z", "endedAt": "2026-04-30T17:00:00Z" }
+  ],
+  "notifications": [ { "id": "…", "createdAt": "2026-03-08T09:15:00Z", "readAt": null } ]
+}
+```
+
+| Option | What it does for Marisol | What it costs |
+|---|---|---|
+| **Retain the record, anonymise the person (recommended)** | Identity gone, hours and approval trail intact | Not a complete erasure: hours remain, attributable to an anonymous id |
+| **Hard delete the user and cascade her entries** | Complete removal | Reported hours vanish, the funder's sample no longer reconciles, other people's reviews point at nothing |
+| **Hard delete the user, keep entries with `createdBy` nulled** | Complete removal of the person | The record can no longer say who submitted or approved it, which is the guarantee D-041 and §16.16 exist to give |
+| **Refuse erasure until a retention period expires** | Nothing | Defensible only with a stated period and a legal basis, and the MVP has neither |
+
+**Accepted costs.**
+
+- Email uniqueness must be enforced only among non-anonymised accounts, or
+  the placeholder must live outside the unique column; otherwise the
+  anonymised row blocks the address forever.
+- The export endpoint must be kept in step with every field the other
+  endpoints later gain, or it silently becomes a partial answer to a
+  legal-flavoured request.
+- The organisation's own terms have to carry a sentence the API cannot
+  enforce: hours are retained, identity is not.
+- An anonymised person may re-register with the same address and be treated
+  as new, with no link to the old record. That linkage is a feature, not a
+  leak, and it is also an accepted loss of continuity.
+
+**Rejected alternatives.** Hard deletion of the person with their entries
+(destroys reported hours and the audit trail), hard deletion with nulled
+authors (breaks attribution, which is the point of the audit trail), a
+configurable retention period in the MVP (funding audits want records kept,
+not purged, and a period nobody sets is machinery nobody maintains), and a
+whole-instance purge button (a destructive operation with no undo, offered
+to the least supervised administrator).
+
+**Left open.** Whether an organisation may configure retention at all
+(deferred); whether the audit trail shows that a record was anonymised and
+when (it should — the fact of erasure is itself auditable); whether
+notifications age out, which is §15.12 item 25's business; and the legal
+wording the organisation gives its volunteers, which is outside the API.
+
+**Resolves:** backlog item B7 (§17). It also constrains B11: the audit trail
+must survive anonymisation and must record the erasure itself.
+
 
 
 ------------------------------------------------------------------------
@@ -3351,7 +3472,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B4** | Concurrency and idempotency for mutations: client-generated ids on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | **Resolved — D-049 (§16.16).** A client-generated UUID per record plus an integer `version`; no `Idempotency-Key`; state-setting operations idempotent by outcome. Offline replay (§15.12 item 30) depends on it |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | **Resolved — D-050 (§16.17).** The deployment is the tenant: each organisation runs its own instance, identity is scoped to it, and no organisation identifier appears in the API. One organisation row carries the time zone, approval policy and membership setting; no `organisation_id` columns |
 | **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator |
-| **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | D-043 leaves retention deferred; erasure may conflict with the audit trail the decisions require |
+| **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | D-037 and D-040 fix the entry list only; divergent collection shapes are a later contract rewrite |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | The record discusses totals throughout but never defines a reported hour |
 | **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery |
@@ -3367,8 +3488,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B4 is now the convention every later endpoint inherits (§16.16); B8 is the other one-off convention, still open. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B8 is the other one-off convention, still open. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B7, B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after.
+**What must land before contract drafting.** B1, B2, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 can be fixed as a convention in a single pass. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** B7, with B1, B2, B4, B5 and B6 already closed and B3 deferred by scope (D-048), followed by B12 and B13 as conventions, then the feature-conditional items as each feature is scheduled.
+**Order proposed:** B13 next, as the single convention pass over rate limits, payload caps and `requestId`, then B8 (list contract for other collections) and B12 (mutation response shapes), then B14 and B16 — with B1, B2, B4, B5, B6 and B7 already closed and B3 deferred by scope (D-048), followed by the feature-conditional items as each feature is scheduled.
