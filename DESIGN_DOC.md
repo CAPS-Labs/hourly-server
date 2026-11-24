@@ -561,9 +561,10 @@ The following is a conceptual field inventory, not a finalized schema:
 -   Work date and duration for duration-only entries.
 -   Required activity description for project-less entries.
 -   Optional notes.
--   Lifecycle status.
 -   Approval status.
 -   Conflict status or conflict references.
+-   Lifecycle state, only if voiding is ever decided: `voidedAt`, a
+    timestamp rather than an enum (§16.25, D-058).
 -   Creation and update timestamps.
 -   Audit history or audit-history references.
 
@@ -623,6 +624,11 @@ not required: validated entries may become auto-accepted or
 
 Approval status should be separate from entry lifecycle and conflict
 status. Resolving a conflict does not automatically approve hours.
+
+**Superseded 24 November 2026 (§16.25, D-058):** the state machine is
+settled. `approvalStatus` is `pending`, `approved`, `rejected` or
+`not_required` (the provisional `notRequired`), an entry has no lifecycle
+axis, and the transitions and their guards are in D-058.
 
 **Confirmed decisions:** - Organization-wide approval configuration
 controls the default approval policy. - Entries follow the current
@@ -934,6 +940,11 @@ contract uses a different shape.
 A pending assignment must not grant permission to record valid project
 time.
 
+**Clarified 24 November 2026 (§16.25, D-058):** this `status` is the
+assignment request's own lifecycle, not an entry's `approvalStatus` — an
+entry has no lifecycle field — and the request's field names remain
+§15.12 item 29's.
+
 ### 10.5 Illustrative structured validation error
 
 ``` json
@@ -1131,7 +1142,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21); **D-055** — every mutation returns the resource it changed, replays are `200` with `Idempotency-Replay`, and archival's counts are read before the act rather than returned after it (§16.22). **D-056** — the session model: a bearer access token with a single-use rotating refresh token, and no cookie, CSRF or CORS because the MVP has no browser client (§16.23). **D-057** — no maximum age for an entry's date or its submission: eligibility bounds the past, five minutes bounds the future, and an ineligible date is `409 DATE_NOT_ELIGIBLE` (§16.24). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21); **D-055** — every mutation returns the resource it changed, replays are `200` with `Idempotency-Replay`, and archival's counts are read before the act rather than returned after it (§16.22). **D-056** — the session model: a bearer access token with a single-use rotating refresh token, and no cookie, CSRF or CORS because the MVP has no browser client (§16.23). **D-057** — no maximum age for an entry's date or its submission: eligibility bounds the past, five minutes bounds the future, and an ineligible date is `409 DATE_NOT_ELIGIBLE` (§16.24). **D-058** — the entry's state: one `approvalStatus` axis with four values, a fixed transition table, no lifecycle field, and `409 INVALID_TRANSITION` (§16.25). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -1160,7 +1171,9 @@ time rather than filled in by assumption.
     approval or require explicit volunteer submission.~~ **Resolved 22
     November 2026 — explicit submission (§16.11, D-044).**
 6.  Define entry lifecycle, approval status, and conflict status as
-    separate state models.
+    separate state models. **Partly resolved 24 November 2026 — approval
+    status and the absence of a lifecycle axis (§16.25, D-058); conflict
+    status belongs to §15.12 item 21.**
 7.  Define the exact conditions that trigger reapproval after editing an
     approved entry.
 8.  ~~Define what happens to pending entries and requests when
@@ -1778,7 +1791,11 @@ These permissions do not automatically grant approval authority or conflict-reso
 
 **Confirmed decision — Adopted recommendation.**
 
-The editing permissions above apply across all four entry states:
+The editing permissions above apply across every entry state.
+**Amended 24 November 2026 (§16.25, D-058):** a draft is not a server
+state (D-044), and the remaining three are values of `approvalStatus` —
+`pending`, `approved` and `rejected`, with `not_required` for an entry
+nobody will review — each with the transitions D-058 fixes.
 
 - **Draft:** Exists only on the volunteer's device (§16.11, D-044) and may be edited freely there. The server-side permissions below begin at submission.
 - **Pending approval:** May be edited. The approval workflow must reflect the latest version of the entry.
@@ -1835,9 +1852,11 @@ The retrieval model will support filters for:
 - Activity.
 - Work-date range.
 - Initial submission-time range.
-- Lifecycle status.
 - Approval status.
 - Conflict status.
+- ~~Lifecycle status.~~ **Withdrawn for the MVP (24 November 2026,
+  §16.25, D-058):** an entry has no lifecycle field; a `voidedAt` filter
+  arrives only if §15.12 item 20 decides voiding exists.
 
 The exact endpoint paths, parameter names, request/response DTOs, and error envelope remain to be designed.
 
@@ -1984,6 +2003,13 @@ The API exposes independent filters for:
 
 These are distinct concepts and must not be collapsed into one combined status field. The exact lifecycle and enum values remain to be finalized.
 
+**Amended 24 November 2026 (§16.25, D-058):** the first filter is
+withdrawn for the MVP — every server-side entry is submitted (D-044), so
+there is no lifecycle field to filter on. The second carries the four
+values D-058 fixes, and lifecycle returns as a `voidedAt` filter only if
+§15.12 item 20 decides voiding exists. The rule that these are separate
+concepts, never one combined field, stands.
+
 ### 15.8.7 Combining filters
 
 **Confirmed decision for MVP: AND semantics.**
@@ -2100,7 +2126,10 @@ The following items remain unresolved. They should be addressed before or during
 
 ### Priority 1 — Time-entry lifecycle and approval
 
-1. Define the complete lifecycle state machine for drafts, submitted entries, pending approval, approved entries, and rejected entries.
+1. ~~Define the complete lifecycle state machine for drafts, submitted
+   entries, pending approval, approved entries, and rejected entries.~~
+   **Resolved 24 November 2026 — one approval axis with four values, a
+   fixed transition table, and no lifecycle field (§16.25, D-058).**
 2. Define the exact behavior of approval when an entry is edited, including the meaning of a material change.
 3. ~~Decide what happens to pending entries when organizational approval settings change.~~ **Resolved 22 November 2026 — the policy in force at submission governs; later changes affect only later submissions (§16.12, D-045).**
 4. ~~Define approval authority, including the boundaries of coordinator authority for project-less entries and other entries outside their projects.~~ **Resolved 23 November 2026 (D-051, §16.18):** approval authority is an active coordinator grant on the entry's project, excluding the entry's author, or the administrator role; project-less entries are administrator-only. Which categories of entry require approval at all remains open.
@@ -2128,7 +2157,12 @@ The following items remain unresolved. They should be addressed before or during
 ### Priority 4 — Entry deletion and operational details
 
 19. ~~Decide whether drafts may be permanently deleted or must be retained as discarded records.~~ **Resolved 22 November 2026 — drafts never reach the server, so discarding one is a device action (§16.11, D-044).**
-20. Define whether submitted entries may be voided and the associated permissions, audit requirements, and effect on reported hours.
+20. Define whether submitted entries may be voided and the associated
+    permissions, audit requirements, and effect on reported hours.
+    **Re-scoped 24 November 2026 (§16.25, D-058):** the question is
+    whether a `voidedAt` timestamp exists — who may set it, whether it can
+    be cleared, and whether voided hours leave the reports. There is no
+    `status` enum for voiding to be a value of.
 21. Finalize overlap warning and review behavior.
 22. Decide whether project-less activity descriptions are stored separately from optional notes.
 23. Finalize required and optional profile fields and email-change verification behavior.
@@ -2169,14 +2203,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), and item 1 (the entry state machine, §16.25). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line, beginning with the state machine (item 1).
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line, beginning with material change (item 2).
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2318,7 +2352,7 @@ Errors use the envelope already illustrated in §10.5, now confirmed as the cont
 | `401` | `UNAUTHENTICATED` | Missing, malformed or expired credentials, a revoked or ended session, and a reused refresh token — all indistinguishable (§16.23, D-056) |
 | `403` | `FORBIDDEN` (with field codes) | Authenticated, but a supplied **filter value** lies outside the caller's scope (§15.8.9) |
 | `404` | `NOT_FOUND` | Addressed resource absent **or** outside scope — identical status and body either way |
-| `409` | `CONFLICT`, `VERSION_MISMATCH`, `DATE_NOT_ELIGIBLE` | State conflicts, including the in-place edit path of §15.5, and an entry date outside the volunteer's eligibility (§16.24, D-057) |
+| `409` | `CONFLICT`, `VERSION_MISMATCH`, `DATE_NOT_ELIGIBLE`, `INVALID_TRANSITION` | State conflicts, including the in-place edit path of §15.5, an entry date outside the volunteer's eligibility (§16.24, D-057), and an approval decision the entry's state does not allow (§16.25, D-058) |
 | `413` | `PAYLOAD_TOO_LARGE` | Body over the 1 MiB cap, refused before it is parsed (D-053, §16.20) |
 | `429` | `RATE_LIMITED` | Token bucket exhausted; carries `Retry-After` (D-053, §16.20) |
 | `500`, `503` | `INTERNAL_ERROR`, `SERVICE_UNAVAILABLE` | No internals, no identifiers |
@@ -2541,7 +2575,7 @@ Finishing work does not submit it. A volunteer completes an entry and submits it
 - Drafts do not travel between a volunteer's devices, and losing the device loses the drafts. This is accepted rather than worked around with server-side draft storage.
 - Clients validate drafts locally, because the server cannot reject a draft it never sees. An invalid submission is refused as a whole with structured errors (D-039), and the draft stays on the device for correction.
 - The offline queue carries submissions only (§7.1). Drafts are not queued for transmission.
-- Submission is an action taken by the entry's owner. Coordinators and administrators may approve, reject, or return entries, but they do not submit on a volunteer's behalf — that would attest to hours the volunteer has not claimed.
+- Submission is an action taken by the entry's owner. Coordinators and administrators may approve or reject entries, but they do not submit on a volunteer's behalf — that would attest to hours the volunteer has not claimed.
 - A draft is invisible to approval queues, approval counts and coordinator workloads; it does not exist at all for those purposes.
 - Bulk submission is allowed as a repeated explicit act, not as a background sweep.
 - ~~A timer stopped by archival is server-side session state, not a server draft: the elapsed time is held by the server and offered to the volunteer's device as a pre-filled draft on its next sync (D-042).~~ Superseded 22 November 2026 (D-048, §16.15): the MVP has no server timer, and therefore no server-side timer session.
@@ -2573,7 +2607,10 @@ An approval-setting change governs submissions received after it takes effect. A
 **Rules:**
 
 - The policy in force when a submission is received decides whether that entry needs approval.
-- A pending entry is not auto-approved or auto-rejected when the organization switches approval off or on. It continues under the rules it entered.
+- A pending entry is not auto-approved or auto-rejected when the organization switches approval off or on. It continues under the rules it entered. A rejected entry that is
+corrected and resubmitted is that same entry continuing under those
+rules, so it returns to `pending` even if approval has since been switched
+off (§16.25, D-058).
 - An approved entry is not un-approved by a later change.
 - A change effective at time T splits the queue by submission instant — not by work date, not by when the volunteer opened the app.
 - The instant is when the server accepts the submission. A client that submitted while offline before the change but syncs afterwards is judged by the policy at sync — the server checks current policy on receipt (§8.2).
@@ -4276,6 +4313,139 @@ Content-Type: application/json
 
 **Resolves:** backlog item B16 (§17), the last contract-blocking item in that list. It gives §16.9's archived-gap refusal the code it never named, fixes the date rules that §16.13 deferred, and constrains B9 (totals count entries by work date however late they arrive, not by submission date) and the per-endpoint code inventory in §15.12 item 29.
 
+## 16.25 The entry's state: one submission, one decision
+
+**Confirmed decision (D-058) — 24 November 2026.**
+
+§15.8.6 confirmed that lifecycle status, approval status and conflict status are independent and must not be collapsed into one field, but it finalized none of their values. §15.5.3 listed "four entry states" — Draft, Pending approval, Approved, Rejected — which mixes the first two axes. D-044 then removed the first of them: a draft never reaches the server, so every server-side entry is submitted from the moment it exists. And D-044's own text let coordinators "approve, reject, or **return** entries", a third act that the record never defined. The submit, approve and reject routes therefore had a vocabulary and no grammar.
+
+**The case this protects.** Nadia's Monday dashboard, approval switched on, Dee's fourteen Saturday entries in the queue:
+
+- Nadia approves thirteen in a row and taps the fourteenth twice, because the list re-orders as she works. The second tap must not write a second decision, or the audit says she approved the same entry on two dates.
+- The fourteenth is a duplicate of an entry Dee already submitted, so Nadia rejects it with a reason. Dee must see that reason, correct it and send it back — and the correction must not escape review because the organisation switched approval **off** on Thursday.
+- Marcus opens the same entry on Wednesday from a list loaded Monday and taps Approve. His copy carries `version: 3`; the entry is at `version: 5` and already rejected. He must be told to refresh — not told nothing, and not shown a green tick.
+- A fourth entry was submitted on Sunday, while approval was off. Nobody has checked it and nobody ever will. A report that calls it "approved" claims a review that never happened.
+
+**Decision in one line: one approval status, fixed at submission and changed only by a decision or a resubmission; no lifecycle field at all until voiding exists.**
+
+**Rules.**
+
+1. **`approvalStatus` is the entry's only status field.** There is no `status` axis and no lifecycle enum. Every server-side entry is submitted by definition (D-044) and `submittedAt` says when, so a `status` field would carry one value forever. This supersedes §15.8.6's first filter in part; its principle — that approval is never merged with lifecycle or conflict — is untouched.
+2. **Four values, each set at submission or by a decision:**
+
+   | Value | Meaning | Set by |
+   |---|---|---|
+   | `pending` | Approval was required when it was submitted and nobody has decided | the submission |
+   | `approved` | A person with authority accepted it | that person's decision |
+   | `rejected` | A person with authority refused it | that person's decision |
+   | `not_required` | No approval was required when it was submitted; nobody will review it | the submission |
+
+   `not_required` is the value §15.8.6 has been naming as "not requiring approval" all along. Reusing `approved` with an empty `reviewedBy` would overload one word with two meanings and make "how many hours did a person actually check?" unanswerable.
+
+3. **The transition table.** Route shapes belong to §15.12 item 29; the states and guards are this decision's.
+
+   | From | Act | To | Who may | Writes |
+   |---|---|---|---|---|
+   | — | submit (create) | `pending` or `not_required`, by the policy in force at submission (D-045) | the entry's owner only (D-044) | `submittedAt`, `version: 1` |
+   | `pending` | approve | `approved` | a coordinator granted on that project, or an administrator; an owner may not approve their own entry unless they are an administrator (D-051) | `approvedAt`, `reviewedBy`, `rejectionReason: null` |
+   | `pending` | reject | `rejected` | same as approve | `rejectedAt`, `reviewedBy`, optional `rejectionReason` |
+   | `rejected` | correct and resubmit | `pending` | the entry's owner only | clears `approvedAt`, `rejectedAt` and `reviewedBy`; keeps `rejectionReason`; new `submittedAt` |
+   | `approved` | edit | `approved` | any editor (§15.5.2) | `version` only; reapproval on a material change is §15.12 item 2's reserved transition, not enabled here |
+   | `not_required` | edit | `not_required` | any editor (§15.5.2) | `version` only |
+   | any | void | *does not exist* | — | §15.12 item 20 |
+
+4. **Approval status is fixed at submission and changes only through a decision or a resubmission.** No edit, policy change or timeout moves it (D-045).
+5. **A resubmission returns to `pending`, judged by the policy that governed the original submission.** This is D-045's "anything already submitted keeps the handling it entered" applied to a correction: otherwise a rejected entry escapes review by waiting for approval to be switched off.
+6. **`returned` is not a state.** It is rejection with a reason — a rejected entry is editable and resubmittable, which is everything "return" was being asked to mean. D-044's sentence is amended to "approve or reject".
+7. **A rejection reason is optional**, mirroring §4.4's confirmed rule for assignment requests, and travels into the volunteer's notification when supplied. It survives a resubmission so the volunteer can still see why the entry came back, and clears when the entry is approved.
+8. **The row shows the current decision; the audit trail shows the history.** `reviewedBy` and the decision timestamps describe the latest act, never a list. Prior decisions belong to B11's audit rows, which §4.2.4 already requires.
+9. **An impossible transition is its own `409`: `INVALID_TRANSITION`**, with `details: { "from", "to", "allowedFrom": [...] }`. It is distinguishable from `VERSION_MISMATCH` (refresh and retry) and from `CONFLICT` (something else is in the way). Without it, a client that branches on status alone retries a decision that can never succeed.
+10. **Version is checked before state.** A stale copy gets `409 VERSION_MISMATCH` with D-049's `current` resource, not an `INVALID_TRANSITION` about a state it never saw.
+11. **Repeating a decision that is already true is `200` with the current state and no write** (D-055's idempotency by outcome). Approving an approved entry does not overwrite `reviewedBy` and does not add an audit row.
+12. **Voiding is reserved, not implemented.** `voidedAt` is named as the field §15.12 item 20 would add if it decides voiding exists — a nullable timestamp, matching `archivedAt` on projects (D-042) and `anonymisedAt` on users (D-052), rather than an enum value. No filter, field or transition exists in the MVP.
+13. **Conflict status stays independent.** An overlap flag is not an approval state and resolving one does not approve hours (§15.8.6); its values belong to §15.12 item 21.
+
+**The shapes.**
+
+A rejection with a reason:
+
+```http
+POST /v1/time-entries/6f1c9a3e-…/rejection HTTP/1.1
+Authorization: Bearer eyJhbGciOi…
+Content-Type: application/json
+
+{ "reason": "This is the same shift as entry 2b7d…, submitted separately. Please keep one." }
+```
+
+```json
+{
+  "id": "6f1c9a3e-…",
+  "version": 5,
+  "approvalStatus": "rejected",
+  "submittedAt": "2026-11-21T18:02:00Z",
+  "rejectedAt": "2026-11-23T09:41:00Z",
+  "reviewedBy": "77bd…",
+  "rejectionReason": "This is the same shift as entry 2b7d…, submitted separately. Please keep one.",
+  "updatedAt": "2026-11-23T09:41:00Z"
+}
+```
+
+A decision the entry's state does not allow:
+
+```http
+HTTP/1.1 409 Conflict
+Content-Type: application/json
+```
+
+```json
+{
+  "error": {
+    "code": "INVALID_TRANSITION",
+    "message": "A rejected entry cannot be approved. It must be resubmitted first.",
+    "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a63",
+    "details": { "from": "rejected", "to": "approved", "allowedFrom": ["pending"] }
+  }
+}
+```
+
+A correction that goes back into the queue, keeping the reason the volunteer is answering:
+
+```json
+{
+  "id": "6f1c9a3e-…",
+  "version": 6,
+  "approvalStatus": "pending",
+  "submittedAt": "2026-11-24T07:10:00Z",
+  "approvedAt": null,
+  "rejectedAt": null,
+  "reviewedBy": null,
+  "rejectionReason": "This is the same shift as entry 2b7d…, submitted separately. Please keep one."
+}
+```
+
+| Option | Nadia's double tap | What it costs |
+|---|---|---|
+| **One approval axis with four values and a fixed transition table (recommended)** | Second tap returns `200` and writes nothing | No lifecycle representation at all until voiding is decided; a boolean filter shape arrives with `voidedAt` later |
+| Three values, with `not_required` recorded as `approved` | Same | "Approved" stops meaning a person approved, and reports cannot separate checked hours from unchecked |
+| A single combined `status` enum (submitted/pending/approved/rejected/voided) | Same | Contradicts §15.8.6's confirmed separation, and every filter combination becomes a matrix of values |
+| `returned` as a state distinct from `rejected` | Same | Two words for one transition; two identical-looking queues, and "may I edit this?" with two answers |
+| No `INVALID_TRANSITION`, reuse `CONFLICT` | Same | A sync client cannot tell a decision that will never work from a transient conflict, so it retries forever |
+
+**Accepted costs.**
+
+- Nothing in the MVP can say whether an entry is voided, because voiding does not exist; when item 20 adds `voidedAt`, its filter will be boolean where the other two are enum-valued.
+- `pending` can persist for an entry whose organisation no longer requires approval, because D-045 refuses to retro-apply policy.
+- A volunteer can be blocked waiting for a coordinator even after approval is switched off — the price of rule 5.
+- `rejectionReason` outliving the rejection makes a field whose meaning depends on `approvalStatus`.
+- Version-before-state is easy to implement the other way round and will be got wrong once, with a confusing error as a result.
+- Any material-change reapproval will extend this table rather than slot into it, which is why item 2 is next.
+
+**Rejected alternatives.** A `status` axis carrying only `submitted` (a field that never changes value); a server-side `draft` state (D-044 removed it, and it would let the server hold hours nobody claimed); deriving `approvalStatus` from `approvedAt`/`reviewedBy` nulls (four states from three nullable columns is a matrix of illegal combinations); storing decisions only as audit events and computing status on read (correct history, but every list query pays for it and §15.8.6's filter becomes a join); letting any edit re-open approval (that is item 2's question, decided here by accident); and rejecting without a reason (nothing for the volunteer to correct toward).
+
+**Left open.** Whether item 20's voiding ships at all; whether a rejected entry should have a deadline before it is treated as abandoned; whether an administrator's self-approval needs a second reviewer when one exists (D-051 leaves it as visibility only); whether the decision notification is B10's work or this item's (B10 owns delivery, this decision owns the fact); and item 2's material-change transition, which the table reserves and leaves disabled.
+
+**Resolves:** §15.12 item 1. It supersedes §15.8.6's lifecycle filter in part, re-scopes §15.12 item 20 around `voidedAt`, amends D-044's wording, gives §16.12 the resubmission rule, and constrains B9 (hours reported from `approved` and `not_required` entries are not the same claim) and B11 (every decision is an audit row, even the ones the row no longer shows).
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -4312,8 +4482,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and fed B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which leaves B11 as its main downstream: the audit list's contents and access are B11's, not B8's. B12 is settled (§16.22), so every later mutation inherits a shape rather than choosing one; B14 is settled (§16.23), so every route's authentication requirement has its shape; B16 is settled (§16.24), so every entry's date has a rule and §16.9's archived-gap refusal has a code. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and fed B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which leaves B11 as its main downstream: the audit list's contents and access are B11's, not B8's. B12 is settled (§16.22), so every later mutation inherits a shape rather than choosing one; B14 is settled (§16.23), so every route's authentication requirement has its shape; B16 is settled (§16.24), so every entry's date has a rule and §16.9's archived-gap refusal has a code. The entry state machine is settled (§16.25), so the submit, approve and reject routes have states to move between rather than a vocabulary to invent. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
 **What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** the entry state machine (§15.12 item 1) next, then material change, preserved invalid submissions and concurrent edits (§15.12 items 2, 5 and 6) — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed and B3 deferred by scope (D-048) — followed by the feature-conditional items as each feature is scheduled.
+**Order proposed:** material change (§15.12 item 2) next, then preserved invalid submissions and concurrent edits (items 5 and 6) — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed and B3 deferred by scope (D-048) — followed by the feature-conditional items as each feature is scheduled.
