@@ -58,6 +58,8 @@ not replace server-side enforcement.
 organizations. A mobile app records time and synchronizes records with a
 central server for the relevant organization.
 
+**Confirmed 24 November 2026 (D-056, §16.23) — the MVP has one client, the native mobile app.** No browser client is planned for the MVP and the API is not designed for one. Every client constraint in this record is therefore a phone's constraint: a device that is carried, that loses signal, that locks and unlocks, and whose storage is the operating system's secure store. The consequences are recorded where they bite — no cookie, no CSRF protection and no CORS headers (§16.23), tokens in the Keychain or Keystore (§16.23), and a sync queue that survives a rejected sign-in (§7.1). A browser client later is an additive decision, not a change to this one.
+
 The MVP supports: - Manual time entries, in both established forms:
 exact start and end timestamps, or a work date plus total duration. - A
 device-local stopwatch that times work and pre-fills a timestamp entry,
@@ -120,7 +122,9 @@ in the MVP.
 **Established design direction:** The mobile app must not connect
 directly to PostgreSQL. It communicates with the organization's API, and
 the API performs authorization, validation, business logic, and database
-operations.
+operations. The client on the other side of that boundary is the native
+mobile app, and only it (§2.1, D-056): nothing in this record specifies a
+browser-facing contract.
 
 The exact backend stack for this specific project has not been
 reconfirmed as part of this decision record. TypeScript, Express, and
@@ -135,6 +139,17 @@ explicitly confirmed here**.
 ### 3.1 Authentication method
 
 **Deferred:** The authentication method is intentionally undecided.
+
+**Partly resolved 24 November 2026 (D-056, §16.23):** the *session
+machinery* is settled — bearer tokens on every business route, a 30-minute
+access token, a single-use rotating refresh token with a 90-day idle and
+180-day absolute limit, server-side revocation checked on every request,
+and no cookie, CSRF protection or CORS because there is no browser client.
+What remains open here is the **credential itself**: password, one-time
+code, sign-in link, or an external provider. D-056 is written so that the
+answer does not change it, with one exception: its rule 10 ("changing the
+credential ends the other sessions") applies to whichever credential is
+chosen.
 
 Options discussed: - Email and password. - Passwordless email using a
 one-time code or sign-in link. - External identity provider such as
@@ -151,6 +166,11 @@ servers. - Account recovery and email verification. - Mobile secure
 storage and token/session lifecycle. - Offline use and what happens when
 credentials expire while the device is offline. - Provider dependency
 and the effect of outages or pricing changes.
+
+**Answered for the session layer by D-056 (§16.23):** mobile secure
+storage, the token and session lifecycle, and what happens when credentials
+expire while a device is offline — synchronisation pauses and the queue is
+preserved. The remaining items above still bear on the credential choice.
 
 **Important:** Authentication answers "who is signing in?" Authorization
 answers "what may that person do?" A valid login alone must not grant
@@ -630,6 +650,12 @@ server remains authoritative for accepted state.
 The client must also download server-side changes; synchronization is
 not only uploading local changes.
 
+**Amended 24 November 2026 (D-056, §16.23):** a session that has ended —
+expired, revoked or replaced — pauses synchronisation and asks for sign-in.
+It never clears the outbox. The queue is a local record of work already
+done, and losing it to an authentication error would punish the offline
+support this section requires.
+
 ### 7.2 Stable identifiers and idempotency
 
 **Confirmed decision (D-049, §16.16) — 23 November 2026:** Client-created
@@ -938,6 +964,9 @@ future implementation. They do not finalize the endpoint catalogue.
 -   The API is the contract between the mobile app and the server;
     Express or another framework is an implementation choice, not the
     API itself.
+-   The only client is the native mobile app (D-056, §16.23): every route
+    but sign-in and refresh authenticates with a bearer token, and no
+    response sets a cookie or a CORS header.
 -   The mobile app should not access the database directly.
 -   Use predictable resource-oriented endpoints and standard HTTP
     semantics where appropriate.
@@ -1102,7 +1131,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21); **D-055** — every mutation returns the resource it changed, replays are `200` with `Idempotency-Replay`, and archival's counts are read before the act rather than returned after it (§16.22). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21); **D-055** — every mutation returns the resource it changed, replays are `200` with `Idempotency-Replay`, and archival's counts are read before the act rather than returned after it (§16.22). **D-056** — the session model: a bearer access token with a single-use rotating refresh token, and no cookie, CSRF or CORS because the MVP has no browser client (§16.23). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -2108,7 +2137,7 @@ The following items remain unresolved. They should be addressed before or during
 
 ### Priority 5 — API contract and implementation
 
-26. Choose the authentication method/provider and determine whether authentication is managed or self-hosted. **Hosting resolved 23 November 2026 — each organisation runs its own instance, so authentication is self-hosted per instance (§16.17, D-050). The method itself remains open (§3.1, B14).**
+26. Choose the authentication method/provider and determine whether authentication is managed or self-hosted. **Hosting resolved 23 November 2026 — each organisation runs its own instance, so authentication is self-hosted per instance (§16.17, D-050). The session layer is settled 24 November 2026 (§16.23, D-056) — bearer tokens, a single-use rotating refresh token, and a mobile-only client, so no cookie and no CORS. The credential itself remains open (§3.1).**
 27. Design the first-administrator bootstrap process. **Now a per-instance installation step (§16.17, D-050); the process is still undesigned.**
 28. Finalize database schema, constraints, and transaction requirements.
 29. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
@@ -2140,14 +2169,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22) and B13 (request identity and load control, §16.20). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B14.
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) and B14 (the session model, §16.23). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B16.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B14 (the session model), with B3 deferred by scope (D-048, §16.15), B4–B7 settled (§16.16–§16.19), B8 settled (§16.21), B12 settled (§16.22) and B13 settled (§16.20). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B16 (the backdating window), with B3 deferred by scope (D-048, §16.15), B4–B7 settled (§16.16–§16.19), B8 settled (§16.21), B12 settled (§16.22), B13 settled (§16.20) and B14 settled (§16.23). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2286,7 +2315,7 @@ Errors use the envelope already illustrated in §10.5, now confirmed as the cont
 | Status | Codes | Trigger |
 |---|---|---|
 | `400` | `VALIDATION_FAILED` (with field codes), `INVALID_CURSOR`, `CURSOR_QUERY_MISMATCH`, `MALFORMED_REQUEST` | Invalid filters or combinations (§15.8.8), cursor failures (D-037), unparseable body |
-| `401` | `UNAUTHENTICATED` | Missing or expired credentials |
+| `401` | `UNAUTHENTICATED` | Missing, malformed or expired credentials, a revoked or ended session, and a reused refresh token — all indistinguishable (§16.23, D-056) |
 | `403` | `FORBIDDEN` (with field codes) | Authenticated, but a supplied **filter value** lies outside the caller's scope (§15.8.9) |
 | `404` | `NOT_FOUND` | Addressed resource absent **or** outside scope — identical status and body either way |
 | `409` | `CONFLICT`, `VERSION_MISMATCH` | State conflicts, including the in-place edit path of §15.5 |
@@ -3629,7 +3658,9 @@ not in the MVP: the request log does, which keeps audit rows small); whether
 an in-app administrator control over the numbers should ever exist
 (deployment configuration is enough for the MVP), the buckets themselves
 never being switchable off, for the reason given under accepted costs; and whether `429` timing on sign-in needs to be made uniform with
-`401` to avoid revealing which addresses are real, which belongs to B14.
+`401` to avoid revealing which addresses are real — **answered in D-056 (§16.23):** the per-address bucket
+is applied before the credential is examined, so a blocked address receives
+`429` with `Retry-After` whether or not the account exists.
 
 **Resolves:** backlog item B13 (§17). It also closes D-039's "no `retryable`
 flag yet" note: `429` is the one retryable status, by D-049's classification
@@ -3968,6 +3999,163 @@ every route consumes, and it constrains B10 (a bulk mark-read, if it exists,
 returns a count and no rows) and B11 (the audit trail records what the act did,
 not what the confirmation predicted).
 
+## 16.23 The session: a bearer token, a rotating refresh token, and no browser
+
+**Confirmed decision (D-056) — 24 November 2026.**
+
+D-050 fixed that each organisation runs its own instance, so authentication is self-hosted and there is no shared identity provider to inherit a token policy from. §3.1 left the credential itself open, and B14 (§17) carried everything about a sign-in that shapes the client: how long it lasts, how it is renewed, how it ends, and what a cookie would have required. The MVP has **one client, and it is the native mobile app** (§2.1); that single fact removes half of the question and changes one of its numbers.
+
+**The case this protects.** A season at the Saturday Pantry: nine volunteers, one coordinator, and one basement with no signal.
+
+- Dee works four hours in that basement. Four entries are recorded on the phone and sit in the queue.
+- Sunday afternoon her phone finds a bar of signal on a bus. The queue starts to drain, the access token has expired, the app refreshes — and the bus enters a tunnel before the answer arrives. Server-side the refresh succeeded and the old token is spent; client-side the app still holds the old one and retries it. A rotation rule without a grace window reads that retry as a stolen token and ends the session. Dee is signed out with two entries still queued, looking at a password field she cannot reliably fill in on a moving bus.
+- Priya volunteers only in tax season. Her last shift was 12 March; she opens the app on 8 June. A 30-day idle limit died on 11 April. Signing in again is survivable, but the same clock applied to a *device* rather than a person is what keeps a sold phone authenticated for weeks.
+- Marcus loses his old phone in October. He signs in on the new one, opens the device list, and ends the old session. It has to stop on its next request, not thirty minutes later.
+- A browser tab on the pantry's shared laptop must never be able to act as Nadia just because she once signed in on it. There is no browser client in the MVP (§2.1), so that case is removed rather than defended against.
+
+Each of those is a different failure of the same design, and each is cheap to prevent with a rule here.
+
+**Rules.**
+
+1. **One credential type, one header.** Every route except `POST /v1/auth/sign-in` and `POST /v1/auth/refresh` requires `Authorization: Bearer <access token>`. No route accepts a token in a query parameter, a body field or a cookie. The two unauthenticated routes are the ones that mint a token, so there is no third case to remember — including the session routes themselves, which are refreshed and then called like any other.
+2. **No cookie, therefore no CSRF, and no CORS.** The MVP has no browser client (§2.1). No response sets `Set-Cookie`, no route reads a cookie, and the API sends no `Access-Control-Allow-*` headers. A browser cannot use this API and is not meant to: without CORS headers, a page's scripted request is refused by the browser itself. A future web client is its own decision — cookie refresh, CSRF protection, an origin allowlist — additive to this one, not a dormant branch of it.
+3. **The access token is a signed JWT lasting 30 minutes**, carrying `sub` (user id), `sid` (session id), `iat` and `exp`, and **nothing about permission**: no role, no grant list, no projects. Authorization is re-evaluated per request from the database (§4.5), so a revoked grant or a changed role takes effect on the next call rather than whenever a token happens to expire.
+4. **The refresh token is opaque, single-use and rotating.** 32 random bytes, base64url, stored only as a SHA-256 hash. Every successful refresh mints a new access token *and* a new refresh token, and spends the old one. A refresh response is the only place a refresh token is ever issued.
+5. **The session is bounded twice.** An **idle limit of 90 days**: 90 consecutive days without a successful refresh ends it. An **absolute limit of 180 days** from creation: no amount of use extends it. Either limit ends the session with `401 UNAUTHENTICATED`. Both are deployment configuration with these defaults; an instance may shorten either, and may not raise the absolute ceiling above 180 days.
+6. **A spent refresh token is replayed for 120 seconds, not punished.** After a rotation the previous hash and the pair it produced are kept for 120 seconds. A refresh arriving with the previous token inside that window returns **that same pair** — identical tokens, identical expiry — with `200 OK` and `Idempotency-Replay: true` (D-055's signal, reused rather than reinvented). No new rotation, no new session. Outside 120 seconds, presenting a spent token is treated as theft: the session is revoked and every token descended from it dies. The honest client sees one `401` and signs in; the thief's copy is already dead.
+7. **`sid` is checked on every request.** A correctly signed, unexpired access token is not sufficient: the row named by `sid` must exist, must not be revoked, and must be inside both limits. Otherwise `401`. This is what makes Marcus's lost phone stop within one request instead of within 30 minutes, and it is why a short access token does not have to be the only defence.
+8. **Every authentication failure looks identical.** Unknown address, wrong password, expired access token, revoked session and reused refresh token all return `401 UNAUTHENTICATED` with the same envelope and no further detail; `WWW-Authenticate: Bearer` is present for standards compliance. Sign-in compares against a dummy hash when the address has no account, so the answer does not arrive measurably faster for an address that does not exist. This also answers the question §16.20 left open about `429` on sign-in: D-053's per-address bucket is applied *before* the credential is examined, so a blocked address receives `429` with `Retry-After` whether or not the account exists.
+9. **Sessions are a resource the person can see and end.** `GET /v1/auth/sessions` lists them in a D-054 list body (`items`, `nextCursor`, `pageSize`) with `id`, `deviceLabel`, `createdAt`, `lastRefreshedAt` and `current`; `DELETE /v1/auth/sessions/{id}` ends one and returns `204 No Content` under D-055's deletion rule. **Signing out is that same route.** There is no separate sign-out verb, because a sign-out and a remote revocation do exactly the same thing to the same row.
+10. **Changing the credential ends the other sessions.** A successful credential change — whose route §3.1 still owns — revokes every session of that user except the one that performed it, and the response says nothing about how many. An account compromised through its password does not stay compromised on devices its owner no longer holds.
+11. **The tokens live in the operating system's secure store.** iOS Keychain with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`; Android Keystore-backed storage. Not `NSUserDefaults`, not `SharedPreferences`, not a log line, not a crash report, not a URL. Sign-out deletes the item explicitly: on iOS the Keychain otherwise survives app deletion, and a reinstall would silently resume a session the person believes they ended.
+12. **A rejected refresh pauses the queue; it never clears it.** A `401` during sync leaves the outbox intact and asks for sign-in (§7.1). The access token is refreshed on app foreground rather than on a timer, and the client keeps at most one refresh in flight: five parallel `401`s must produce one refresh, not five, or the client revokes itself through rule 6.
+
+**The shapes.** Sign-in creates a session, so D-055 makes it `201` with `Location`, and the body carries the two tokens — the only moment either is returned for that session.
+
+```http
+POST /v1/auth/sign-in HTTP/1.1
+Content-Type: application/json
+
+{ "email": "dee@example.org", "password": "…", "deviceLabel": "Pixel 8 — Dee" }
+```
+
+```http
+HTTP/1.1 201 Created
+Location: /v1/auth/sessions/8a41c2d7-…
+Content-Type: application/json
+X-Request-Id: 0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a60
+```
+
+```json
+{
+  "session": {
+    "id": "8a41c2d7-…",
+    "deviceLabel": "Pixel 8 — Dee",
+    "createdAt": "2026-11-24T09:12:00Z",
+    "lastRefreshedAt": "2026-11-24T09:12:00Z",
+    "current": true
+  },
+  "accessToken": "eyJhbGciOi…",
+  "accessTokenExpiresAt": "2026-11-24T09:42:00Z",
+  "refreshToken": "rt_9f2c7a1e5b…",
+  "refreshTokenExpiresAt": "2027-05-23T09:12:00Z"
+}
+```
+
+A refresh, then the same refresh replayed because the first answer was lost forty seconds earlier:
+
+```http
+POST /v1/auth/refresh HTTP/1.1
+Content-Type: application/json
+
+{ "refreshToken": "rt_9f2c7a1e5b…" }
+```
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "accessToken": "eyJhbGciOi…",
+  "accessTokenExpiresAt": "2026-11-24T10:12:00Z",
+  "refreshToken": "rt_4b8d0f6a2c…",
+  "refreshTokenExpiresAt": "2027-05-23T09:12:00Z"
+}
+```
+
+```http
+HTTP/1.1 200 OK
+Idempotency-Replay: true
+Content-Type: application/json
+```
+
+```json
+{
+  "accessToken": "eyJhbGciOi…",
+  "accessTokenExpiresAt": "2026-11-24T10:12:00Z",
+  "refreshToken": "rt_4b8d0f6a2c…",
+  "refreshTokenExpiresAt": "2027-05-23T09:12:00Z"
+}
+```
+
+Ending a session — signing out is the same call:
+
+```http
+DELETE /v1/auth/sessions/8a41c2d7-… HTTP/1.1
+Authorization: Bearer eyJhbGciOi…
+
+HTTP/1.1 204 No Content
+```
+
+The session table (a sketch; the schema is §15.12 item 28):
+
+```sql
+sessions (
+  id                uuid primary key,
+  user_id           uuid not null,
+  refresh_hash      bytea not null,   -- sha256 of the current refresh token
+  previous_hash     bytea,            -- sha256 of the spent one, grace window only
+  previous_issued   jsonb,            -- the pair it produced, returned on replay
+  created_at        timestamptz not null,
+  last_refreshed_at timestamptz not null,  -- the idle clock
+  rotated_at        timestamptz,
+  revoked_at        timestamptz,
+  device_label      text
+)
+```
+
+There is no `access_hash`: the access token is a stateless JWT and the `sid` lookup is the check that matters. Revoked rows are tombstoned (`revoked_at`), never deleted, so a presentation of an old token is a recordable event rather than an absent row.
+
+| Option | Dee on the bus | What it costs |
+|---|---|---|
+| **Bearer access token, rotating refresh, 120-second replay grace, `sid` checked per request (recommended)** | The retry is answered from the stored pair; the queue drains; nobody is signed out by a tunnel | One extra session lookup per request, a stored pair for two minutes, and a client rule about single-flight refreshes |
+| A long-lived access token (say 30 days), no refresh at all | Nothing to refresh, so nothing to lose | A stolen token is a 30-day credential nobody can shorten; revocation waits for expiry; roles in the token or a lookup on every call either way |
+| A short access token and a non-rotating refresh token | The retry works | A stolen refresh token stays valid for its whole lifetime and theft is invisible — no reuse to detect |
+| Cookie session, as a browser would have it | Same as recommended | Needs CSRF tokens, `SameSite` reasoning, an origin allowlist and a CORS contract — for a client that does not exist |
+| Access token only, re-sign-in on expiry | No refresh surface at all | A volunteer re-enters a password mid-shift, on a phone, in a basement; the queue stalls whenever it happens |
+
+**Deferred: multi-factor authentication.** No second factor, no enrolment flow, no recovery codes in the MVP. A password is therefore the whole credential, and the mitigations that remain are D-053's per-address bucket on sign-in, rule 8's uniform answer, rule 9's device list, and rule 10's unreviewable revocation on a credential change. Passkeys and TOTP are additive later; neither changes the session model above, because both end in the same sign-in response.
+
+**Accepted costs.**
+
+- Every authenticated request costs one indexed session lookup, so authentication is two checks rather than one. Rule 7 is the reason, and it is the price of revocation that lands immediately.
+- No in-process cache of session validity in the MVP: a cache would reintroduce exactly the revocation delay rule 7 removes.
+- A 30-minute access token means a device that stays open all day refreshes roughly a few dozen times a day, each a small request on a phone radio that is already awake.
+- A 90-day idle window leaves an unattended, unlocked phone signed in for months if nobody ends the session, so the device lock is doing real work rather than a decorative one.
+- Retention of `previous_hash` and `previous_issued` for 120 seconds means a live refresh token exists in a second column for two minutes, and therefore that the pair is encrypted at rest or the column is treated as a secret.
+- Sending no CORS headers means a future web client cannot be bolted on without a decision — and someone will try to bolt it on.
+- The absolute limit still forces a re-authentication twice a year for the most active users, at a moment of the server's choosing rather than theirs.
+
+**Rejected alternatives.** Cookie sessions with CSRF tokens (no browser client to protect, so the machinery would defend nothing), a non-rotating refresh token (theft is silent and permanent), rotation with no replay grace (a lost response logs the volunteer out, which is the tunnel test above), access-token expiry as the only revocation control (a 30-minute window for a lost phone), roles and grants baked into the access token (authorization would lag a revocation by up to 30 minutes, contradicting §4.5), a separate `POST /v1/auth/sign-out` (a second name for `DELETE` on the same row), and a token in the query string (it lands in logs and browser history).
+
+**Left open.** Whether 30/90/180 are contract or configuration once the contract is drafted (configuration with documented defaults here); whether "sign out everywhere" is a route of its own or a client loop over the list; whether the session list should carry a coarse last-seen address so a person can recognise a device; whether `previous_issued` is encrypted at rest or stored as a hash plus a re-derivation (it cannot be re-derived — it holds a live token for 120 seconds, so encryption is the answer and the key management belongs to deployment); whether refresh should also be attempted on a background sync trigger as well as on foreground; MFA and passkeys; and the credential route itself, which remains §3.1's.
+
+**Boundary with §3.1.** Nothing above says whether the credential is a password, a one-time code or an external provider. The examples show a password because that is the working assumption; rules 1–9 and 11–12 are unchanged if it becomes a code, and rule 10 becomes "changing the credential ends the other sessions" with whatever the credential's change route turns out to be.
+
+**Resolves:** backlog item B14 (§17). It closes §16.20's open note on `429` versus `401` at sign-in, gives every business route in §16 its authentication requirement, and makes the client's session behaviour — foreground refresh, single-flight, a queue that survives `401` — part of the contract rather than an implementation detail. It constrains the authentication section of the contract draft (§15.12 items 26, 29) and the sync design (§15.12 item 30): a sync that meets an ended session pauses, it does not fail the queued records.
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -3995,7 +4183,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | Four decisions already name it as an output without specifying it |
 | **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | **Resolved — D-055 (§16.22).** Every mutation returns the changed resource in its read shape; creates are `201` + `Location`, replays `200` + `Idempotency-Replay` (by client id or by the uniqueness constraint), `409` keeps D-049's `current` copy, no mutation returns counts, and archival's impact comes from a confirmation read. Deletion is the only `204` |
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
-| **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | The half of authentication (§15.12 item 26) that shapes the client |
+| **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | **Resolved — D-056 (§16.23).** Bearer tokens on every business route and no cookie, because the MVP has no browser client; a 30-minute access token, a single-use rotating refresh token with a 120-second replay grace, a 90-day idle and a 180-day absolute limit, and `sid` checked on every request so a revocation lands on the next call. Sessions are listed and ended from the phone, every authentication failure is the same `401 UNAUTHENTICATED`, and MFA is deferred |
 | **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires | **Implementation** | §15.12 item 28 names the schema; the operational half is unlisted |
 | **B16** | Backdating window: how far in the past an entry may be dated or submitted | **Contract** | Surfaced while taking up B1 and set aside; §16.9 only forbids work after an archived instant |
 | **B17** | Daily or weekly maximum hours, separate from the per-entry ceiling | **Feature** | Surfaced while taking up B1 and set aside; affects validation and reporting, not the record shape |
@@ -4004,8 +4192,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which leaves B11 as its main downstream: the audit list's contents and access are B11's, not B8's. B12 is settled (§16.22), so B14 and B16 inherit a mutation shape rather than choosing one. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and fed B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which leaves B11 as its main downstream: the audit list's contents and access are B11's, not B8's. B12 is settled (§16.22), so B16 inherits a mutation shape rather than choosing one; B14 is settled (§16.23), so every route's authentication requirement now has its shape too. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 becomes so as soon as the authentication routes are drafted. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
+**What must land before contract drafting.** B1, B2 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** B14 next (the session model), then B16 — with B1, B2, B4, B5, B6, B7, B8, B12 and B13 already closed and B3 deferred by scope (D-048), followed by the feature-conditional items as each feature is scheduled.
+**Order proposed:** B16 next (the backdating window) — with B1, B2, B4, B5, B6, B7, B8, B12, B13 and B14 already closed and B3 deferred by scope (D-048), followed by the feature-conditional items as each feature is scheduled.
