@@ -1102,7 +1102,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -2140,14 +2140,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18) B7 (retention and erasure, §16.19) and B13 (request identity and load control, §16.20). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B8.
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21) and B13 (request identity and load control, §16.20). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B12.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B8 (the list contract for every other collection), with B3 deferred by scope (D-048, §16.15), B4–B7 settled (§16.16–§16.19) and B13 settled (§16.20). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B12 (mutation response shapes), with B3 deferred by scope (D-048, §16.15), B4–B7 settled (§16.16–§16.19), B8 settled (§16.21) and B13 settled (§16.20). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -3604,9 +3604,12 @@ X-Request-Id: 0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a20
 - The address is taken from the connection, not from `X-Forwarded-For`. Behind
   a reverse proxy every request shares the proxy's address until the proxy is
   configured, which is an operator step the deployment notes must carry.
-- Limits are deployment configuration, not an administrator setting: there is
-  no toggle to raise or disable them from the app. An organisation that needs
-  a different ceiling needs whoever deployed the instance.
+- Limits are deployment configuration, not an administrator setting. Whoever
+  deploys the instance can change the numbers through environment
+  configuration; there is no in-app control, and no supported state in which
+  the buckets are switched off — a disabled limit is protection whose absence
+  nobody notices. An organisation that needs a different ceiling needs
+  whoever deployed the instance.
 - Three extra headers on every response, including list responses where they
   are least interesting.
 
@@ -3623,13 +3626,161 @@ caller can forge).
 IETF combined `RateLimit` field — additive, and a client that reads either
 keeps working; whether the audit trail stores `X-Client-Request-Id` (it does
 not in the MVP: the request log does, which keeps audit rows small); whether
-an operator-facing switch should exist at all (tuning is enough if the numbers
-are wrong); and whether `429` timing on sign-in needs to be made uniform with
+an in-app administrator control over the numbers should ever exist
+(deployment configuration is enough for the MVP), the buckets themselves
+never being switchable off, for the reason given under accepted costs; and whether `429` timing on sign-in needs to be made uniform with
 `401` to avoid revealing which addresses are real, which belongs to B14.
 
 **Resolves:** backlog item B13 (§17). It also closes D-039's "no `retryable`
 flag yet" note: `429` is the one retryable status, by D-049's classification
 (§16.16), and every other `4xx` is terminal for that request.
+
+## 16.21 One list contract for every collection
+
+**Confirmed decision (D-054) — 24 November 2026.**
+
+D-037 and D-040 fixed what a page looks like and how time entries are ordered.
+Four other collections exist as soon as the interface does — notifications,
+assignment requests, users and the audit log — and each has its own natural
+order. Undecided, they diverge, and every client learns the same lesson four
+more times.
+
+**The case this protects.** Nadia coordinates the Saturday Pantry. Monday at
+08:50 she opens the dashboard: 43 pending assignment requests, 212 unread
+notifications, and an auditor asking what happened to eleven entries in
+October. Without a shared contract the app carries four pagers, four empty
+states and four retry rules; pasting a notifications cursor into the requests
+list returns a plausible page of the wrong rows, and nobody notices until a
+request goes unanswered. With one contract the app carries one pager, and the
+mistake is a refused cursor instead of a silent misreading.
+
+**Rules.**
+
+1. **One envelope, no exceptions.** Every list endpoint returns exactly
+   `items`, `nextCursor` and `pageSize` (D-040). `nextCursor` is `null` on the
+   last page. Nothing else appears at the top level — no per-collection key,
+   no wrapper object, no bare array.
+2. **Each collection has one fixed total order**, ended by the row `id` so the
+   order is total and two rows sharing a timestamp cannot swap between pages.
+   There is no `sort` parameter in the MVP.
+3. **Live results, as for entries.** Each page reflects current state (D-035):
+   deduplicate by `id`, and refresh rather than assuming a scroll was
+   complete. A row whose sort key changes mid-scroll may repeat or be skipped.
+4. **A cursor belongs to one collection and one filter set.** It is signed and
+   carries the collection name, a fingerprint of the normalised filters, and
+   the last row's sort key and `id` (D-037's token, one payload wider).
+   Presenting it to another collection, or after changing a filter, is a
+   `400 CURSOR_QUERY_MISMATCH` rather than a page of the wrong rows. Changing
+   `pageSize` mid-scroll is permitted, because it does not move the frontier.
+5. **Filters narrow; they never reorder.** The filter sets below are the whole
+   of the MVP's, and an unknown parameter is a `400 VALIDATION_FAILED` rather
+   than being ignored.
+6. **No list returns a total.** A count on every page of the audit log is a
+   scan of everything the organisation has ever done, and it implies the
+   frozen view D-035 rejected. Unread and pending figures come from dedicated
+   counting endpoints, which remain the deferred item in §16's head.
+7. **The users list is administrator-only and hides what it need not show.**
+   `q` matches a display name by prefix and an email address exactly — no
+   free-text search in the MVP. An anonymised person appears under their
+   stable `id` with `status: "anonymised"` and no email (D-052), so history
+   stays coherent. Coordinators reach people through their project's
+   assignments; a coordinator-facing directory would be a filter on this same
+   route, not a fifth shape.
+8. **The audit list's shape is fixed here; its contents and its readers are
+   not.** B11 still decides what is recorded and who may read it. B8 fixes only
+   that it is a page of immutable rows in the envelope, newest first.
+
+| Collection | Fixed order | Notable filters |
+|---|---|---|
+| **Notifications** | `createdAt` desc, `id` desc | `unreadOnly`, `since`, `until` |
+| **Assignment requests** | pending group first (`requestedAt` asc, `id` asc), then resolved group (`requestedAt` desc, `id` desc) | `status`, `projectId`, `volunteerId` |
+| **Users** | `displayName` asc (case-insensitive), `id` asc | `role`, `status`, `projectId`, `q` |
+| **Audit log** | `occurredAt` desc, `id` desc | `actorId`, `entityType` + `entityId`, `action`, `from`, `to` |
+
+The assignment-request order needs its reason stated, because it is the one
+that is not simply "newest first": the pending group is a queue, so the person
+who has waited longest is served first, while resolved rows are history and
+read newest-first. It is one total order, not two: `(group, requestedAt, id)`,
+where `group` is `0` for pending and `1` otherwise.
+
+```json
+{
+  "items": [
+    { "id": "5b7c…", "type": "ENTRY_APPROVED", "createdAt": "2026-11-22T18:04:00Z",
+      "readAt": null, "entryId": "0f6a…", "projectId": "a3f1…",
+      "message": "Your entry for 22 Nov was approved." }
+  ],
+  "nextCursor": "eyJjIjoibm90aWZpY2F0aW9ucyIsImYiOiJ1bnJlYWQiLCJrIjpbIjIwMjYtMTEtMjJUMTg6MDQ6MDBaIiwiNWI3YyJdfQ",
+  "pageSize": 50
+}
+```
+
+```json
+{
+  "items": [
+    { "id": "c19e…", "status": "pending", "requestedAt": "2026-11-20T07:12:00Z",
+      "volunteerId": "9c21…", "projectId": "a3f1…", "decidedAt": null,
+      "decidedBy": null, "note": "Can cover the early shift." }
+  ],
+  "nextCursor": null,
+  "pageSize": 50
+}
+```
+
+```json
+{
+  "items": [
+    { "id": "e004…", "occurredAt": "2026-10-04T08:12:00Z", "action": "COORDINATOR_GRANTED",
+      "actorId": "77bd…", "entityType": "project", "entityId": "a3f1…",
+      "requestId": "0193a0f4-…", "before": null, "after": { "grantedTo": "9c21…" } }
+  ],
+  "nextCursor": "eyJjIjoiYXVkaXQiLCJrIjpbIjIwMjYtMTAtMDRUMDg6MTI6MDBaIiwiZTAwNCJdfQ",
+  "pageSize": 50
+}
+```
+
+| Option | What Nadia's app gets | What it costs |
+|---|---|---|
+| **One envelope, fixed order per collection, collection-bound cursors (recommended)** | One pager for five lists; a mismatched cursor fails loudly | Four order rules and four filter sets to document, and no way to ask for "newest pending" |
+| One envelope, but `offset`/`limit` for the three small collections | Marginally simpler cursors | Rows shift while scrolling, producing duplicates and silent omissions — the failure D-035 exists to prevent |
+| A bespoke body per collection (`{notifications, unreadCount}`, bare arrays) | Each screen fits perfectly | Four shapes, four clients, four ways to break, and a fifth on the next collection |
+| One envelope plus `total` on every list | "43 pending" straight from the response | A count on every scroll page of the audit log, and a frozen-view promise the design does not make |
+
+**Accepted costs.**
+
+- Four order rules and four filter sets must be written down and tested, and
+  the two-direction assignment-request order needs its one sentence wherever
+  client authors look.
+- No `total` in any list means the unread badge needs its own small endpoint —
+  the counting item already deferred, not something B8 quietly settles.
+- The audit list's shape is fixed before B11 decides what it contains and who
+  may read it, so B11 inherits a shape rather than choosing one.
+- The users list is administrator-only in the MVP; a coordinator who wants to
+  browse people is served by their project's assignments instead. That is a
+  smaller MVP surface and a visible gap if coordinators ask for it.
+- `q` is a prefix match on names and an exact match on addresses. Anything
+  resembling search is deferred, and someone will ask for it.
+- Five collections to keep in step as fields are added, where four divergent
+  shapes would each drift on their own.
+
+**Rejected alternatives.** Offset pagination for the smaller collections
+(unstable under inserts), bespoke bodies per collection (four shapes to keep
+in step and four client pagers), `total` in list bodies (cost on every page,
+and it implies a snapshot), a `sort`/`order` parameter in the MVP (it
+multiplies the cursor's fingerprint means "same list" across every collection
+for a preference nobody has asked for yet), ignoring unknown query parameters
+(a typo becomes silently unfiltered data), and returning a bare array (no room
+for `nextCursor`, so no way to continue).
+
+**Left open.** Whether an `order` parameter ever arrives, and on which
+collections; free-text search over users; notification retention, which is
+B10 and §15.12 item 25; the audit list's contents and access, which is B11;
+the counting endpoints, already deferred; and whether a coordinator-facing
+directory is wanted, which would be a filter rather than a new shape.
+
+**Resolves:** backlog item B8 (§17). It constrains B10 (notification filters
+now exist, so transport must not invent a second list) and B11 (the audit
+list's shape is fixed; its contents, immutability rules and readers are not).
 
 ------------------------------------------------------------------------
 
@@ -3652,7 +3803,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | **Resolved — D-050 (§16.17).** The deployment is the tenant: each organisation runs its own instance, identity is scoped to it, and no organisation identifier appears in the API. One organisation row carries the time zone, approval policy and membership setting; no `organisation_id` columns |
 | **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator |
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
-| **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | D-037 and D-040 fix the entry list only; divergent collection shapes are a later contract rewrite |
+| **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | The record discusses totals throughout but never defines a reported hour |
 | **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery |
 | **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | Four decisions already name it as an output without specifying it |
@@ -3667,8 +3818,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is the other one-off convention, still open. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which leaves B11 as its main downstream: the audit list's contents and access are B11's, not B8's. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 and B8 become so as soon as the authentication and collection routes are drafted. B13 has left that list (§16.20), fixed as a single convention pass. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
+**What must land before contract drafting.** B1, B2, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 becomes so as soon as the authentication routes are drafted. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20). B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** B8 next (list contract for other collections) and B12 (mutation response shapes), then B14 and B16 — with B1, B2, B4, B5, B6, B7 and B13 already closed and B3 deferred by scope (D-048), followed by the feature-conditional items as each feature is scheduled.
+**Order proposed:** B12 next (mutation response shapes), then B14 and B16 — with B1, B2, B4, B5, B6, B7, B8 and B13 already closed and B3 deferred by scope (D-048), followed by the feature-conditional items as each feature is scheduled.
