@@ -1131,7 +1131,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21); **D-055** — every mutation returns the resource it changed, replays are `200` with `Idempotency-Replay`, and archival's counts are read before the act rather than returned after it (§16.22). **D-056** — the session model: a bearer access token with a single-use rotating refresh token, and no cookie, CSRF or CORS because the MVP has no browser client (§16.23). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21); **D-055** — every mutation returns the resource it changed, replays are `200` with `Idempotency-Replay`, and archival's counts are read before the act rather than returned after it (§16.22). **D-056** — the session model: a bearer access token with a single-use rotating refresh token, and no cookie, CSRF or CORS because the MVP has no browser client (§16.23). **D-057** — no maximum age for an entry's date or its submission: eligibility bounds the past, five minutes bounds the future, and an ineligible date is `409 DATE_NOT_ELIGIBLE` (§16.24). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -2169,14 +2169,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) and B14 (the session model, §16.23). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B16.
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B16 (the backdating window), with B3 deferred by scope (D-048, §16.15), B4–B7 settled (§16.16–§16.19), B8 settled (§16.21), B12 settled (§16.22), B13 settled (§16.20) and B14 settled (§16.23). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line, beginning with the state machine (item 1).
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2318,7 +2318,7 @@ Errors use the envelope already illustrated in §10.5, now confirmed as the cont
 | `401` | `UNAUTHENTICATED` | Missing, malformed or expired credentials, a revoked or ended session, and a reused refresh token — all indistinguishable (§16.23, D-056) |
 | `403` | `FORBIDDEN` (with field codes) | Authenticated, but a supplied **filter value** lies outside the caller's scope (§15.8.9) |
 | `404` | `NOT_FOUND` | Addressed resource absent **or** outside scope — identical status and body either way |
-| `409` | `CONFLICT`, `VERSION_MISMATCH` | State conflicts, including the in-place edit path of §15.5 |
+| `409` | `CONFLICT`, `VERSION_MISMATCH`, `DATE_NOT_ELIGIBLE` | State conflicts, including the in-place edit path of §15.5, and an entry date outside the volunteer's eligibility (§16.24, D-057) |
 | `413` | `PAYLOAD_TOO_LARGE` | Body over the 1 MiB cap, refused before it is parsed (D-053, §16.20) |
 | `429` | `RATE_LIMITED` | Token bucket exhausted; carries `Retry-After` (D-053, §16.20) |
 | `500`, `503` | `INTERNAL_ERROR`, `SERVICE_UNAVAILABLE` | No internals, no identifiers |
@@ -2501,7 +2501,7 @@ Archiving is reversible. Restoring reverses the project's status only; it does n
 **Rules:**
 
 - Each archive event records its cause — an activity archived by itself, or archived along with its project — because that cause decides what restore brings back. Without it, a cascade cannot be told from a deliberate individual archive.
-- Eligibility stays date-based (D-042). A restored project has two active windows with an ineligible gap between them; an entry backdated into the gap is refused, not accepted.
+- Eligibility stays date-based (D-042). A restored project has two active windows with an ineligible gap between them; an entry backdated into the gap is refused, not accepted — `409 DATE_NOT_ELIGIBLE` (§16.24, D-057).
 - Restoring an already-active project returns the current state, matching archival's idempotency (D-042).
 - Restoring an activity whose parent project is still archived returns `409 CONFLICT`. An active activity under an archived project is a state nobody can act on.
 - The confirmation before restore names what returns and what does not: "The project and the activities archived with it will be active again. Volunteer assignments ended in December are not restored; volunteers will need to request access."
@@ -2640,7 +2640,7 @@ An entry's length is stored as a **whole number of seconds**. A timestamp entry 
 - Duration is available to every read path without arithmetic, so totals over a range do not recompute subtraction per row.
 - The stored duration is what was claimed at submission, so an approval, an audit entry and a dispute all refer to the same number.
 
-**Deferred:** how far back an entry may be dated or submitted (B16), any daily or weekly maximum (B17), whether a break field is ever added (B18), and how exported hours are rounded (B19).
+**Deferred:** any daily or weekly maximum (B17), whether a break field is ever added (B18), and how exported hours are rounded (B19). **Answered 24 November 2026 (D-057, §16.24):** how far back an entry may be dated or submitted — there is no maximum age; eligibility bounds the past, and the future is bounded at five minutes of clock tolerance.
 
 ## 16.14 Definition of an overlap
 
@@ -4156,6 +4156,126 @@ There is no `access_hash`: the access token is a stateless JWT and the `sid` loo
 
 **Resolves:** backlog item B14 (§17). It closes §16.20's open note on `429` versus `401` at sign-in, gives every business route in §16 its authentication requirement, and makes the client's session behaviour — foreground refresh, single-flight, a queue that survives `401` — part of the contract rather than an implementation detail. It constrains the authentication section of the contract draft (§15.12 items 26, 29) and the sync design (§15.12 item 30): a sync that meets an ended session pauses, it does not fail the queued records.
 
+## 16.24 How old an entry may be, and how far ahead
+
+**Confirmed decision (D-057) — 24 November 2026.**
+
+D-046 fixed the shape of an entry's length and deferred the rest of the date question: "how far back an entry may be dated or submitted". D-042 had meanwhile said that eligibility is judged **by date, not by arrival** — an entry whose work falls before an archival instant stays valid "however late it is submitted or synced" — and §§5.5 and 15.3.7 already allow historical work to be submitted after a volunteer's assignment ends. Read together, those statements amount to "no limit", but the record never said so as a decision, so the contract had no answer and every implementer was free to invent a number.
+
+**The case this protects.** One autumn at the Saturday Pantry, three entries:
+
+- Dee worked a shift on **8 March** and wrote it on the kitchen tally sheet. She finds the sheet on **2 August** and enters it: 147 days late, real work, for a project that ran, during her assignment.
+- Tom's phone sat in a drawer through September. On **2 October** it syncs four entries dated in July and August.
+- Marcus, who has volunteered since 2019, types his **14 November** shift with the year field still on last year. The entry says **14 November 2025**: 365 days late and entirely fictitious.
+
+A 90-day window refuses Dee and Tom and accepts Marcus. A 12-month window accepts all three — the fabricated one at 364 days, by a single day. The honest late entry and the wrong one are both simply *old*, so age does not discriminate between them. What does is whether the person was eligible for that date, and whether a person ever looks at the two dates together.
+
+**The decision in one line: there is no maximum age. The past is bounded by eligibility, and the future is bounded by the clock.**
+
+**Rules.**
+
+1. **No limit on how old the work is.** An entry dated three years ago is accepted if it is otherwise valid. Nothing in the API refuses an entry for its date alone.
+2. **No limit on how late it is submitted.** The queue may drain whenever it drains. This keeps D-042's "however late", keeps §5.5's historical work meaningful, and keeps §7.1's promise whole: a queued entry is never refused for having waited.
+3. **Eligibility is the past bound.** The work date must fall inside a period when the volunteer held an assignment on that project — an active one, or an ended one under §5.5 — and must not fall inside an archived interval (D-042, D-043). A date the volunteer was never eligible for is refused however recent it is. This is the guard a day-count was trying to be, and it already exists; this decision names it.
+4. **The future is bounded at five minutes.** `startedAt` and `endedAt` may be at most five minutes ahead of the server clock. A shift whose end is three minutes ahead is accepted, and its `durationSeconds` includes those three minutes: refusing a volunteer who submits the instant they stop costs more than three minutes of recorded time. Beyond five minutes, the field fails validation as `DATE_IN_FUTURE`.
+5. **A duration-only work date may be one day ahead of today** in the organisation's time zone, because a device in a later zone is genuinely on the next calendar day. This covers the ordinary travel case; a device two calendar days ahead (the extreme of UTC−12 to UTC+14) is refused and the volunteer corrects the date by a day.
+6. **Ineligibility has its own code: `409 DATE_NOT_ELIGIBLE`.** A client must be able to tell "refresh and try again" (`VERSION_MISMATCH`) from "this date will never be accepted", or a sync client retries an eligibility refusal forever. The refusal D-042 already makes for an archived gap uses the same code, so one name covers both.
+7. **Lateness is visible, not flagged.** `submittedAt`, `startedAt` and `workDate` all appear in every representation (D-055), so any client, report or reviewer computes the gap. There is no stored `backdated` boolean: it is derivable from two fields that already exist, and a stored copy can disagree with them.
+8. **Project-less entries have no assignment to check**, so nothing bounds their past either — and they are administrator-only (D-051), which is where their review already happens. They are subject to rules 4 and 5 like any other entry.
+9. **Moving a date is subject to the same rules.** Editing `startedAt` backwards, or changing a work date, is validated exactly as a create is; an edit that would move an entry into an archived interval is refused with the same `DATE_NOT_ELIGIBLE`.
+
+**The shapes.**
+
+Dee's August submission of March work is an ordinary `201`:
+
+```http
+POST /v1/time-entries HTTP/1.1
+Content-Type: application/json
+
+{ "id": "6f1c9a3e-…", "projectId": "a3f1…", "activityId": "b7d2…",
+  "startedAt": "2026-03-08T13:00:00Z", "endedAt": "2026-03-08T16:30:00Z" }
+```
+
+```json
+{
+  "id": "6f1c9a3e-…",
+  "version": 1,
+  "startedAt": "2026-03-08T13:00:00Z",
+  "endedAt": "2026-03-08T16:30:00Z",
+  "workDate": "2026-03-08",
+  "durationSeconds": 12600,
+  "submittedAt": "2026-08-02T10:14:00Z",
+  "approvalStatus": "pending",
+  "createdAt": "2026-08-02T10:14:00Z"
+}
+```
+
+Nothing is flagged. The coordinator sees `submittedAt` and `startedAt` together, 147 days apart, and that is the whole control.
+
+A clock that is further ahead than five minutes:
+
+```http
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+```
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "One or more fields are invalid.",
+    "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a61",
+    "details": {
+      "errors": [
+        { "path": "startedAt", "code": "DATE_IN_FUTURE",
+          "message": "startedAt is more than five minutes ahead of the server clock." }
+      ]
+    }
+  }
+}
+```
+
+A date the volunteer was never eligible for:
+
+```http
+HTTP/1.1 409 Conflict
+Content-Type: application/json
+```
+
+```json
+{
+  "error": {
+    "code": "DATE_NOT_ELIGIBLE",
+    "message": "This date is not covered by an assignment on that project.",
+    "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a62",
+    "details": { "workDate": "2026-02-14" }
+  }
+}
+```
+
+| Option | Dee's 147-day-old shift | What it costs |
+|---|---|---|
+| **No age limit; eligibility bounds the past and five minutes bounds the future (recommended)** | Accepted, as it should be | A mis-typed year from a long-standing volunteer is accepted too, and only review catches it; a stale device can add a multi-year backlog to a queue in one sync |
+| A fixed 90-day window, refused beyond it | Refused — real hours discarded | Breaks the drawer phone and the seasonal volunteer, and contradicts "however late" |
+| A fixed 12-month window | Accepted | Accepts the wrong year at 364 days, and the boundary is arbitrary in both directions |
+| Late work always goes to approval once the gap exceeds 30 days | Accepted, held for review | Separates the two cases by machine, at the price of an entry waiting on a coordinator even where the organisation approves nothing |
+| No future tolerance at all | Unaffected | A phone four minutes fast cannot submit the shift it just finished |
+
+**Accepted costs.**
+
+- A wrong year is accepted, and only a person catches it. The server can say the date was eligible; it cannot say the work happened.
+- There is no "too old" code for a client to pre-validate, because there is no "too old".
+- A coordinator's queue can jump by forty rows when a stale phone finally syncs, all with old dates and none of them wrong.
+- An entry submitted in August against March work is judged by August's approval policy (D-045), so switching approval off in July auto-accepts March's backlog. The honest fix for that is the runner-up option, not a date window.
+- A traveller two calendar days ahead of the organisation's zone must correct a work date by a day.
+- `DATE_NOT_ELIGIBLE` joins `CONFLICT` and `VERSION_MISMATCH` at `409`, so clients that branch on status alone treat an eligibility refusal as retryable; the code is the contract, as D-039 requires.
+
+**Rejected alternatives.** Any fixed day-count (simultaneously too short for the person who found a note and too long for the person who mis-typed a year, and every complaint moves the number rather than the rule); a reporting-period lock (needs a closed-period concept the record does not have — that belongs to B9 if reports ever need one); refusing late submission outright (discards eligible work the offline design exists to preserve); a stored `backdated` flag (a third copy of a derivable fact); `403` for ineligibility (reads as a permission problem, so a client asks for a grant instead of fixing the date); and refusing any future instant at all (rejects the volunteer who taps submit as they walk out, for the sake of a clock they did not set).
+
+**Left open.** Whether an organisation-level maximum age should exist later as configuration (additive, and I would keep it out of the contract); whether five minutes is the right clock tolerance and whether it should instead be derived from the device's reported clock offset; whether a report should surface submission lag as a column rather than an entry flag (B9); whether `DATE_NOT_ELIGIBLE` should carry the assignment period in `details` so a volunteer sees why; and whether the one-day work-date tolerance is worth widening for deployed organisations whose volunteers cross the date line.
+
+**Resolves:** backlog item B16 (§17), the last contract-blocking item in that list. It gives §16.9's archived-gap refusal the code it never named, fixes the date rules that §16.13 deferred, and constrains B9 (totals count entries by work date however late they arrive, not by submission date) and the per-endpoint code inventory in §15.12 item 29.
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -4185,15 +4305,15 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
 | **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | **Resolved — D-056 (§16.23).** Bearer tokens on every business route and no cookie, because the MVP has no browser client; a 30-minute access token, a single-use rotating refresh token with a 120-second replay grace, a 90-day idle and a 180-day absolute limit, and `sid` checked on every request so a revocation lands on the next call. Sessions are listed and ended from the phone, every authentication failure is the same `401 UNAUTHENTICATED`, and MFA is deferred |
 | **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires | **Implementation** | §15.12 item 28 names the schema; the operational half is unlisted |
-| **B16** | Backdating window: how far in the past an entry may be dated or submitted | **Contract** | Surfaced while taking up B1 and set aside; §16.9 only forbids work after an archived instant |
+| **B16** | Backdating window: how far in the past an entry may be dated or submitted | **Contract** | **Resolved — D-057 (§16.24).** No maximum age and no submission deadline: the work date must be covered by the volunteer's assignment and must not fall in an archived interval (`409 DATE_NOT_ELIGIBLE`), and the only clock rule is a five-minute tolerance on future instants (`400 DATE_IN_FUTURE`) plus one day for a duration-only work date. Lateness is read from `submittedAt` rather than stored as a flag |
 | **B17** | Daily or weekly maximum hours, separate from the per-entry ceiling | **Feature** | Surfaced while taking up B1 and set aside; affects validation and reporting, not the record shape |
 | **B18** | Break deduction: whether a shift records a break that is subtracted, rather than net time as two entries | **Feature** | Surfaced while taking up B1 and set aside; a break field is a derived quantity that can disagree with the timestamps |
 | **B19** | Payroll rounding: whether exported hours are decimal, and the rule applied at the boundary | **Feature** | Surfaced while taking up B1 and set aside; the API stays exact and any rounding happens once, at export |
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and fed B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which leaves B11 as its main downstream: the audit list's contents and access are B11's, not B8's. B12 is settled (§16.22), so B16 inherits a mutation shape rather than choosing one; B14 is settled (§16.23), so every route's authentication requirement now has its shape too. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and fed B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which leaves B11 as its main downstream: the audit list's contents and access are B11's, not B8's. B12 is settled (§16.22), so every later mutation inherits a shape rather than choosing one; B14 is settled (§16.23), so every route's authentication requirement has its shape; B16 is settled (§16.24), so every entry's date has a rule and §16.9's archived-gap refusal has a code. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
+**What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** B16 next (the backdating window) — with B1, B2, B4, B5, B6, B7, B8, B12, B13 and B14 already closed and B3 deferred by scope (D-048), followed by the feature-conditional items as each feature is scheduled.
+**Order proposed:** the entry state machine (§15.12 item 1) next, then material change, preserved invalid submissions and concurrent edits (§15.12 items 2, 5 and 6) — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed and B3 deferred by scope (D-048) — followed by the feature-conditional items as each feature is scheduled.
