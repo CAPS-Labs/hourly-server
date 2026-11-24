@@ -715,7 +715,7 @@ Sync state is primarily client-side---for example, queued, sending, or
 synchronized---while the server retains the authoritative business
 record and relevant conflict/audit history.
 
-A giant all-purpose `/sync` endpoint has not been selected.
+A giant all-purpose `/v1/sync` endpoint has not been selected.
 Synchronization endpoints and protocol should be designed after the
 domain resources and operations are clearer.
 
@@ -1102,7 +1102,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21); **D-055** — every mutation returns the resource it changed, replays are `200` with `Idempotency-Replay`, and archival's counts are read before the act rather than returned after it (§16.22). Gaps not yet raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -2029,7 +2029,7 @@ The following example is illustrative, not a finalized endpoint or parameter con
 A request conceptually equivalent to:
 
 ```text
-GET /time-entries
+GET /v1/time-entries
     ?volunteerId={volunteerId}
     &projectId={projectId}
     &activityId={activityId}
@@ -2113,7 +2113,7 @@ The following items remain unresolved. They should be addressed before or during
 28. Finalize database schema, constraints, and transaction requirements.
 29. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
 30. Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses. **Retry and idempotency resolved 23 November 2026 — the entry id is the deduplication record and `version` guards writes (§16.16, D-049). Change tracking and conflict responses remain open.**
-31. Define API versioning, security controls, deployment, backups, and monitoring. **Deployment is per instance (§16.17, D-050), so API version skew between an installed app and an instance that upgrades on its own schedule is a supported state rather than a hypothetical. Versioning is contract-blocking, not operational polish.**
+31. Define API versioning, security controls, deployment, backups, and monitoring. **Deployment is per instance (§16.17, D-050), so API version skew between an installed app and an instance that upgrades on its own schedule is a supported state rather than a hypothetical. Versioning is contract-blocking, not operational polish.** **URL versioning settled 24 November 2026: every route is prefixed `/v1`, and every path in this record is written that way.** What remains open is the compatibility and deprecation policy — what an old client does against a `/v2` instance, and for how long `/v1` is served.
 
 Items may be combined or deferred where appropriate. The list is a planning aid, not a requirement to settle every item before drafting any part of the API contract.
 
@@ -2140,14 +2140,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21) and B13 (request identity and load control, §16.20). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B12.
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22) and B13 (request identity and load control, §16.20). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why the sequence below begins at B14.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B12 (mutation response shapes), with B3 deferred by scope (D-048, §16.15), B4–B7 settled (§16.16–§16.19), B8 settled (§16.21) and B13 settled (§16.20). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, beginning with B14 (the session model), with B3 deferred by scope (D-048, §16.15), B4–B7 settled (§16.16–§16.19), B8 settled (§16.21), B12 settled (§16.22) and B13 settled (§16.20). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line once the two deferred items are settled.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2806,7 +2806,7 @@ cannot answer both, which is why this decision has two parts and no third.
   decide whether a request is a repeat. Identity is the fact; comparing
   payloads would need a canonical hash and normalisation rules to answer a
   question the primary key already answers.
-- **Replay response.** `201 Created` with `Location: /time-entries/{id}` on
+- **Replay response.**   `201 Created` with `Location: /v1/time-entries/{id}` on
   first application; `200 OK` with `Idempotency-Replay: true` and the
   identical body shape on every later attempt. The status distinguishes
   them in a log without a header; the header names it for clients and
@@ -2819,7 +2819,7 @@ cannot answer both, which is why this decision has two parts and no third.
 **Create request and first response.**
 
 ```http
-POST /time-entries
+POST /v1/time-entries
 Content-Type: application/json
 ```
 
@@ -2836,7 +2836,7 @@ Content-Type: application/json
 
 ```http
 HTTP/1.1 201 Created
-Location: /time-entries/6f1c9a3e-1b77-4b0e-9a2c-5d0f6c1e8b41
+Location: /v1/time-entries/6f1c9a3e-1b77-4b0e-9a2c-5d0f6c1e8b41
 ```
 
 ```json
@@ -2970,7 +2970,7 @@ from existing.
 - **Last-write-wins.** Smallest surface, but silently discards a
   coordinator's correction when a volunteer's stale device syncs, and
   nobody ever learns it happened.
-- **`PUT /time-entries/{id}` for creation.** Naturally idempotent and
+- **`PUT /v1/time-entries/{id}` for creation.** Naturally idempotent and
   arguably more honest about the client-chosen identity, but `PUT` implies
   a full replacement of an existing resource, which is not what submission
   is, and it would make partial edits a second verb and a second set of
@@ -3383,7 +3383,7 @@ principal, and nothing left in the instance says who Marisol was.
 4. **Archived projects have no expiry.** They are restorable by design
    (D-043), and an audit three years later is exactly when restore matters.
    No automatic purge and no retention timer in the MVP.
-5. **Personal export is synchronous and self-service.** `GET /me/export`
+5. **Personal export is synchronous and self-service.** `GET /v1/me/export`
    returns the caller's own profile, membership, entries, grants and
    notifications as one document, built from the same scoped queries the
    lists already use. No job queue and no email delivery.
@@ -3405,7 +3405,7 @@ principal, and nothing left in the instance says who Marisol was.
   "membership": { "role": "volunteer", "status": "active", "joinedAt": "2024-02-11T09:00:00Z" },
   "entries": [
     { "id": "…", "startedAt": "2026-03-07T14:00:00Z", "durationSeconds": 14400,
-      "status": "approved", "projectId": "a3f1…" }
+      "approvalStatus": "approved", "projectId": "a3f1…" }
   ],
   "coordinatorOf": [
     { "projectId": "a3f1…", "grantedAt": "2025-10-04T08:12:00Z", "endedAt": "2026-04-30T17:00:00Z" }
@@ -3536,7 +3536,7 @@ answered from a log line.
 
 ```http
 HTTP/1.1 201 Created
-Location: /time-entries/0f6a…
+Location: /v1/time-entries/0f6a…
 X-Request-Id: 0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a20
 X-Client-Request-Id: dee-queue-14
 RateLimit-Limit: 300
@@ -3666,24 +3666,29 @@ mistake is a refused cursor instead of a silent misreading.
 3. **Live results, as for entries.** Each page reflects current state (D-035):
    deduplicate by `id`, and refresh rather than assuming a scroll was
    complete. A row whose sort key changes mid-scroll may repeat or be skipped.
-4. **A cursor belongs to one collection and one filter set.** It is signed and
-   carries the collection name, a fingerprint of the normalised filters, and
-   the last row's sort key and `id` (D-037's token, one payload wider).
-   Presenting it to another collection, or after changing a filter, is a
-   `400 CURSOR_QUERY_MISMATCH` rather than a page of the wrong rows. Changing
-   `pageSize` mid-scroll is permitted, because it does not move the frontier.
+4. **A cursor belongs to one collection and one filter set.** D-037's token,
+   with one payload field added: `c`, the collection, alongside the existing
+   `v`, `k` and `q` (D-037's `v` is the format version, which is exactly how
+   its payload is allowed to grow). `q` still fingerprints the normalised
+   filter set; `k` becomes each collection's ordering tuple, still ending in
+   the row `id`. Presenting a cursor to another collection, or after changing
+   a filter, is a `400 CURSOR_QUERY_MISMATCH` rather than a page of the wrong
+   rows — the collection is compared before the fingerprint, so the two
+   mistakes produce the same code. Changing `pageSize` mid-scroll is
+   permitted, because `q` excludes it and the frontier does not move.
 5. **Filters narrow; they never reorder.** The filter sets below are the whole
    of the MVP's, and an unknown parameter is a `400 VALIDATION_FAILED` rather
    than being ignored.
 6. **No list returns a total.** A count on every page of the audit log is a
    scan of everything the organisation has ever done, and it implies the
    frozen view D-035 rejected. Unread and pending figures come from dedicated
-   counting endpoints, which remain the deferred item in §16's head.
+   counting endpoints, deferred in §16.7 and not settled here.
 7. **The users list is administrator-only and hides what it need not show.**
    `q` matches a display name by prefix and an email address exactly — no
    free-text search in the MVP. An anonymised person appears under their
-   stable `id` with `status: "anonymised"` and no email (D-052), so history
-   stays coherent. Coordinators reach people through their project's
+   stable `id` with `anonymisedAt` set and the email withheld (D-052), so
+   history stays coherent without inventing a status value D-052 does not
+   define. Coordinators reach people through their project's
    assignments; a coordinator-facing directory would be a filter on this same
    route, not a fifth shape.
 8. **The audit list's shape is fixed here; its contents and its readers are
@@ -3752,7 +3757,7 @@ where `group` is `0` for pending and `1` otherwise.
   the two-direction assignment-request order needs its one sentence wherever
   client authors look.
 - No `total` in any list means the unread badge needs its own small endpoint —
-  the counting item already deferred, not something B8 quietly settles.
+  the counting item deferred in §16.7, not something B8 quietly settles.
 - The audit list's shape is fixed before B11 decides what it contains and who
   may read it, so B11 inherits a shape rather than choosing one.
 - The users list is administrator-only in the MVP; a coordinator who wants to
@@ -3782,6 +3787,187 @@ directory is wanted, which would be a filter rather than a new shape.
 now exist, so transport must not invent a second list) and B11 (the audit
 list's shape is fixed; its contents, immutability rules and readers are not).
 
+## 16.22 What a write returns: the resource, and the counts that come before it
+
+**Confirmed decision (D-055) — 24 November 2026.**
+
+D-049 fixed the shape of a create and its replay for time entries. D-042 fixed
+that an archive confirmation names its impact **before** the act. Every other
+mutation — submit, approve, reject, archive, restore, grant, revoke, cancel,
+mark read — sat between those two answers with none of its own. This section
+generalises the first and keeps the second.
+
+**The case this protects.** Nadia opens the pantry's archive dialog. It says
+twelve assignments will end and three pending requests will be cancelled. She
+confirms, and three things have to be true at once, without a refresh:
+
+- her screen shows the project archived, because the response is the new state
+  rather than a bare acknowledgement;
+- Dee's phone, replaying the same approval out of last night's queue, shows no
+  error, because the second attempt is recognised as the same act;
+- the audit trail later shows what actually happened, not the count Nadia
+  approved — a volunteer asked for access while the dialog was open, so four
+  requests were cancelled, not three.
+
+**Rules.**
+
+1. **Every successful mutation returns the full current representation of the
+   resource it changed**, in the shape its read already uses. Not a
+   `{ "success": true }`, not a patch of the changed fields, not an empty body.
+2. **Creation is `201 Created`** with `Location: /v1/<collection>/<id>` — paths
+   carry the `/v1` prefix settled under §15.12 item 31 — and the new resource as
+   its body, including `version: 1` where the resource is versioned.
+3. **Everything else is `200 OK`** with the resource in its new state. A
+   mutation's answer and a read's answer are the same representation, so a
+   client that just wrote something does not have to fetch it back to render it.
+4. **A replay is `200 OK` with `Idempotency-Replay: true` and the same body
+   shape**, with `version` at whatever it is now rather than at the value the
+   first attempt returned (D-049, §16.16). Two sources of identity are used,
+   chosen by what the record already guarantees:
+   - where the client supplies the `id` (entries, projects, activities), the
+     insert-on-conflict rule of D-049 decides;
+   - where the business rule already makes the row unique (one active grant per
+     project and person; one pending request per project and person), the
+     constraint decides, and a retried create returns the **existing row** as a
+     replay rather than a `409`. A constraint that already says "this can exist
+     once" is the idempotency key; a second mechanism beside it could only
+     disagree with it.
+5. **State-setting operations are idempotent by outcome, not by header.**
+   Archiving an archived project returns `200` with the original `archivedAt`;
+   restoring an active project returns its current state (D-042, D-043).
+   Nothing about repetition has to be signalled, because the body already says
+   the state was already the requested one.
+6. **`409 VERSION_MISMATCH` keeps the shape D-049 fixed** —
+   `{ "currentVersion", "updatedAt", "current": { …resource… } }` — for every
+   versioned resource, not only entries. The `current` copy saves the round
+   trip; a client replaces its copy wholesale rather than merging two versions
+   field by field, which is how a stale field survives unnoticed.
+7. **No mutation returns counts.** What the act affected is named by the
+   confirmation read before it, not by the act afterwards. Archival's impact is
+   read from `GET /v1/projects/{id}/archival-impact`, which uses the same
+   authority as the act itself (D-041):
+
+```json
+{
+  "assignmentsEnding": 12,
+  "pendingRequestsCancelling": 3,
+  "activitiesArchiving": 2,
+  "computedAt": "2026-11-24T09:08:00Z"
+}
+```
+
+   The figures are **advisory**: the interval between reading them and acting is
+   real, someone may submit in it, and the act must not be refused because its
+   consequences moved. A confirmation that says "three" and a trail that says
+   "four" is the honest pair; a confirmation and a response that both say three
+   while four were cancelled is the dishonest one.
+
+8. **Deletion is the one `204 No Content`.** A user may delete their own
+   notification (§6.1), and there is no representation left to return. Entries
+   are never deleted (D-052), so no other route needs it.
+9. **A bulk endpoint, if one is ever added, returns `{ "updated": <n> }` and no
+   rows**, because the client already holds them. Whether bulk mark-read exists
+   is B10's.
+10. **The server's own fields come from the server, in every response.**
+    `createdAt`, `updatedAt`, `submittedAt`, `approvedAt`, `version` and
+    `durationSeconds` are computed on the server; a value the client sent is
+    never echoed back as though the server had confirmed it.
+
+**The shapes.** The paths and verbs below are illustrative — item 29 settles
+those — but the status codes and bodies are what this decision fixes.
+
+```http
+HTTP/1.1 201 Created
+Location: /v1/projects/a3f1…/coordinators/c19e…
+X-Request-Id: 0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a52
+```
+
+```json
+{
+  "id": "c19e…",
+  "projectId": "a3f1…",
+  "userId": "9c21…",
+  "grantedBy": "77bd…",
+  "grantedAt": "2026-11-24T09:02:41Z",
+  "endedAt": null
+}
+```
+
+A second identical grant request, from a coordinator who did not see the first
+answer, returns `200 OK`, `Idempotency-Replay: true`, and that same row.
+
+```json
+{
+  "id": "6f1c9a3e-…",
+  "version": 4,
+  "approvalStatus": "approved",
+  "approvedAt": "2026-11-24T09:12:41Z",
+  "reviewedBy": "77bd…",
+  "updatedAt": "2026-11-24T09:12:41Z",
+  "durationSeconds": 10800
+}
+```
+
+and when someone else got there first:
+
+```http
+HTTP/1.1 409 Conflict
+```
+
+```json
+{
+  "error": {
+    "code": "VERSION_MISMATCH",
+    "message": "This entry has changed since you loaded it.",
+    "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a53",
+    "details": {
+      "currentVersion": 7,
+      "updatedAt": "2026-11-24T09:12:02Z",
+      "current": { "id": "6f1c9a3e-…", "version": 7, "approvalStatus": "approved" }
+    }
+  }
+}
+```
+
+| Option | What Nadia's screen does | What it costs |
+|---|---|---|
+| **Full representation on every mutation, counts only in the confirmation read (recommended)** | Renders the new state from the reply; no refetch, no stale card | Larger responses — a project's forty fields come back on every status change |
+| `204 No Content` on every write, client re-fetches | Nothing to design | Two requests per action, a race between them, and an offline client that cannot refresh at all |
+| Return only the fields that changed | Smallest responses | Every client merges, and a merge bug looks exactly like a server bug |
+| Counts in the archive response as well as before it | Confirms the impact afterwards | Restores the after-the-fact count D-042 removed, and it can disagree with the confirmation the person actually approved |
+
+**Accepted costs.**
+
+- Mutation bodies are larger, and each is a snapshot that can go stale the
+  moment someone else writes — which is why `version` travels with it.
+- The impact read duplicates arithmetic the mutation performs, so one
+  implementation must serve both, and the two must be allowed to differ.
+- Constraint-based replay means every create route has to say which rule makes
+  its rows unique; a route that cannot name one has no replay protection.
+- `current` in a `409` is a whole resource in an error body, which is the
+  largest error the API can produce.
+- `204` survives as one special case that client libraries each handle their
+  own way.
+- The confirmation read is a route that exists only to fill a dialog, and it
+  must not become a second, richer project view.
+
+**Rejected alternatives.** `204` for all writes (forces a refetch and a race),
+changed-fields-only patches (merge logic in every client), `{ "ok": true }`
+(tells a client nothing it can render), counts in the archive response
+(contradicts D-042's before-only confirmation), `currentVersion`-only `409`
+(removes a round trip D-049 deliberately kept), and `Idempotency-Key` headers
+(already rejected in D-049: the record's identity is the key).
+
+**Left open.** Whether `updatedAt` is contract or convenience; the exact field
+names in the impact payload; whether an `ETag`/`If-Match` pair ever replaces the
+body `version` (it would be additive); and bulk shapes, which belong to B10 if a
+bulk endpoint ever exists.
+
+**Resolves:** backlog item B12 (§17). It settles the shape every mutation and
+every route consumes, and it constrains B10 (a bulk mark-read, if it exists,
+returns a count and no rows) and B11 (the audit trail records what the act did,
+not what the confirmation predicted).
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -3802,12 +3988,12 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B4** | Concurrency and idempotency for mutations: client-generated ids on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | **Resolved — D-049 (§16.16).** A client-generated UUID per record plus an integer `version`; no `Idempotency-Key`; state-setting operations idempotent by outcome. Offline replay (§15.12 item 30) depends on it |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | **Resolved — D-050 (§16.17).** The deployment is the tenant: each organisation runs its own instance, identity is scoped to it, and no organisation identifier appears in the API. One organisation row carries the time zone, approval policy and membership setting; no `organisation_id` columns |
 | **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator |
-| **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /me/export` is self-service, and there is no organisation-purge endpoint |
+| **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | The record discusses totals throughout but never defines a reported hour |
 | **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery |
 | **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | Four decisions already name it as an output without specifying it |
-| **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | Small but pervasive; D-042's confirmation shows counts before the act, never after |
+| **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | **Resolved — D-055 (§16.22).** Every mutation returns the changed resource in its read shape; creates are `201` + `Location`, replays `200` + `Idempotency-Replay` (by client id or by the uniqueness constraint), `409` keeps D-049's `current` copy, no mutation returns counts, and archival's impact comes from a confirmation read. Deletion is the only `204` |
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
 | **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | The half of authentication (§15.12 item 26) that shapes the client |
 | **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires | **Implementation** | §15.12 item 28 names the schema; the operational half is unlisted |
@@ -3818,8 +4004,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which leaves B11 as its main downstream: the audit list's contents and access are B11's, not B8's. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and feeds B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which leaves B11 as its main downstream: the audit list's contents and access are B11's, not B8's. B12 is settled (§16.22), so B14 and B16 inherit a mutation shape rather than choosing one. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2, B12 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 becomes so as soon as the authentication routes are drafted. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20). B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
+**What must land before contract drafting.** B1, B2 and B16 are unavoidable. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 becomes so as soon as the authentication routes are drafted. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** B12 next (mutation response shapes), then B14 and B16 — with B1, B2, B4, B5, B6, B7, B8 and B13 already closed and B3 deferred by scope (D-048), followed by the feature-conditional items as each feature is scheduled.
+**Order proposed:** B14 next (the session model), then B16 — with B1, B2, B4, B5, B6, B7, B8, B12 and B13 already closed and B3 deferred by scope (D-048), followed by the feature-conditional items as each feature is scheduled.
