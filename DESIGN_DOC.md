@@ -3383,7 +3383,7 @@ principal, and nothing left in the instance says who Marisol was.
 4. **Archived projects have no expiry.** They are restorable by design
    (D-043), and an audit three years later is exactly when restore matters.
    No automatic purge and no retention timer in the MVP.
-5. **Personal export is synchronous and self-service.** `GET /v1/me/export`
+5. **Personal export is synchronous and self-service.** `GET /me/export`
    returns the caller's own profile, membership, entries, grants and
    notifications as one document, built from the same scoped queries the
    lists already use. No job queue and no email delivery.
@@ -3536,7 +3536,7 @@ answered from a log line.
 
 ```http
 HTTP/1.1 201 Created
-Location: /v1/entries/0f6a…
+Location: /time-entries/0f6a…
 X-Request-Id: 0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a20
 X-Client-Request-Id: dee-queue-14
 RateLimit-Limit: 300
@@ -3802,7 +3802,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B4** | Concurrency and idempotency for mutations: client-generated ids on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | **Resolved — D-049 (§16.16).** A client-generated UUID per record plus an integer `version`; no `Idempotency-Key`; state-setting operations idempotent by outcome. Offline replay (§15.12 item 30) depends on it |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | **Resolved — D-050 (§16.17).** The deployment is the tenant: each organisation runs its own instance, identity is scoped to it, and no organisation identifier appears in the API. One organisation row carries the time zone, approval policy and membership setting; no `organisation_id` columns |
 | **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator |
-| **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
+| **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /me/export` is self-service, and there is no organisation-purge endpoint |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | The record discusses totals throughout but never defines a reported hour |
 | **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery |
