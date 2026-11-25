@@ -1160,8 +1160,11 @@ refused submission has three outcomes and stores nothing: a `400`, `403`,
 visible blocked state, a `429` or `5xx` is retryable with the same
 client-generated id, and overlap is never a refusal (§16.27). **D-061** — a stale write gets
 one `409 VERSION_MISMATCH` carrying the current entry and
-`details.changedFields`, and the person re-applies it by hand: nothing
-retries, forces or merges on its own (§16.28). Gaps not yet
+`details.changedFields`, and the person re-applies it by hand: nothing retries, forces or merges on its own (§16.28). **D-062** — an
+overlap is a flag derived on read (`hasConflict` plus a `conflicts` pair
+list), filtered as a boolean, never stored and never notified, and never a
+gate on approval: the client announces it on the create, the replay and each
+bulk-sync result (§16.29). Gaps not yet
 raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -1190,10 +1193,11 @@ time rather than filled in by assumption.
 5.  ~~Decide whether completed entries are automatically submitted for
     approval or require explicit volunteer submission.~~ **Resolved 22
     November 2026 — explicit submission (§16.11, D-044).**
-6.  Define entry lifecycle, approval status, and conflict status as
-    separate state models. **Partly resolved 24 November 2026 — approval
-    status and the absence of a lifecycle axis (§16.25, D-058); conflict
-    status belongs to §15.12 item 21.**
+6.  ~~Define entry lifecycle, approval status, and conflict status as
+    separate state models.~~ **Resolved 25 November 2026 — approval status
+    and the absence of a lifecycle axis (§16.25, D-058); conflict is not a
+    state model at all but a flag derived from the entries on every read
+    (§16.29, D-062).**
 7.  Define the exact conditions that trigger reapproval after editing an
     approved entry. **Resolved 24 November 2026 — a material edit,
     defined by the fields it changes, returns an approved entry to
@@ -1498,7 +1502,7 @@ Setting or policy| Status
 Whether assigned coordinators may add and remove coordinators| Required for MVP; enabled by default
 Whether volunteer self-assignment requires approval| Existing organization-wide setting; confirmed
 Whether volunteers may leave projects without coordinator approval| Existing organization-wide setting; confirmed in the previous design record
-Whether coordinators may resolve time-entry conflicts| Still unresolved
+Whether coordinators may resolve time-entry conflicts| Partly settled: there is no separate resolve act, only the existing edit or reject (§16.29, D-062); whether a coordinator may edit or reject another volunteer's entry is §15.12 item 14
 Whether coordinator notifications are sent for direct volunteer self-assignment and self-removal| Optional behavior; exact configuration not decided
 Notification retention period| Undecided
 
@@ -2026,7 +2030,8 @@ The API exposes independent filters for:
 
 1. **Lifecycle status**, such as submitted or voided. Unsubmitted drafts are not a server state (§16.11, D-044).
 2. **Approval status**, such as pending, approved, rejected, or not requiring approval.
-3. **Conflict status**, representing relevant synchronization or timer conflicts.
+3. **Conflict**, a boolean `hasConflict` derived from the entries rather
+   than a stored status (§16.29, D-062).
 
 These are distinct concepts and must not be collapsed into one combined status field. The exact lifecycle and enum values remain to be finalized.
 
@@ -2036,6 +2041,12 @@ there is no lifecycle field to filter on. The second carries the four
 values D-058 fixes, and lifecycle returns as a `voidedAt` filter only if
 §15.12 item 20 decides voiding exists. The rule that these are separate
 concepts, never one combined field, stands.
+
+**Amended again 25 November 2026 (§16.29, D-062):** the third filter is
+`hasConflict=true|false`, computed from the volunteer's current entries rather
+than read from a stored status. There is therefore no third state model to
+finalize: a conflict is a property of a pair of entries, not a state in one
+entry's row.
 
 ### 15.8.7 Combining filters
 
@@ -2188,7 +2199,7 @@ The following items remain unresolved. They should be addressed before or during
 11. ~~Decide who may archive projects and activities.~~ **Resolved 18 November 2026 — coordinators within their project remit, administrators organization-wide, no approval step (§16.6, D-041).**
 12. ~~Decide how archival affects active assignments, pending requests, and historical time entry.~~ **Resolved 18 November 2026 — dated boundary: volunteer assignments end, pending requests cancel, pending entries stay reviewable, pre-archival work stays valid, running timers stop into pre-filled drafts on the volunteer's device (§16.9, D-042; §16.11, D-044).**
 13. ~~Decide whether archived projects or activities can be restored.~~ **Resolved 18 November 2026 — reversible by the same authority, without reviving assignments (§16.10, D-043).**
-14. Confirm whether coordinators may resolve conflicts for volunteers assigned to their projects and how project-less entries are treated.
+14. Confirm whether coordinators may resolve conflicts for volunteers assigned to their projects and how project-less entries are treated. **Narrowed 25 November 2026 (§16.29, D-062):** there is no separate resolve act — resolving is editing or rejecting (D-047) — so what remains is who may edit or reject another volunteer's entry; project-less entries follow §16.18.
 15. Finalize whether volunteer and coordinator assignments use a generalized resource or separate resources.
 16. Define the consequences of assignment departure for pending time entries and requests, beyond the established historical-work eligibility rule.
 17. Finalize timestamp and timezone semantics for assignment boundaries.
@@ -2203,7 +2214,11 @@ The following items remain unresolved. They should be addressed before or during
     whether a `voidedAt` timestamp exists — who may set it, whether it can
     be cleared, and whether voided hours leave the reports. There is no
     `status` enum for voiding to be a value of.
-21. Finalize overlap warning and review behavior.
+21. ~~Finalize overlap warning and review behavior.~~ **Resolved 25
+    November 2026 — the flag and its pair list are derived on every read,
+    the filter is a boolean, approval warns and proceeds, and no
+    notification is stored; the client surfaces it on the create, the
+    replay and each bulk-sync result (§16.29, D-062).**
 22. Decide whether project-less activity descriptions are stored separately from optional notes.
 23. Finalize required and optional profile fields and email-change verification behavior.
 24. **Entry submissions settled:** an approval-policy change applies only to submissions received after its effective time (§16.12, D-045). Still open: the effects of policy changes on pending assignment requests and other pending operations.
@@ -2247,8 +2262,9 @@ The contract should explicitly identify which behaviors are finalized, which are
 ## Outstanding decisions (maintained in place)
 
 Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
-§16.26), item 5 (preserved invalid submissions, §16.27) and item 6
-(concurrent-edit reconciliation, §16.28). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+§16.26), item 5 (preserved invalid submissions, §16.27), item 6
+(concurrent-edit reconciliation, §16.28) and item 21 (overlap and conflict
+values, §16.29). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
@@ -2258,8 +2274,9 @@ Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), 
 All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed but for
 conflict values: the state machine (item 1, §16.25), material change
 (item 2, §16.26), preserved invalid submissions (item 5, §16.27) and
-concurrent-edit reconciliation (item 6, §16.28) are settled, leaving
-overlap and conflict status values (item 21) as the next one to take.
+concurrent-edit reconciliation (item 6, §16.28) and conflict values
+(item 21, §16.29) are settled, leaving voiding (item 20) as the next one
+to take.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2750,6 +2767,13 @@ A conflict is any **positive overlap in absolute time** between two **submitted 
 - **Response.** A conflict is not an error. The submission succeeds with its normal status and carries `conflicts: [{ entryId, startedAt, endedAt }]`, naming the other entry so both can be shown. Duration is not adjusted.
 - **Resolution.** A volunteer or coordinator resolves it by editing or discarding one of the two entries. Conflict status stays separate from approval status: resolving a conflict does not approve hours (§15.5.4).
 
+**Amended 25 November 2026 (§16.29, D-062):** the flag and the pair list
+are computed on every read from the entries that exist at that moment, not
+stored on either entry. An entry carries `hasConflict` and `conflicts` in its
+read shape, `version` does not change when a conflict appears or disappears,
+and §15.8.6's third filter is that boolean. The definition, membership and
+advisory rule above are unchanged.
+
 **Why advisory rather than blocking.** The cases that produce overlaps are the cases where blocking does damage: two devices capture the same shift offline and sync without seeing each other; a timer is left running and the shift is logged again; a shared device is left signed in. A rejection in an offline queue is a dead end — the client cannot resolve it without the volunteer, who may not return — so the entry is lost rather than corrected. Accepting with a flag keeps the record and puts the question where a human already is: D-045's review queue. The decision becomes "which of these two is wrong" instead of "nothing was recorded".
 
 **Worked examples:**
@@ -2779,7 +2803,7 @@ A conflict is any **positive overlap in absolute time** between two **submitted 
 - Because the earlier entry is not re-judged, the two sides of a conflict can reach different approval outcomes, each correct on the evidence at its own arrival.
 - Conflicts are information, not a gate; nothing waits on resolution unless a later decision makes approval depend on it.
 
-**Deferred:** whether an unresolved conflict should block final approval, whether a resubmission shortly after a timer stop is merged instead of flagged — the duplicate itself no longer needs an answer, since a repeat of one draft replays into one entry (§16.16, D-049) — and whether clock skew needs a grace window (B3).
+**Deferred:** ~~whether an unresolved conflict should block final approval~~ (answered 25 November 2026, §16.29, D-062: it does not — approval warns and proceeds), whether a resubmission shortly after a timer stop is merged instead of flagged — the duplicate itself no longer needs an answer, since a repeat of one draft replays into one entry (§16.16, D-049) — and whether clock skew needs a grace window (B3).
 
 ## 16.15 Stopwatch instead of a server timer
 
@@ -3944,7 +3968,9 @@ confirms, and three things have to be true at once, without a refresh:
    client that just wrote something does not have to fetch it back to render it.
 4. **A replay is `200 OK` with `Idempotency-Replay: true` and the same body
    shape**, with `version` at whatever it is now rather than at the value the
-   first attempt returned (D-049, §16.16). Two sources of identity are used,
+first attempt returned (D-049, §16.16). A replay carries the entry's derived
+`hasConflict` and `conflicts` like any other read, so a client whose first
+response was lost still shows the conflict warning (§16.29, D-062). Two sources of identity are used,
    chosen by what the record already guarantees:
    - where the client supplies the `id` (entries, projects, activities), the
      insert-on-conflict rule of D-049 decides;
@@ -4421,7 +4447,7 @@ policy change or timeout moves it (D-045); the material edit is D-059's
 10. **Version is checked before state.** A stale copy gets `409 VERSION_MISMATCH` with D-049's `current` resource, not an `INVALID_TRANSITION` about a state it never saw.
 11. **Repeating a decision that is already true is `200` with the current state and no write** (D-055's idempotency by outcome). Approving an approved entry does not overwrite `reviewedBy` and does not add an audit row.
 12. **Voiding is reserved, not implemented.** `voidedAt` is named as the field §15.12 item 20 would add if it decides voiding exists — a nullable timestamp, matching `archivedAt` on projects (D-042) and `anonymisedAt` on users (D-052), rather than an enum value. No filter, field or transition exists in the MVP.
-13. **Conflict status stays independent.** An overlap flag is not an approval state and resolving one does not approve hours (§15.8.6); its values belong to §15.12 item 21.
+13. **Conflict status stays independent.** An overlap flag is not an approval state and resolving one does not approve hours (§15.8.6); it has no status values to fix, being a flag derived on read (§16.29, D-062).
 
 **The shapes.**
 
@@ -4629,7 +4655,7 @@ A `401` belongs to neither class: it is a dead access token, which D-056's refre
 3. **A blocked item is visible, not silent.** The device shows it as unsent work with the server's `code`, `message` and `X-Request-Id`, so a support question has a request to look up (D-053). A queue that silently retries or silently drops fails this rule equally.
 4. **Correctable and retryable are different states with different remedies.** A `409` must not be retried unchanged — D-057 says an ineligible date "will never be accepted" — while a `429` must be. A client that treats them alike either hammers the server or discards good work.
 5. **A refusal is terminal for the request, not for the record.** The volunteer corrects the blocked item and submits it again, reusing the same client-generated `id` because it is the same entry; a genuinely different entry gets a new id. Nothing the volunteer typed is lost by the refusal itself.
-6. **Overlap and conflict are never refusals.** A conflicting submission is accepted and stored with its conflict flag (§16.14, D-047). The volunteer's work is not refused because a coordinator might need to look at it.
+6. **Overlap and conflict are never refusals.** A conflicting submission is accepted and stored with its conflict flag (§16.14, D-047), computed in the response like any read (§16.29, D-062). The volunteer's work is not refused because a coordinator might need to look at it.
 7. **A refused edit leaves the stored row exactly as it was.** Where the refusal is `409 VERSION_MISMATCH`, the envelope's `current` copy (D-049) tells the client what the row now is; the client's local copy is stale and must be reconciled before it resends, not overwritten with its own older version.
 8. **A resend of an accepted submission is a replay, not a refusal.** If the `id` already exists and the body matches, the response is `200` with `Idempotency-Replay` (D-055). A client whose first attempt timed out gets the record back instead of a "duplicate" error to interpret.
 9. **No server-side deadline and no server-side cleanup.** Nothing expires a blocked item on the device and nothing on the server needs purging, because nothing was stored. Ageing a blocked item is device policy, as it is for drafts.
@@ -4923,6 +4949,256 @@ decision is re-taken, never re-applied), D-060 (a refused edit is a blocked
 item on the device) and B11 (the field-name change record the audit trail
 exposes is what makes `changedFields` computable).
 
+## 16.29 Overlap and conflict values: a derived flag, not a status
+
+**Confirmed decision (D-062) — 25 November 2026.**
+
+D-047 settled what an overlap *is* and that it is advisory. It did not settle
+how the fact is *represented*. §15.8.6 promised an independent "conflict
+status" filter, §16.25 kept conflict status as one of three axes with its
+values still to fix, and §15.12 item 21 asked for "overlap warning and review
+behavior". Until the representation is fixed, no read shape, filter, queue
+column or approval rule can be drafted against it — and the representation
+decides whether there is a column at all.
+
+**The case this protects.** Dee volunteers at the Saturday Pantry. On
+Saturday she logs 09:00–12:00 from her phone at the site, then that evening
+logs 10:00–13:00 again from her tablet, having forgotten the first. Nadia
+coordinates the pantry and works her approval queue on Tuesday morning.
+
+- **Saturday, 20:14.** The tablet's `POST /v1/time-entries` returns `201`
+  with `hasConflict: true` and a pair list naming the 09:00–12:00 entry. The
+  app says *"This overlaps your 09:00–12:00 pantry shift."* Dee fixes it in
+  one edit before she puts the tablet down.
+- **Saturday, 20:20.** The connection dropped before the app rendered that
+  response. The outbox retries with the same client-generated `id` and gets
+  `200` with `Idempotency-Replay: true` — and the same `hasConflict` and
+  pair list, because the replay is the entry in its read shape (D-055,
+  §16.22). The warning is not a one-shot that a lost response can destroy.
+- **Tuesday, 08:50.** Nadia's queue shows fourteen pending entries; one row
+  carries a conflict marker with the same pair detail, because the flag is
+  computed when the queue is read. It cannot have gone stale since Saturday.
+- **Tuesday, 08:52.** She approves it anyway. Nothing blocks her, and the
+  response repeats the entry with `hasConflict: true`, so the marker does not
+  disappear from her screen the moment she acts on it.
+- **The following week.** Dee opens November. Both entries still carry the
+  flag. Nothing had to be stored, delivered or remembered for that to be
+  true.
+
+The question was never "should the volunteer be told" — D-047 already says
+the submission succeeds and carries the pair. It is where that fact *lives*:
+in a status column with a lifecycle of its own, in a notification row with
+delivery behind it, or in the entries themselves.
+
+**The rules.**
+
+1. **Derived on every read, never stored.** `hasConflict` and `conflicts` are
+   computed from the volunteer's entries as they exist at the moment of the
+   read. There is no `conflictStatus` column, no `resolvedAt`, no
+   `resolvedBy`, no resolve route, and no stored copy to fall out of step
+   with the intervals it describes.
+2. **The definition and its membership are unchanged.** D-047's rules stand
+   exactly: submitted timestamp entries of one volunteer, across every
+   project and activity, half-open intervals, no tolerance, duration-only
+   entries excluded, rejected entries excluded. This decision changes neither
+   what a conflict is nor when one exists — only where the answer is kept.
+3. **Both fields are always present, and the list is bounded by the pair.**
+   `hasConflict` is a boolean on every entry representation, `false` included.
+   `conflicts` is an array, `[]` when there is none — never `null`, never
+   omitted, so a client never has to distinguish "no conflicts" from "the
+   server did not send the field". Each member is
+   `{ entryId, startedAt, endedAt }`: the partner's identity and the interval
+   that produced the overlap, not a copy of the partner entry. Members are
+   ordered by `startedAt` ascending, then `entryId` ascending, so two reads of
+   an unchanged entry return byte-identical lists.
+4. **The pair is symmetric.** If A conflicts with B then B conflicts with A,
+   and both carry each other. The earlier entry is not "the conflicted one":
+   D-047 already says the earlier entry is never re-judged, and a flag on one
+   side only would make the marker depend on which row a screen happened to
+   load.
+5. **The third filter is a boolean, not an enum.** §15.8.6's conflict filter
+   becomes `hasConflict=true|false`. Omitted, both are returned, so the
+   filter is a narrowing and never a default that hides rows. Any other value
+   is `400 VALIDATION_ERROR` (§16.4). It combines with every other filter
+   under §15.8.7's AND rule, and because it is part of a request's filter set
+   it is part of the cursor's identity: changing it invalidates an existing
+   cursor with `CURSOR_QUERY_MISMATCH` (§16.21, D-054), automatically and
+   with no extra rule.
+6. **There is no resolve act, because there is no status to resolve.**
+   Resolution is D-047's answer — edit one of the two entries, or reject it.
+   Rejecting clears the flag on the partner for free, since membership
+   excludes rejected entries. Nothing is written to record that a conflict was
+   dealt with, and nothing needs to be: the intervals are the record.
+7. **Approval warns and proceeds.** A conflicted entry is approvable by
+   whoever §16.18 already allows. No transition is added, no `409` is raised,
+   and `409 INVALID_TRANSITION` never means "unresolved conflict". The
+   approval queue's row carries `hasConflict` so the reviewer sees it before
+   deciding, and the approval response returns the entry in its read shape
+   with the flag repeated. A conflict is information for the person deciding,
+   not a precondition they must satisfy first.
+8. **`hasConflict` is a view field, outside `version`.** A partner entry
+   arriving changes what the read says but changes nothing about the stored
+   entry: no `version` bump, no `updatedAt` change, no audit row (B11), and
+   the name never appears in `details.changedFields` (D-061) — that field
+   reports what a *write* changed. A client must not treat a difference
+   between its cached `hasConflict` and a response's as a concurrent edit, and
+   must not send it back as one.
+9. **No notification.** A detected conflict creates no notification row, and
+   B10's delivery list does not include one. Recording why, because this was
+   the contested half: §6.1 makes notifications persistent server records, so
+   a notification is the only way to tell a *different device* later — but
+   the fact itself is already durable and current on both entries, the person
+   who can act on it is looking at one of them, and an advisory flag does not
+   earn a permanent inbox item that can outlive the overlap it describes. A
+   client may warn *before* sending, by comparing its own cached entries; that
+   is a courtesy, never the record, and the server's flag decides.
+10. **The client announces it at the three moments a response can carry it.**
+    This is a contract obligation on clients, stated here because the warning
+    is the only announcement the system makes: (a) on `201 Created` for the
+    submission, (b) on `200` with `Idempotency-Replay: true` for a retry of
+    that same submission, and (c) in the per-item result of a bulk sync
+    (§15.12 item 30), so a flushed offline outbox does not swallow the flag on
+    every entry at once. A client that shows "Saved" and discards the body has
+    taken the decision to tell nobody.
+11. **No new code, route or permission.** A conflict adds no error code, no
+    endpoint and no authority rule: whoever may read the entry may see its
+    flag. The pair list may name an entry the reader cannot open — a project
+    filter (§15.8.4) returns one side, and a coordinator may lack authority on
+    the partner's project — so a client renders the partner by `entryId` and
+    times and does not assume a fetch of it will succeed.
+12. **Reports are untouched.** A conflict does not change whether hours count.
+    Approving a conflicted entry counts its hours exactly as approving any
+    other does; what an approved hour is remains B9's question. A conflict is
+    a claim about the same person's time, not a discount on it.
+
+**The shapes.**
+
+An entry with a conflict, as returned by any read, by `201`, by an approving
+`200` and by a replay:
+
+```json
+{
+  "id": "2b7d5c1e-8f3a-4c92-b0d4-1e6f8a9c7d20",
+  "workDate": "2026-11-21",
+  "startedAt": "2026-11-21T10:00:00Z",
+  "endedAt": "2026-11-21T13:00:00Z",
+  "durationSeconds": 10800,
+  "projectId": "0d9a…",
+  "activityId": "5f2b…",
+  "notes": null,
+  "approvalStatus": "pending",
+  "version": 1,
+  "hasConflict": true,
+  "conflicts": [
+    {
+      "entryId": "6f1c9a3e-0b7d-4f51-a8c3-2d9e4b6f1a77",
+      "startedAt": "2026-11-21T09:00:00Z",
+      "endedAt": "2026-11-21T12:00:00Z"
+    }
+  ],
+  "submittedAt": "2026-11-23T08:10:11Z",
+  "updatedAt": "2026-11-23T08:10:11Z"
+}
+```
+
+The same entry with no conflict, unchanged elsewhere:
+
+```json
+  "hasConflict": false,
+  "conflicts": [],
+```
+
+The filter, asking one volunteer's November for the rows that need a look:
+
+```http
+GET /v1/time-entries?volunteerId=…&from=2026-11-01&to=2026-11-30&hasConflict=true&pageSize=50
+Authorization: Bearer …
+```
+
+The bulk-sync item result carries the same two fields; item 30 still owns the
+rest of that result's shape, so this is the part it must include:
+
+```json
+{
+  "id": "2b7d5c1e-8f3a-4c92-b0d4-1e6f8a9c7d20",
+  "outcome": "accepted",
+  "replay": true,
+  "hasConflict": true,
+  "conflicts": [ { "entryId": "6f1c9a3e-…", "startedAt": "2026-11-21T09:00:00Z", "endedAt": "2026-11-21T12:00:00Z" } ]
+}
+```
+
+**Worked examples.**
+
+| Event | What the entry reads | `version` |
+|---|---|---|
+| 09:00–12:00 exists; 10:00–13:00 submitted | `hasConflict: true`, one pair | `1` on both |
+| The same submission retried after a lost response | `200`, replay, same flag and pair | unchanged |
+| Coordinator rejects the 09:00–12:00 entry | `hasConflict: false`, `[]` — no write touched the 10:00 entry | unchanged |
+| Volunteer edits 10:00–13:00 to 12:00–15:00 | `hasConflict: false`, `[]` | `2` — the edit, not the flag |
+| Volunteer edits only `notes` | `hasConflict` unchanged | `2` — D-059's immaterial edit |
+| Two entries ending and starting at 12:00 | `false` both ways | unchanged |
+| A duration-only entry on the same date | `false` — no position in the day to compare | unchanged |
+| An approved conflicted entry, then its partner is rejected | `hasConflict: false`; still `approved` | unchanged |
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **Derived flag and pair list on every read (recommended)** | One representation, always current; no column, no lifecycle, no resolve act; a conflict can appear or vanish without a write to the entry and the read simply answers differently | Every read of an entry pays a comparison over the volunteer's overlapping window; the announcement depends on a client rendering it; nothing records that anyone was told |
+| A stored enum `conflictStatus: none \| unresolved \| resolved` | A filter answered from an index; `resolved` is explicit | Needs a resolve act nobody performs, since resolution is editing or rejecting; `resolved` becomes a second record of what the intervals already say, and goes wrong when the *partner* is rejected by someone else |
+| A stored boolean column maintained by trigger or service | Cheap to filter; a row to point at | Every write path must recompute both sides; one missed path (a rejection, a restore, an assignment change) leaves a stored lie that no read can detect |
+| Deriving it in the queue view only | The reviewer sees it without paying on every entry read | The volunteer — the person who can fix it in one edit — sees nothing, and D-047's response field has no source |
+| A notification row per detected conflict | The other device learns on its next sync | A permanent inbox item for an advisory fact, delivery work in B10, read state, retention, and a row that can claim an overlap that no longer exists; and no backfill if added later |
+| Blocking approval until the conflict is separated | Nothing reaches the ledger with contradictory time | Turns an advisory fact into a gate D-047 explicitly rejected, and strands the queue on a volunteer who may not return |
+
+**Accepted consequences.**
+
+- **A read costs a comparison.** Each entry read looks at the volunteer's
+  entries for the surrounding window, so the flag is not free per row. That
+  is B15's index to size; the alternative is a stored value that must be
+  recomputed by every writer instead.
+- **The flag can change with no version and no audit row.** A client that
+  diffs its cache must treat `hasConflict` and `conflicts` as view data, and
+  any future "unseen conflict" counter cannot be stored either — it would be
+  a second copy of a derived fact, which is the thing this decision refuses.
+- **The announcement is a one-shot per response.** Nothing anywhere records
+  that a warning was displayed. A volunteer who never reopens either entry,
+  and whose client swallowed the response, learns nothing until she does.
+- **The pair list can name what the reader cannot open.** A project filter
+  returns one side of a conflict, and a coordinator may have no authority on
+  the partner's project; the screen must survive a `403` or `404` on the
+  partner and still say what overlaps what.
+- **Silence on the other device is by design.** Dee editing one entry on her
+  tablet does not tell her phone. The phone's next read is correct, and that
+  is the whole of the promise.
+
+**Left open.** Whether a coordinator is told that a queue entry conflicts
+(visible on the row today; a notification if ever wanted is B10's work, and
+this decision's refusal of conflict notifications would have to be revisited
+rather than assumed); whether a coordinator may edit or reject another
+volunteer's entry at all, which is the remainder of §15.12 item 14 now that
+there is no separate resolve act; whether an instance with a strict approval
+policy should ever gate on a conflict (rejected for the MVP, revisitable if
+disputes show up); whether each member of `conflicts` should also carry
+`projectId` so a client can render the partner without a second read (a
+larger body and a field that names something the caller may not be allowed to
+see); whether item 20's voiding, if it exists, removes a voided entry from
+membership — the default is that membership follows D-047 plus whatever item
+20 adds; and B15's index for the computed filter.
+
+**Resolves:** §15.12 item 21. It supersedes §15.8.6's third filter in part
+(boolean, not status), replaces the "conflict status" axis §16.25 rule 13
+reserved with a flag, answers D-047's deferred question about whether an
+unresolved conflict blocks approval, and narrows §15.12 item 14 to approval to
+edit or reject. It constrains §16.22 rule 4 and §16.16 (a replay carries the
+derived fields, which is how a lost response still warns), §16.27 rule 6 (a
+conflict is never a refusal, and the flag is computed like any read), §15.12
+item 30 (its per-item result must carry `hasConflict` and `conflicts`), B10
+(no conflict notification), B11 (the flag is not an audit event, while every
+write that creates one still is), B9 (a conflicted hour counts like any other)
+and B15 (the index the computed filter needs).
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -4946,7 +5222,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | The record discusses totals throughout but never defines a reported hour |
-| **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery |
+| **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery. §16.29 (D-062) records that an advisory conflict raises no notification, so this list has one fewer entry |
 | **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | Four decisions already name it as an output without specifying it |
 | **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | **Resolved — D-055 (§16.22).** Every mutation returns the changed resource in its read shape; creates are `201` + `Location`, replays `200` + `Idempotency-Replay` (by client id or by the uniqueness constraint), `409` keeps D-049's `current` copy, no mutation returns counts, and archival's impact comes from a confirmation read. Deletion is the only `204` |
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
@@ -4965,13 +5241,14 @@ so an edit's effect on approval no longer depends on which client made it.
 The refusal rule is settled as well (§16.27), so a submission the server
 will not accept has a defined home — the device — and no server-side table
 to design, index or purge. Reconciliation is settled too (§16.28), so a
-stale write has an answer that neither retries nor overwrites. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+stale write has an answer that neither retries nor overwrites, and conflict
+values are settled as well (§16.29), so the entry read shape is final and the
+approval queue filters a boolean rather than a status. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
 **What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** overlap and conflict values (§15.12 item 21) next, with
-concurrent edits settled in §16.28 and conflict responses closed with it —
-with B1, B2, B4–B8, B12, B13, B14 and B16
-already closed, the state machine, material change and preserved
-submissions closed in §16.25–§16.27, and B3 deferred by scope (D-048) —
-followed by the feature-conditional items as each feature is scheduled.
+**Order proposed:** voiding (§15.12 item 20) next — with B1, B2, B4–B8,
+B12, B13, B14 and B16 already closed, the state machine, material change,
+preserved submissions, reconciliation and conflict values closed in
+§16.25–§16.29, and B3 deferred by scope (D-048) — followed by the
+feature-conditional items as each feature is scheduled.
