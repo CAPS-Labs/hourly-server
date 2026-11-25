@@ -1158,7 +1158,10 @@ while a `not_required` entry keeps its handling (§16.26). **D-060** — a
 refused submission has three outcomes and stores nothing: a `400`, `403`,
 `404` or `409` is correctable and the client keeps the submission in a
 visible blocked state, a `429` or `5xx` is retryable with the same
-client-generated id, and overlap is never a refusal (§16.27). Gaps not yet
+client-generated id, and overlap is never a refusal (§16.27). **D-061** — a stale write gets
+one `409 VERSION_MISMATCH` carrying the current entry and
+`details.changedFields`, and the person re-applies it by hand: nothing
+retries, forces or merges on its own (§16.28). Gaps not yet
 raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -1836,8 +1839,10 @@ The existing direction remains that material changes to an approved entry may tr
 - Repeated edits while awaiting reapproval are ordinary edits to a
   `pending` entry, each one a new `version` (§16.26, §16.16).
 
-**Still open:** how concurrent edits are detected and reconciled. Detection
-is D-049's version guard; the reconciliation interface is §15.12 item 6.
+**Answered 25 November 2026 (§16.28, D-061):** detection is D-049's
+version guard, and reconciliation is a `409 VERSION_MISMATCH` carrying the
+current entry and the names of the fields that moved, which the person
+re-applies by hand. Nothing retries, forces or merges on its own.
 
 ---
 
@@ -2165,7 +2170,11 @@ The following items remain unresolved. They should be addressed before or during
    a refusal stores nothing and the client holds the submission in a
    visible blocked state until it is corrected or deliberately discarded
    (§16.27, D-060).**
-6. Decide how edits made concurrently by multiple authorized users are detected and reconciled. **Detection resolved 23 November 2026 — optimistic concurrency on an integer `version`, with `409 VERSION_MISMATCH` carrying the current representation (§16.16, D-049). The reconciliation interface for a detected edit remains open.**
+6. ~~Decide how edits made concurrently by multiple authorized users are
+   detected and reconciled.~~ **Resolved 25 November 2026 — optimistic
+   concurrency on an integer `version` with `409 VERSION_MISMATCH` (§16.16,
+   D-049), and a collision answered with `current`, `changedFields` and a
+   hand re-apply rather than a retry, a force or a merge (§16.28, D-061).**
 
 ### Priority 2 — Retrieval and pagination
 
@@ -2206,7 +2215,10 @@ The following items remain unresolved. They should be addressed before or during
 27. Design the first-administrator bootstrap process. **Now a per-instance installation step (§16.17, D-050); the process is still undesigned.**
 28. Finalize database schema, constraints, and transaction requirements.
 29. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
-30. Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses. **Retry and idempotency resolved 23 November 2026 — the entry id is the deduplication record and `version` guards writes (§16.16, D-049). Change tracking and conflict responses remain open.**
+30. Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses. **Retry and idempotency resolved 23 November 2026 — the entry id is the
+deduplication record and `version` guards writes (§16.16, D-049). Conflict
+responses settled 25 November 2026 (§16.28, D-061); change tracking remains
+open.**
 31. Define API versioning, security controls, deployment, backups, and monitoring. **Deployment is per instance (§16.17, D-050), so API version skew between an installed app and an instance that upgrades on its own schedule is a supported state rather than a hypothetical. Versioning is contract-blocking, not operational polish.** **URL versioning settled 24 November 2026: every route is prefixed `/v1`, and every path in this record is written that way.** What remains open is the compatibility and deprecation policy — what an old client does against a `/v2` instance, and for how long `/v1` is served.
 
 Items may be combined or deferred where appropriate. The list is a planning aid, not a requirement to settle every item before drafting any part of the API contract.
@@ -2235,17 +2247,19 @@ The contract should explicitly identify which behaviors are finalized, which are
 ## Outstanding decisions (maintained in place)
 
 Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
-§16.26) and item 5 (preserved invalid submissions, §16.27). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+§16.26), item 5 (preserved invalid submissions, §16.27) and item 6
+(concurrent-edit reconciliation, §16.28). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are nearly closed: the
-state machine (item 1, §16.25), material change (item 2, §16.26) and
-preserved invalid submissions (item 5, §16.27) are settled, leaving
-concurrent edits (item 6) as the next one to take.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed but for
+conflict values: the state machine (item 1, §16.25), material change
+(item 2, §16.26), preserved invalid submissions (item 5, §16.27) and
+concurrent-edit reconciliation (item 6, §16.28) are settled, leaving
+overlap and conflict status values (item 21) as the next one to take.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2387,7 +2401,7 @@ Errors use the envelope already illustrated in §10.5, now confirmed as the cont
 | `401` | `UNAUTHENTICATED` | Missing, malformed or expired credentials, a revoked or ended session, and a reused refresh token — all indistinguishable (§16.23, D-056) |
 | `403` | `FORBIDDEN` (with field codes) | Authenticated, but a supplied **filter value** lies outside the caller's scope (§15.8.9) |
 | `404` | `NOT_FOUND` | Addressed resource absent **or** outside scope — identical status and body either way |
-| `409` | `CONFLICT`, `VERSION_MISMATCH`, `DATE_NOT_ELIGIBLE`, `INVALID_TRANSITION` | State conflicts, including the in-place edit path of §15.5, an entry date outside the volunteer's eligibility (§16.24, D-057), and an approval decision the entry's state does not allow (§16.25, D-058) |
+| `409` | `CONFLICT`, `VERSION_MISMATCH`, `DATE_NOT_ELIGIBLE`, `INVALID_TRANSITION` | State conflicts, including the in-place edit path of §15.5, an entry date outside the volunteer's eligibility (§16.24, D-057), and an approval decision the entry's state does not allow (§16.25, D-058). `VERSION_MISMATCH` alone carries `details.changedFields`, the names of the fields that moved (§16.28, D-061) |
 | `413` | `PAYLOAD_TOO_LARGE` | Body over the 1 MiB cap, refused before it is parsed (D-053, §16.20) |
 | `429` | `RATE_LIMITED` | Token bucket exhausted; carries `Retry-After` (D-053, §16.20) |
 | `500`, `503` | `INTERNAL_ERROR`, `SERVICE_UNAVAILABLE` | No internals, no identifiers |
@@ -2998,7 +3012,8 @@ as an identity, not a request label.
 - A `409 VERSION_MISMATCH` carries a fixed `details` object for that code:
   `{ "currentVersion": 2, "updatedAt": "…", "current": { …entry… } }`.
   `details` varies by code, not by endpoint (§16.4), and `current` saves a
-  second round trip for a device that has been offline for hours.
+  second round trip for a device that has been offline for hours. D-061 adds
+  `changedFields` beside these three (§16.28).
 - A client must not retry a `409` unchanged. It reapplies the change to
   `currentVersion`, or shows the conflict to the person who is editing.
 - The version is entry-wide, not per field. Per-field merging is a
@@ -3114,7 +3129,7 @@ and item 30's retry/idempotency half. Backlog item B4 (§17). It also
 constrains B12: a create returns the created representation.
 
 **Deferred:** the reconciliation interface for a detected concurrent edit
-(item 6's other half), and whether a submission shortly after a stopwatch
+(item 6's other half, now settled in §16.28), and whether a submission shortly after a stopwatch
 stop is merged rather than flagged — a repeated submission of one draft can
 no longer duplicate anything, so that is now a merge-UI question alone.
 Also deferred: whether `version` is exposed as `If-Match`, and idempotent
@@ -3946,7 +3961,8 @@ confirms, and three things have to be true at once, without a refresh:
    the state was already the requested one.
 6. **`409 VERSION_MISMATCH` keeps the shape D-049 fixed** —
    `{ "currentVersion", "updatedAt", "current": { …resource… } }` — for every
-   versioned resource, not only entries. The `current` copy saves the round
+   versioned resource, not only entries. Entries add `changedFields` to it
+   (§16.28, D-061). The `current` copy saves the round
    trip; a client replaces its copy wholesale rather than merging two versions
    field by field, which is how a stale field survives unnoticed.
 7. **No mutation returns counts.** What the act affected is named by the
@@ -4493,7 +4509,8 @@ D-059 (§16.26).
 
 **Confirmed decision (D-059) — 24 November 2026.**
 
-§15.5.4 left four questions open when it recorded that an approved entry may be edited: which changes are material, whether a material edit demotes the entry immediately or leaves it approved while reapproval is pending, what repeated edits do, and how concurrent edits are detected. The last one is §15.12 item 6's. §6.6 had already confirmed the direction — "material changes to approved entries that affect hours or substantive details should trigger reapproval when the policy requires it; prior approval should remain in audit history" — and D-058 reserved the `approved` → `pending` transition for this item. Nothing defined "material", so the direction could not be implemented.
+§15.5.4 left four questions open when it recorded that an approved entry may be edited: which changes are material, whether a material edit demotes the entry immediately or leaves it approved while reapproval is pending, what repeated edits do, and how concurrent edits are detected — the last
+of which was §15.12 item 6's, settled in §16.28 (D-061). §6.6 had already confirmed the direction — "material changes to approved entries that affect hours or substantive details should trigger reapproval when the policy requires it; prior approval should remain in audit history" — and D-058 reserved the `approved` → `pending` transition for this item. Nothing defined "material", so the direction could not be implemented.
 
 **The case this protects.** Nadia approved Dee's Saturday shift on 12 November: 13:00–16:30, four hours, at the pantry.
 
@@ -4574,7 +4591,9 @@ The same entry with only its notes corrected returns `200` with `"approvalStatus
 
 **Rejected alternatives.** A client-declared `material` flag (an unchecked client controls its own review); "anything except `notes` is material" written as a deny-list (new fields default to material by accident, and a future convenience field forces reapproval for nothing); keeping `approved` while reapproval is pending (unverified hours reported as approved); re-running the submission policy on an edit (contradicts D-045); requiring a fresh submission rather than an edit (throws away the record's identity and its audit chain, and D-049's version guard exists so that an edit can be attributed).
 
-**Left open.** Whether a note should be material on a project-less entry, where the description carries the substance and the note may too; whether a material edit made by the approver in the same session should reopen at all; whether the reapproval request needs its own timestamp rather than relying on `updatedAt`; whether a client should warn the owner before an edit sends an approved entry back to the queue; and item 6's reconciliation surface, which decides what a reviewer sees when the version they opened is not the version they decide.
+**Left open.** Whether a note should be material on a project-less entry, where the description carries the substance and the note may too; whether a material edit made by the approver in the same session should reopen at all; whether the reapproval request needs its own timestamp rather than relying on `updatedAt`; and whether a client should warn the owner before an edit sends an
+approved entry back to the queue. What a reviewer sees when the version they
+opened is not the version they decide is now §16.28's (D-061).
 
 **Resolves:** §15.12 item 2, and with it §13's reapproval item. It implements §6.6's confirmed direction, enables the `approved` → `pending` transition D-058 reserved, and constrains B9 (approved hours and `not_required` hours are different claims) and B11 (the edit and the approval are separate audit rows, both retained).
 
@@ -4680,9 +4699,229 @@ The retryable case differs in one field and one instruction: `"state": "queued"`
 
 **Rejected alternatives.** An `unaccepted_submissions` table (the only option that answers "what did they try to send?", but it puts hours the volunteer has not successfully claimed back into the database and needs its own retention, visibility and audit rules, superseding D-044 in part); treating every refusal as a `rejected` entry (one word for two different acts, and approval queues and totals would then need to exclude them); accepting first and validating later (stores invalid rows so they can be explained — the same table by another name); a `200` with `"stored": false` (a success code for a failure, and every client must still branch); silent retry with a fresh `id` per attempt (turns one submission into a duplicate, or into two entries when the first attempt actually succeeded).
 
-**Left open.** Whether a permanently blocked submission should ever raise a notification to the volunteer or a coordinator (B10 owns delivery, and this decision deliberately records no fact to notify from); whether the device should show blocked items differently from unsubmitted drafts; whether a blocked item should survive sign-out on a shared device; whether `details` should carry enough for a client to propose a correction, such as the nearest eligible date, rather than only the reason; and item 6's reconciliation surface, which decides what a reviewer sees when the version they opened is not the version they decide.
+**Left open.** Whether a permanently blocked submission should ever raise a notification to the volunteer or a coordinator (B10 owns delivery, and this decision deliberately records no fact to notify from); whether the device should show blocked items differently from unsubmitted drafts; whether a blocked item should survive sign-out on a shared device; and whether `details` should carry enough for a client to propose a
+correction, such as the nearest eligible date, rather than only the reason.
+What a stale edit does next is §16.28's (D-061).
 
 **Resolves:** §15.12 item 5. It closes the open statements in §5.8, §7.5 and §10.5, replaces §10.5's illustrative `PROJECT_ASSIGNMENT_ENDED` with D-057's `DATE_NOT_ELIGIBLE`, and constrains §16.11 (a refused submission is a blocked draft, not a stored one), D-039 (no new status class and no new envelope) and B10 (there is no refusal event to deliver).
+
+## 16.28 A stale edit is refused, shown what changed, and re-applied by hand
+
+**Confirmed decision (D-061) — 25 November 2026.**
+
+§15.12 item 6 asked two things in one sentence: how concurrent edits are
+*detected* and how they are *reconciled*. D-049 settled detection — an
+integer `version` compared inside the write, `409 VERSION_MISMATCH` carrying
+`current` — and said plainly that it was leaving "the reconciliation
+interface for a detected concurrent edit" to this item. Three later sections
+repeated the debt: §15.5.4's "Still open", and the "Left open" lists of
+§16.26 and §16.27, each ending with the same clause about what a reviewer
+sees when the version they opened is not the version they decide. Until it is
+settled the contract says only "the write failed", and the three answers a
+client is likely to invent on its own — retry it, force it, or merge it — are
+the three that lose work.
+
+**The case this protects.** Saturday pantry, 08:15. Nadia keeps the approval
+queue open on the office tablet, Tom has the same queue on his phone, and Dee
+is at the door signing people in.
+
+- Nadia opens Dee's Saturday entry at `version: 7` — four hours of food
+  preparation — and is called away before she decides.
+- At 08:17 Dee fixes a mis-set end time on her own phone. Her `PATCH` carries
+  `version: 7` and is accepted as `version: 8`; the entry is now five hours.
+- At 08:19 Tom approves from the copy he loaded at 08:12, `version: 6`. He
+  must not get a green tick: he would be approving a number that no longer
+  exists. He gets `409 VERSION_MISMATCH` with the current entry, which shows
+  five hours still `pending`.
+- At 08:24 Nadia taps Approve from her `version: 7` copy. Same answer, same
+  body — and her screen can say "hours changed from 4:00 to 5:00 while you
+  were away" without a second fetch, because `changedFields` names `hours`
+  and `current` shows the value.
+- Had either of them been able to force the write, Dee's correction would
+  vanish and nobody would learn of it: the audit would record an approval of
+  four hours against an entry that now says five.
+
+**Decision in one line: one code for every stale write, carrying the current
+entry and the names of the fields that moved; nothing retries, forces or
+merges on its own, and a decision is taken again on what the reviewer can now
+see rather than re-applied.**
+
+**Rules.**
+
+1. **One code, `409 VERSION_MISMATCH`, on every versioned route.** An edit, an
+   approval, a rejection, an archive: the same code, the same envelope
+   (D-039), the same `details` keys. There is no `ALREADY_DECIDED` and no
+   per-route variant, because the fact is the same — the caller wrote against
+   a version that is no longer current — and a client should not have to learn
+   one fact once per route.
+2. **`details` carries the current entry, not a description of it.**
+   `currentVersion`, `updatedAt` and `current` as D-049 fixed them, where
+   `current` is the entry in its full read shape: `approvalStatus`,
+   `reviewedBy`, hours, `conflicts` — everything the person needs in order to
+   decide again. "Someone else changed this" costs a round trip on the
+   connection that has just failed.
+3. **`changedFields` names what moved.** One key added to that same `details`
+   object: an array of field names, the union of the fields the server changed
+   in the versions after the one the caller sent — `["hours"]`,
+   `["notes", "category"]`, `[]` when only server timestamps moved. It is
+   computed from the field names recorded with each accepted mutation, the
+   same record B11's audit trail will expose. Names only: no values, no
+   per-version breakdown, no timestamps.
+4. **It is a hint, and `current` is the authority.** `changedFields` may be
+   absent — a retention window that dropped the intervening records, a
+   resource whose history is not kept — and a client must render correctly
+   without it. What a client must not do is read the list as permission to
+   keep its own values for the fields it does not name: the entry is replaced
+   wholesale from `current`, as §16.22 already requires.
+5. **Nothing retries automatically.** Not the client's outbox, not a
+   background sync, not the server. A stale write is the one case where the
+   right action depends on what the other person did, and the client does not
+   know that.
+6. **No `force`.** No `force: true`, no `If-Match: *`, no "overwrite anyway".
+   Deliberately replacing a newer version is an ordinary write sent at
+   `current.version` after reading `current`: the same path as any edit, the
+   other writer's value left in the audit trail, and no way to do it without
+   having seen what is being overwritten.
+7. **No locks.** No edit lease, no `423 Locked`, no "Nadia is editing this".
+   An offline phone holds a draft for days, so a lock either expires before
+   the write arrives or outlives the phone that took it; and the case locks
+   exist for — two people in one entry at the same second — is the case the
+   version check already catches, in one round trip and only when it happens.
+8. **No field-level merge.** The version is entry-wide (D-049). Merging needs
+   a winner rule per field, and the right rule differs: two notes can be
+   joined, two durations cannot.
+9. **A decision is taken again, not re-applied.** When an approval or a
+   rejection collides, the client shows `current` and asks the reviewer to
+   decide on it; it must not offer "re-apply my approval". Re-sending the
+   decision would approve hours the reviewer never read, which is the act
+   D-058 says a person performs. Where `current.approvalStatus` is already
+   decided, the reviewer sees who decided and when, and their tap is refused
+   as stale — the repeat that returns `200` and writes nothing is the one made
+   at the *current* version, not the one made against an old copy.
+10. **A collision is settled before anything else is judged.** The version
+    check runs before the eligibility and state checks (D-058), so a stale
+    body gets `VERSION_MISMATCH` even where the same body would also be an
+    `INVALID_TRANSITION` or a `DATE_NOT_ELIGIBLE`. The person reads the
+    current entry first; the next attempt is judged on its own merits, one
+    reason at a time.
+11. **The stale copy is never silently discarded.** For an offline queue this
+    is D-060's blocked state: what the volunteer typed stays on the device
+    until they re-apply it or deliberately discard it (§16.27).
+
+**The shapes.** Nadia's approve at 08:24, and the answer:
+
+```http
+POST /v1/time-entries/6f1c9a3e-…/approval HTTP/1.1
+Authorization: Bearer eyJhbGciOi…
+Content-Type: application/json
+
+{ "version": 7 }
+```
+
+```http
+HTTP/1.1 409 Conflict
+Content-Type: application/json
+X-Request-Id: 018f3b02-77d4-7a10-9c31-4e8b2d6f0a17
+
+{
+  "error": {
+    "code": "VERSION_MISMATCH",
+    "message": "This entry changed while you were reading it.",
+    "requestId": "018f3b02-77d4-7a10-9c31-4e8b2d6f0a17",
+    "details": {
+      "currentVersion": 8,
+      "updatedAt": "2026-11-21T08:17:04Z",
+      "changedFields": ["hours"],
+      "current": {
+        "id": "6f1c9a3e-…",
+        "version": 8,
+        "approvalStatus": "pending",
+        "workDate": "2026-11-21",
+        "durationSeconds": 18000,
+        "category": "food_preparation",
+        "submittedAt": "2026-11-21T07:58:00Z",
+        "updatedAt": "2026-11-21T08:17:04Z"
+      }
+    }
+  }
+}
+```
+
+Her screen reads "Dee changed the hours from 4:00 to 5:00 at 08:17 — approve
+5:00?", and Approve resends `{ "version": 8 }`. If she had instead seen five
+hours already approved by Tom, no approve button would be offered at all.
+
+The volunteer's side is the same body with a different person behind it. Dee's
+tablet, still holding a note it drafted against `version: 5`, sends:
+
+```http
+PATCH /v1/time-entries/6f1c9a3e-… HTTP/1.1
+Content-Type: application/json
+
+{ "version": 5, "notes": "Sorted the tinned goods, then the fridge." }
+```
+
+and receives `currentVersion: 6` with `changedFields: ["startedAt"]`: her
+phone's earlier correction moved the start time, her note is unaffected, and
+`current` is what she re-applies it to. Until she does, D-060's blocked item
+keeps the text on the device.
+
+| Option | What happens at 08:19 | What it costs |
+|---|---|---|
+| **One code, with `current` and `changedFields`, re-applied by hand (recommended)** | Tom is told the entry is now five hours and still pending; he decides again | Clients must build a conflict screen, and every mutation carries a version |
+| A second code, `ALREADY_DECIDED`, for decisions | Same screen, one more branch | Two names for one fact; the client still needs `current` to say who decided and when |
+| Automatic re-apply at the new version | The approval lands on five hours nobody read | Approves work the reviewer never saw; a rejected-then-corrected entry is approved by a decision about different work |
+| `force: true`, or `If-Match: *` | Tom's approval wins and Dee's correction is overwritten | Silent loss, and an audit row that disagrees with the entry |
+| Field-level merge | Hours from Tom, note from Dee | Needs a winner rule per field, and two durations cannot be merged |
+| Edit locks held while a reviewer has the entry open | Tom is refused until Nadia closes it | A lock nobody releases: Nadia was called away at 08:15 and the entry waits all day |
+
+**Accepted costs.**
+
+- Every mutation carries a version, so a client that has not read the entry
+  cannot write to it — D-049's cost, restated here because reconciliation is
+  where people meet it.
+- A conflict screen is a screen, and it is the one place where a client's own
+  interface can lose work by being wrong.
+- `changedFields` is best-effort. A client that leans on it instead of
+  rendering `current` shows a partial picture once history is trimmed.
+- A collision costs a full entry in the reply — a few hundred bytes — on every
+  occasion, not only the one that matters.
+- Two coordinators working one queue collide more often than two volunteers,
+  because putting several people in front of the same rows is what a queue is
+  for.
+
+**Rejected alternatives.** `updatedAt` instead of a version (same-second
+writes look concurrent; D-049 rejected it already); a `409` without `current`
+(a second round trip on the connection that just failed, which an offline
+client may never get); returning a field-level diff instead of the entry
+(§16.22's rule that a client never merges); turning a collision into a
+server-side queue item or notification (that is B10's delivery, and it would
+let a stored row outlive the fact it describes); locking the entry for the
+duration of a review; and last-write-wins for `notes` alone (the one field
+where a merge looks safe is the one where both people's wording tends to
+matter).
+
+**Left open.** Whether `changedFields` should carry the previous and current
+value per field (a larger body, and `current` already holds half of it);
+whether an administrator should be able to see that a decision was refused as
+stale (an audit question for B11 — today the refusal leaves no row, by D-060's
+rule that a refusal stores nothing); whether a conflict screen should offer
+"keep my version" as a whole-entry replacement in one tap (it is the same
+write at `current.version`, but the screen would have to show what it
+replaces); whether two devices belonging to one volunteer should detect the
+collision before sending, which saves a round trip and can never be relied on;
+and whether a reviewer whose decision was refused should be told once they
+have closed the app (B10 owns delivery).
+
+**Resolves:** §15.12 item 6's reconciliation half — with D-049's detection the
+item is closed — and §15.5.4's last open question. It clears the "Left open"
+clauses in §16.26 and §16.27, and settles §15.12 item 30's conflict-response
+half, leaving change tracking there. It constrains §16.4 (`changedFields` is a
+`details` key on one existing code, with no new status and no new code),
+§16.22 (the `409` body gains one key and keeps its shape), D-058 (a stale
+decision is re-taken, never re-applied), D-060 (a refused edit is a blocked
+item on the device) and B11 (the field-name change record the audit trail
+exposes is what makes `changedFields` computable).
 
 ------------------------------------------------------------------------
 
@@ -4724,13 +4963,15 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 than a vocabulary to invent. The reapproval rule is settled too (§16.26),
 so an edit's effect on approval no longer depends on which client made it.
 The refusal rule is settled as well (§16.27), so a submission the server
-will not accept has a defined home — the device — and no server-side
-table to design, index or purge. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+will not accept has a defined home — the device — and no server-side table
+to design, index or purge. Reconciliation is settled too (§16.28), so a
+stale write has an answer that neither retries nor overwrites. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
 **What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** concurrent edits (§15.12 item 6) next, then overlap
-and conflict values (item 21) — with B1, B2, B4–B8, B12, B13, B14 and B16
+**Order proposed:** overlap and conflict values (§15.12 item 21) next, with
+concurrent edits settled in §16.28 and conflict responses closed with it —
+with B1, B2, B4–B8, B12, B13, B14 and B16
 already closed, the state machine, material change and preserved
 submissions closed in §16.25–§16.27, and B3 deferred by scope (D-048) —
 followed by the feature-conditional items as each feature is scheduled.
