@@ -569,8 +569,8 @@ The following is a conceptual field inventory, not a finalized schema:
 -   Optional notes.
 -   Approval status.
 -   Conflict status or conflict references.
--   Lifecycle state, only if voiding is ever decided: `voidedAt`, a
-    timestamp rather than an enum (§16.25, D-058).
+-   Deletion: `deletedAt`, `deletedBy` and `deleteReason` — a timestamp
+    rather than an enum value, set by the delete route (§16.30, D-063).
 -   Creation and update timestamps.
 -   Audit history or audit-history references.
 
@@ -1164,7 +1164,10 @@ one `409 VERSION_MISMATCH` carrying the current entry and
 overlap is a flag derived on read (`hasConflict` plus a `conflicts` pair
 list), filtered as a boolean, never stored and never notified, and never a
 gate on approval: the client announces it on the create, the replay and each
-bulk-sync result (§16.29). Gaps not yet
+bulk-sync result (§16.29). **D-063** — entries are marked deleted with
+`deletedAt`, `deletedBy` and a required `deleteReason`, never removed: a
+deleted entry leaves the totals, the queues and the conflict set, nothing
+restores it, and "void" is retired from the contract (§16.30). Gaps not yet
 raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -1850,21 +1853,25 @@ re-applies by hand. Nothing retries, forces or merges on its own.
 
 ---
 
-## 15.6 Time-entry deletion and voiding
+## 15.6 Time-entry deletion
 
-**Status: Deferred decision.**
+**Resolved 25 November 2026 (§16.30, D-063).**
 
-No deletion or voiding policy has been adopted.
-
-The following proposals were discussed but remain undecided:
+"Deleted" in this record means *marked as deleted*, never physically removed:
+the row is retained under D-052 and every read that returned it before still
+returns it. A submitted entry carries `deletedAt`, `deletedBy` and a required
+`deleteReason`; deletion is a timestamped act rather than a status value, it
+excludes the entry from reported hours, approval queues and the conflict set,
+and nothing in the MVP undoes it.
 
 - ~~Whether drafts may be permanently deleted or must be retained as discarded records.~~ Resolved: unsubmitted drafts are device-local, so discarding one is a device action (§16.11, D-044).
-- Whether submitted entries may be marked as void or erroneous.
-- Whether voided approved entries must be excluded from valid reported hours.
-- Who may delete, discard, or void entries.
-- What reasons and audit records are required for these operations.
+- ~~Whether submitted entries may be marked as void or erroneous.~~ Resolved — they are marked deleted (§16.30, D-063).
+- ~~Whether voided approved entries must be excluded from valid reported hours.~~ Resolved — deleted entries, approved or not, are excluded from every total (§16.30, D-063).
+- ~~Who may delete, discard, or void entries.~~ Resolved — the author at any approval status, a coordinator holding an active grant on the entry's project, or an administrator; project-less entries are administrator-only (§16.30, D-063).
+- ~~What reasons and audit records are required for these operations.~~ Resolved — `deleteReason` is required, 1–500 characters, and every deletion is exactly one audit row (§16.30, D-063).
 
-The previous recommendation against permanent deletion must not be treated as an accepted requirement. The user explicitly deferred this decision for later.
+The previous recommendation against permanent deletion is now a decision:
+nothing is removed, only marked.
 
 ---
 
@@ -1885,9 +1892,9 @@ The retrieval model will support filters for:
 - Initial submission-time range.
 - Approval status.
 - Conflict status.
-- ~~Lifecycle status.~~ **Withdrawn for the MVP (24 November 2026,
-  §16.25, D-058):** an entry has no lifecycle field; a `voidedAt` filter
-  arrives only if §15.12 item 20 decides voiding exists.
+- ~~Lifecycle status.~~ **Replaced 25 November 2026 (§16.30, D-063):** an
+  entry has no lifecycle field; deletion is the `deleted` filter, inferred
+  from `deletedAt`.
 
 The exact endpoint paths, parameter names, request/response DTOs, and error envelope remain to be designed.
 
@@ -2028,7 +2035,9 @@ The API supports filtering by `volunteerId`.
 
 The API exposes independent filters for:
 
-1. **Lifecycle status**, such as submitted or voided. Unsubmitted drafts are not a server state (§16.11, D-044).
+1. **Deletion**, `deleted=true|false`, inferred from `deletedAt` rather than a
+   status value (§16.30, D-063). Unsubmitted drafts are not a server state
+   (§16.11, D-044).
 2. **Approval status**, such as pending, approved, rejected, or not requiring approval.
 3. **Conflict**, a boolean `hasConflict` derived from the entries rather
    than a stored status (§16.29, D-062).
@@ -2038,8 +2047,8 @@ These are distinct concepts and must not be collapsed into one combined status f
 **Amended 24 November 2026 (§16.25, D-058):** the first filter is
 withdrawn for the MVP — every server-side entry is submitted (D-044), so
 there is no lifecycle field to filter on. The second carries the four
-values D-058 fixes, and lifecycle returns as a `voidedAt` filter only if
-§15.12 item 20 decides voiding exists. The rule that these are separate
+values D-058 fixes, and the first returns as the `deleted` filter now that
+§16.30 has decided deletion (D-063). The rule that these are separate
 concepts, never one combined field, stands.
 
 **Amended again 25 November 2026 (§16.29, D-062):** the third filter is
@@ -2208,12 +2217,12 @@ The following items remain unresolved. They should be addressed before or during
 ### Priority 4 — Entry deletion and operational details
 
 19. ~~Decide whether drafts may be permanently deleted or must be retained as discarded records.~~ **Resolved 22 November 2026 — drafts never reach the server, so discarding one is a device action (§16.11, D-044).**
-20. Define whether submitted entries may be voided and the associated
-    permissions, audit requirements, and effect on reported hours.
-    **Re-scoped 24 November 2026 (§16.25, D-058):** the question is
-    whether a `voidedAt` timestamp exists — who may set it, whether it can
-    be cleared, and whether voided hours leave the reports. There is no
-    `status` enum for voiding to be a value of.
+20. ~~Define whether submitted entries may be voided and the associated
+    permissions, audit requirements, and effect on reported hours.~~
+    **Resolved 25 November 2026 — entries are marked deleted with a
+    timestamp, a named actor and a required reason; deleted entries leave
+    the reports, the queues and the conflict set, and nothing restores them
+    (§16.30, D-063).**
 21. ~~Finalize overlap warning and review behavior.~~ **Resolved 25
     November 2026 — the flag and its pair list are derived on every read,
     the filter is a boolean, approval warns and proceeds, and no
@@ -2264,7 +2273,7 @@ The contract should explicitly identify which behaviors are finalized, which are
 Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
 §16.26), item 5 (preserved invalid submissions, §16.27), item 6
 (concurrent-edit reconciliation, §16.28) and item 21 (overlap and conflict
-values, §16.29). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+values, §16.29) and item 20 (deletion, §16.30). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
@@ -2274,9 +2283,9 @@ Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), 
 All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed but for
 conflict values: the state machine (item 1, §16.25), material change
 (item 2, §16.26), preserved invalid submissions (item 5, §16.27) and
-concurrent-edit reconciliation (item 6, §16.28) and conflict values
-(item 21, §16.29) are settled, leaving voiding (item 20) as the next one
-to take.
+concurrent-edit reconciliation (item 6, §16.28) conflict values
+(item 21, §16.29) and deletion (item 20, §16.30) are settled, leaving
+offline change tracking (§15.12 item 30) as the next one to take.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -4013,7 +4022,9 @@ response was lost still shows the conflict warning (§16.29, D-062). Two sources
 
 8. **Deletion is the one `204 No Content`.** A user may delete their own
    notification (§6.1), and there is no representation left to return. Entries
-   are never deleted (D-052), so no other route needs it.
+   are never removed (D-052): the entry delete route marks the row and returns
+   it (§16.30, D-063), so this rule still covers exactly the routes that leave
+   nothing behind.
 9. **A bulk endpoint, if one is ever added, returns `{ "updated": <n> }` and no
    rows**, because the client already holds them. Whether bulk mark-read exists
    is B10's.
@@ -4407,7 +4418,7 @@ Content-Type: application/json
 - Marcus opens the same entry on Wednesday from a list loaded Monday and taps Approve. His copy carries `version: 3`; the entry is at `version: 5` and already rejected. He must be told to refresh — not told nothing, and not shown a green tick.
 - A fourth entry was submitted on Sunday, while approval was off. Nobody has checked it and nobody ever will. A report that calls it "approved" claims a review that never happened.
 
-**Decision in one line: one approval status, fixed at submission and changed only by a decision or a resubmission; no lifecycle field at all until voiding exists.**
+**Decision in one line: one approval status, fixed at submission and changed only by a decision or a resubmission; no lifecycle field at all — deletion is a timestamp beside it, not a fifth value (§16.30, D-063).**
 
 **Rules.**
 
@@ -4433,7 +4444,7 @@ Content-Type: application/json
    | `rejected` | correct and resubmit | `pending` | the entry's owner only | clears `approvedAt`, `rejectedAt` and `reviewedBy`; keeps `rejectionReason`; new `submittedAt` |
    | `approved` | edit | `approved`, or `pending` if the edit is material | any editor (§15.5.2) | `version`; a material edit clears `approvedAt` and `reviewedBy` and returns the entry to the queue (D-059, §16.26) |
    | `not_required` | edit | `not_required` | any editor (§15.5.2) | `version` only |
-   | any | void | *does not exist* | — | §15.12 item 20 |
+   | any | delete | *unchanged* — `deletedAt` is set and the status is not touched | the author, the project's coordinator, or an administrator (D-063) | `deletedAt`, `deletedBy`, `deleteReason`; no restore exists (§16.30) |
 
 4. **Approval status is fixed at submission and changes only through a
 decision, a resubmission, or a material edit to an approved entry.** No
@@ -4446,7 +4457,7 @@ policy change or timeout moves it (D-045); the material edit is D-059's
 9. **An impossible transition is its own `409`: `INVALID_TRANSITION`**, with `details: { "from", "to", "allowedFrom": [...] }`. It is distinguishable from `VERSION_MISMATCH` (refresh and retry) and from `CONFLICT` (something else is in the way). Without it, a client that branches on status alone retries a decision that can never succeed.
 10. **Version is checked before state.** A stale copy gets `409 VERSION_MISMATCH` with D-049's `current` resource, not an `INVALID_TRANSITION` about a state it never saw.
 11. **Repeating a decision that is already true is `200` with the current state and no write** (D-055's idempotency by outcome). Approving an approved entry does not overwrite `reviewedBy` and does not add an audit row.
-12. **Voiding is reserved, not implemented.** `voidedAt` is named as the field §15.12 item 20 would add if it decides voiding exists — a nullable timestamp, matching `archivedAt` on projects (D-042) and `anonymisedAt` on users (D-052), rather than an enum value. No filter, field or transition exists in the MVP.
+12. **Deletion is a timestamp, not a fifth value.** `deletedAt`, `deletedBy` and a required `deleteReason` are set by the delete route and cleared by nothing in the MVP (§16.30, D-063). `approvalStatus` is untouched: a deleted entry keeps the value it had, which is why a queue or a report can exclude it without asking what state it is in, and why the four values above stay four.
 13. **Conflict status stays independent.** An overlap flag is not an approval state and resolving one does not approve hours (§15.8.6); it has no status values to fix, being a flag derived on read (§16.29, D-062).
 
 **The shapes.**
@@ -4509,15 +4520,15 @@ A correction that goes back into the queue, keeping the reason the volunteer is 
 
 | Option | Nadia's double tap | What it costs |
 |---|---|---|
-| **One approval axis with four values and a fixed transition table (recommended)** | Second tap returns `200` and writes nothing | No lifecycle representation at all until voiding is decided; a boolean filter shape arrives with `voidedAt` later |
+| **One approval axis with four values and a fixed transition table (recommended)** | Second tap returns `200` and writes nothing | Deletion arrives later as a timestamp beside this axis (§16.30, D-063), not as a fifth value |
 | Three values, with `not_required` recorded as `approved` | Same | "Approved" stops meaning a person approved, and reports cannot separate checked hours from unchecked |
-| A single combined `status` enum (submitted/pending/approved/rejected/voided) | Same | Contradicts §15.8.6's confirmed separation, and every filter combination becomes a matrix of values |
+| A single combined `status` enum (submitted/pending/approved/rejected/deleted) | Same | Contradicts §15.8.6's confirmed separation, and every filter combination becomes a matrix of values |
 | `returned` as a state distinct from `rejected` | Same | Two words for one transition; two identical-looking queues, and "may I edit this?" with two answers |
 | No `INVALID_TRANSITION`, reuse `CONFLICT` | Same | A sync client cannot tell a decision that will never work from a transient conflict, so it retries forever |
 
 **Accepted costs.**
 
-- Nothing in the MVP can say whether an entry is voided, because voiding does not exist; when item 20 adds `voidedAt`, its filter will be boolean where the other two are enum-valued.
+- ~~Nothing in the MVP can say whether an entry is voided, because voiding does not exist; when item 20 adds `voidedAt`, its filter will be boolean where the other two are enum-valued.~~ **Answered 25 November 2026 (§16.30, D-063):** deletion is `deletedAt` beside this axis and filtered as a boolean — four statuses and one timestamp, never five statuses.
 - `pending` can persist for an entry whose organisation no longer requires approval, because D-045 refuses to retro-apply policy.
 - A volunteer can be blocked waiting for a coordinator even after approval is switched off — the price of rule 5.
 - `rejectionReason` outliving the rejection makes a field whose meaning depends on `approvalStatus`.
@@ -4526,10 +4537,10 @@ A correction that goes back into the queue, keeping the reason the volunteer is 
 
 **Rejected alternatives.** A `status` axis carrying only `submitted` (a field that never changes value); a server-side `draft` state (D-044 removed it, and it would let the server hold hours nobody claimed); deriving `approvalStatus` from `approvedAt`/`reviewedBy` nulls (four states from three nullable columns is a matrix of illegal combinations); storing decisions only as audit events and computing status on read (correct history, but every list query pays for it and §15.8.6's filter becomes a join); letting any edit re-open approval (that is item 2's question, decided here by accident); and rejecting without a reason (nothing for the volunteer to correct toward).
 
-**Left open.** Whether item 20's voiding ships at all; whether a rejected entry should have a deadline before it is treated as abandoned; whether an administrator's self-approval needs a second reviewer when one exists (D-051 leaves it as visibility only); whether the decision notification is B10's work or this item's (B10 owns delivery, this decision owns the fact); and §15.12 item 2's material-change transition, which is now enabled by
+**Left open.** ~~Whether item 20's voiding ships at all~~ (decided 25 November 2026, §16.30, D-063: it ships as deletion); whether a rejected entry should have a deadline before it is treated as abandoned; whether an administrator's self-approval needs a second reviewer when one exists (D-051 leaves it as visibility only); whether the decision notification is B10's work or this item's (B10 owns delivery, this decision owns the fact); and §15.12 item 2's material-change transition, which is now enabled by
 D-059 (§16.26).
 
-**Resolves:** §15.12 item 1. It supersedes §15.8.6's lifecycle filter in part, re-scopes §15.12 item 20 around `voidedAt`, amends D-044's wording, gives §16.12 the resubmission rule, and constrains B9 (hours reported from `approved` and `not_required` entries are not the same claim) and B11 (every decision is an audit row, even the ones the row no longer shows).
+**Resolves:** §15.12 item 1. It supersedes §15.8.6's lifecycle filter in part, re-scoped §15.12 item 20 around a deletion timestamp, since decided (§16.30, D-063), amends D-044's wording, gives §16.12 the resubmission rule, and constrains B9 (hours reported from `approved` and `not_required` entries are not the same claim) and B11 (every decision is an audit row, even the ones the row no longer shows).
 
 ## 16.26 What counts as a material edit, and what reapproval does
 
@@ -5183,9 +5194,9 @@ policy should ever gate on a conflict (rejected for the MVP, revisitable if
 disputes show up); whether each member of `conflicts` should also carry
 `projectId` so a client can render the partner without a second read (a
 larger body and a field that names something the caller may not be allowed to
-see); whether item 20's voiding, if it exists, removes a voided entry from
-membership — the default is that membership follows D-047 plus whatever item
-20 adds; and B15's index for the computed filter.
+see); ~~whether item 20's voiding, if it exists, removes a voided entry from
+membership~~ (answered 25 November 2026, §16.30, D-063: a deleted entry leaves
+the conflict set); and B15's index for the computed filter.
 
 **Resolves:** §15.12 item 21. It supersedes §15.8.6's third filter in part
 (boolean, not status), replaces the "conflict status" axis §16.25 rule 13
@@ -5198,6 +5209,247 @@ item 30 (its per-item result must carry `hasConflict` and `conflicts`), B10
 (no conflict notification), B11 (the flag is not an audit event, while every
 write that creates one still is), B9 (a conflicted hour counts like any other)
 and B15 (the index the computed filter needs).
+
+## 16.30 Deletion: a timestamp, not a fifth status
+
+**Confirmed decision (D-063) — 25 November 2026.**
+
+§15.6 has said "no deletion or voiding policy has been adopted" since the
+record began, and D-058 narrowed the question to a single shape: with no
+lifecycle axis, a `voided` value had nowhere to live, so all that could be
+decided was whether a nullable timestamp exists. D-058's fixed transition
+table created two holes nothing else fills — an approved entry that should
+never have counted, and a pending entry the volunteer wants to withdraw — and
+neither can be reached by editing, which rewrites the claim instead of
+retracting it.
+
+**The word.** The API, the filter and the interface say **deleted**.
+"Void" is retired from the contract. What deletion means here is *marked as
+deleted*: the row is never removed, every read still returns it, and D-052's
+retention rule is untouched. This decision exists so that "deleted" means one
+thing on every screen and in every route, rather than three things in three
+places.
+
+**The case this protects.** Dee's 4-hour shift on 12 October is approved in
+November. In December the project lead tells her the session was cancelled —
+the centre was closed and nobody worked. Nadia is the coordinator, approval
+is switched on, and October's totals have already been reported to a funder.
+
+- **December, 09:41.** Dee opens the entry and taps **Delete**. The app asks
+  why, because the request will not be accepted without a reason. She types
+  *"Session cancelled — centre closed"*.
+- The request is `POST /v1/time-entries/2b7d…/delete`, and it answers `200`
+  with the entry in its read shape: `approvalStatus` still `approved`,
+  `deletedAt` set, `deletedBy` her, `deleteReason` her sentence, `version`
+  incremented from 3 to 4.
+- **09:42.** October's total drops by four hours and now adds up to what
+  happened. The entry is not in Nadia's queue: there is nothing to decide.
+  It is not in her conflict set either, so a 09:00–12:00 entry that day is no
+  longer flagged.
+- **March, an auditor.** The entry still exists, still shows the original
+  10:00–14:00 claim and its approval, and carries who deleted it, when, and
+  why. Nothing was destroyed and nothing was rewritten — the claim and its
+  retraction are both on the record.
+- **The counterfactual.** Under the rules as they stood, Dee's only lever was
+  to edit the entry, and D-059 returns a material edit to `pending`: four
+  hours nobody worked would have come back into Nadia's queue as a *new
+  claim*, to be approved as though it were work.
+
+**The rules.**
+
+1. **Deleted means marked, never removed.** The row is retained under D-052.
+   Every read that returned it before still returns it, and no route in the
+   API removes an entry. A volunteer's export (§16.19) includes deleted
+   entries and their deletion fields.
+2. **Three fields, and no fourth.** `deletedAt` (timestamp, set from the
+   server clock), `deletedBy` (the acting user id) and `deleteReason`
+   (1–500 characters, required). All three are `null` on a live entry and all
+   three are set together, in one write, by one route. `approvalStatus` is not
+   touched: a deleted entry keeps the value it had, which is what makes
+   "deleted and approved" a coherent thing to read rather than a state the
+   model has to explain.
+3. **The act is a named route that answers with the entry.**
+   `POST /v1/time-entries/{id}/delete` with `{ "reason": "…" }` returns
+   `200 OK` and the entry in its read shape (D-055). Not `PATCH` with a
+   client-supplied `deletedAt`: the timestamp is an audit fact, and the server
+   owns the clock (D-053). Not `DELETE` with a body, because a required body
+   on that verb is asked to be dropped by intermediaries, and not `204`,
+   because nothing was removed — §16.22's rule that deletion is the one
+   `204 No Content` still describes the routes that leave no representation
+   behind, which this one is not.
+4. **Authority: the author, the project's coordinator, an administrator.**
+   The author may delete her own entry at any approval status, including one
+   already approved. A coordinator with an active grant on the entry's project
+   may delete any entry in it, and an administrator may delete any entry.
+   Project-less entries are administrator-only, as they are for approval
+   (§16.18). A coordinator deleting an entry they approved themselves is
+   allowed: D-051 bars approving one's own entry because that grants hours,
+   while deleting withdraws them.
+5. **The effects are four exclusions and no deletion.** A deleted entry is
+   out of reported hours and totals (B9), out of every approval queue, and
+   out of D-047's conflict membership — which answers the membership question
+   §16.29 left open, and means deleting one side of an overlap ends the
+   conflict with no separate act. It stays readable, stays in the audit
+   trail, and stays in the volunteer's own history.
+6. **No restore.** Deletion is terminal for the entry's life in the MVP.
+   A mistaken deletion is corrected by recording the work again as a new
+   entry, which is honest about what happened. The field is what would make a
+   restore cheap later — clearing `deletedAt` returns the previous
+   `approvalStatus` with no state rule to invent — but the policy is that
+   nothing in the MVP un-deletes, so no route, transition or `version` rule
+   for it exists.
+7. **Lists exclude deleted entries; asking for them is explicit.** Every list
+   route omits them unless `deleted=true` is sent. `deleted=false` is the
+   documented default, spelled out so a client can see what it is relying on,
+   and any other value is `400 VALIDATION_ERROR`. This is the one filter whose
+   omission is not "both", deliberately: a conflict flag narrows a live set,
+   while a deleted row is a retracted claim, and listing it by default would
+   put withdrawn work back into every screen. `GET /v1/time-entries/{id}`
+   always returns it, deleted or not.
+8. **A deleted entry accepts nothing but a read.** Editing, approving,
+   rejecting, submitting or deleting it again is `409 INVALID_TRANSITION`
+   carrying `current` (D-049, D-058). No new error code: the client sees
+   `deletedAt` in the copy it gets back and knows exactly why.
+9. **Repeating the delete is a decision already true.** A second identical
+   request returns `200` with the entry and writes nothing — no second audit
+   row and no replaced reason (D-058 rule 11's precedent). A different reason
+   on the second request is still "already deleted", not an amendment.
+10. **Deletion is a write like any other.** It bumps `version`, appears in
+    `changedFields` (D-061), and produces exactly one audit row carrying the
+    actor and the reason (B11). That row is the only place the retraction is
+    explained, because the reports simply stop counting the hours.
+11. **Totals are computed at read time, so a past period can change.** A
+    December deletion changes October's total. That is the point — the
+    alternative is a report that keeps hours nobody worked because a month
+    boundary has passed — and it is why every total carries a predicate on
+    `deletedAt` rather than a stored snapshot. Any published figure is a
+    figure as of when it was read.
+12. **No status value, no lifecycle axis, no supersession of D-058.** The
+    four `approvalStatus` values stay four. Deletion is a timestamp beside
+    them, exactly as `archivedAt` sits beside a project's fields (D-042) and
+    `anonymisedAt` beside a user's (D-052), which is why §16.25 rule 12 is
+    rewritten in place rather than superseded: the rule that reserved this
+    field has now filled it.
+
+**The shapes.**
+
+```http
+POST /v1/time-entries/2b7d5c1e-8f3a-4c92-b0d4-1e6f8a9c7d20/delete HTTP/1.1
+Authorization: Bearer eyJhbGciOi…
+Content-Type: application/json
+
+{ "reason": "Session cancelled — centre closed" }
+```
+
+```json
+{
+  "id": "2b7d5c1e-8f3a-4c92-b0d4-1e6f8a9c7d20",
+  "workDate": "2026-10-12",
+  "startedAt": "2026-10-12T10:00:00Z",
+  "endedAt": "2026-10-12T14:00:00Z",
+  "durationSeconds": 14400,
+  "projectId": "0d9a…",
+  "activityId": "5f2b…",
+  "notes": null,
+  "approvalStatus": "approved",
+  "version": 4,
+  "hasConflict": false,
+  "conflicts": [],
+  "deletedAt": "2026-12-03T09:41:07Z",
+  "deletedBy": "a71e4c62-…",
+  "deleteReason": "Session cancelled — centre closed",
+  "submittedAt": "2026-11-02T07:55:40Z",
+  "updatedAt": "2026-12-03T09:41:07Z"
+}
+```
+
+A live entry carries the three fields as `null`, always present, so a client
+never has to distinguish "not deleted" from "the server did not say". The
+list filter, asking for October including what was withdrawn:
+
+```http
+GET /v1/time-entries?volunteerId=…&from=2026-10-01&to=2026-10-31&deleted=true
+Authorization: Bearer …
+```
+
+And a write against a deleted entry:
+
+```json
+{
+  "error": {
+    "code": "INVALID_TRANSITION",
+    "message": "This entry was deleted on 3 December 2026 and cannot be changed.",
+    "requestId": "018f3b1c-…",
+    "current": { "id": "2b7d…", "approvalStatus": "approved", "version": 4,
+                 "deletedAt": "2026-12-03T09:41:07Z", "deletedBy": "a71e4c62-…",
+                 "deleteReason": "Session cancelled — centre closed" }
+  }
+}
+```
+
+**Worked examples.**
+
+| Case | What happens | Reports |
+|---|---|---|
+| Author deletes her own pending entry | `200`, three fields set, `version` 1 → 2, one audit row | Excluded |
+| Coordinator deletes an entry she approved in November | `200`; allowed, because deletion withdraws hours rather than granting them | Excluded |
+| Author deletes an overdue entry nobody reviewed | `200`; the queue loses a row it was never going to resolve | Excluded |
+| The deleted entry's partner in a conflict, read afterwards | `hasConflict: false` on the surviving entry, no write to it | Unchanged for the survivor |
+| Second identical delete request | `200`, same body, no new audit row, reason unchanged | Excluded |
+| Coordinator outside the entry's project tries to delete it | `403 FORBIDDEN`; the entry is untouched | Included |
+| Deletion applied to a project-less entry by a coordinator | `403`; administrator-only (§16.18) | Included until an administrator acts |
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **`deletedAt` + `deletedBy` + required reason, no restore (recommended)** | Total removal from the ledger while keeping claim, decision and retraction on the record; no state matrix; one nullable column to migrate | Past-period totals change retroactively; a mistaken deletion needs a new entry |
+| A `lifecycleStatus` axis (`active \| deleted`) | Explicit non-null state, no null semantics in queries | Still needs `deletedAt` for "when and why", so it stores one fact twice; doubles the transition table; and raises "what is a deleted entry's `approvalStatus`" and "what does a restore return to", which the field never asks |
+| `deleted` as a fifth `approvalStatus` value | One field, one filter | Collapses approval and deletion, which §15.8.6 and D-058 forbid; needs a transition into and out of the value from all four others, and a rejection message that cannot say whether a person decided anything |
+| Hard delete | The row is gone | Contradicts D-052, destroys the audit trail, and makes an approved-then-removed hour unexplainable |
+| Delete with a restore toggle | Mis-taps are cheap | A rule for the status a restored entry returns to, an audit row per flip, and a second way for an hour to re-enter a closed period |
+| Deletion that leaves the entry in the conflict set | Fewer derived queries | The volunteer's two claims would keep flagging each other after one was withdrawn, and the survivor would show a conflict against work that no longer exists |
+
+**Accepted costs.**
+
+- **Past totals move.** A funder's October figure and December's copy of it
+  can differ, because deletion is a current fact and reports are computed at
+  read time. Every exported figure is a figure as of its export.
+- **A required reason is friction.** Deleting a mis-tapped entry costs a
+  sentence. The precedent is `rejectionReason` (D-058): an act that removes
+  hours from a report records why.
+- **No restore means a typo can cost an entry.** The correction is a new
+  entry, which reads as two acts rather than one reversal — the honest
+  version, and cheaper than a state machine that remembers "what it was".
+- **Three nullable columns join the schema and no filter can use them
+  without care.** A query that forgets `deleted_at is null` leaks retracted
+  hours into a total, and nothing in the type system stops it. B15's index
+  strategy should make the live set the cheap one.
+- **Deletion is a mouthful of fields on every representation.** Three extra
+  members on every entry in every list, nearly always `null`, for the sake of
+  the one screen that shows a withdrawn claim.
+
+**Left open.** Whether a coordinator is told that an approved entry was
+deleted under them (a notification is B10's; today the queue simply stops
+listing it); whether an entry deleted by one coordinator should be visible as
+deleted rather than absent to the volunteer who submitted it (this decision
+says visible, on every read); whether an administrator should ever be able to
+restore one (rejected for the MVP, and the field makes it a later decision
+rather than a migration); whether a deleted entry still counts toward a
+dispute or claim figure that asks "what was claimed" rather than "what is
+owed" (a separate report, B9); and whether the delete route needs a
+server-side two-step confirmation (it does not — the client confirms, because
+no server rule can distinguish a mis-tap from an intention).
+
+**Resolves:** §15.12 item 20 and §15.6. It rewrites §16.25 rule 12 in place
+rather than superseding D-058 — the state model is unchanged and the field
+that rule reserved now exists — turns §15.8.6's first filter into the
+`deleted` boolean, replaces §15.7.1's withdrawn lifecycle bullet, answers
+§16.29's membership question (a deleted entry leaves the conflict set), and
+retires "void" from the contract. It constrains B9 (deleted hours are in no
+total), B11 (one audit row per deletion, carrying the reason), B10 (no
+deletion notification in the MVP), §16.22 (the `204` rule still covers only
+routes that remove a row) and B15 (the partial index on the live set).
 
 ------------------------------------------------------------------------
 
@@ -5242,13 +5494,14 @@ The refusal rule is settled as well (§16.27), so a submission the server
 will not accept has a defined home — the device — and no server-side table
 to design, index or purge. Reconciliation is settled too (§16.28), so a
 stale write has an answer that neither retries nor overwrites, and conflict
-values are settled as well (§16.29), so the entry read shape is final and the
-approval queue filters a boolean rather than a status. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is
+settled too (§16.30), so the entry's read shape has its last three fields and
+every total has one predicate to apply. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
 **What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** voiding (§15.12 item 20) next — with B1, B2, B4–B8,
-B12, B13, B14 and B16 already closed, the state machine, material change,
-preserved submissions, reconciliation and conflict values closed in
-§16.25–§16.29, and B3 deferred by scope (D-048) — followed by the
-feature-conditional items as each feature is scheduled.
+**Order proposed:** offline change tracking (§15.12 item 30) next — with
+B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine,
+material change, preserved submissions, reconciliation, conflict values and
+deletion closed in §16.25–§16.30, and B3 deferred by scope (D-048) —
+followed by the feature-conditional items as each feature is scheduled.
