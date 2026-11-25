@@ -660,8 +660,7 @@ offline and synchronize it later.
 The client should use local persistence and a durable sync queue. The
 server remains authoritative for accepted state.
 
-The client must also download server-side changes; synchronization is
-not only uploading local changes.
+The client must also download server-side changes; synchronization is not only uploading local changes. **Answered 25 November 2026 (D-064, §16.31):** the mechanism is a monotonic `changeSeq` and a pull feed of the caller's own entries, deletions included, and nothing a role grants is held on the device.
 
 **Amended 24 November 2026 (D-056, §16.23):** a session that has ended —
 expired, revoked or replaced — pauses synchronisation and asks for sign-in.
@@ -760,9 +759,9 @@ Sync state is primarily client-side---for example, queued, sending, or
 synchronized---while the server retains the authoritative business
 record and relevant conflict/audit history.
 
-A giant all-purpose `/v1/sync` endpoint has not been selected.
-Synchronization endpoints and protocol should be designed after the
-domain resources and operations are clearer.
+A giant all-purpose `/v1/sync` endpoint has not been selected. Synchronization endpoints and protocol should be designed after the domain resources and operations are clearer.
+
+**Answered 25 November 2026 (D-064, §16.31):** the giant endpoint is still not selected. The download half is one narrow feed ordered by a change counter, scoped to the caller's own entries; the upload half is the ordinary routes replayed. Business state and sync state stay separate.
 
 ------------------------------------------------------------------------
 
@@ -1167,7 +1166,7 @@ gate on approval: the client announces it on the create, the replay and each
 bulk-sync result (§16.29). **D-063** — entries are marked deleted with
 `deletedAt`, `deletedBy` and a required `deleteReason`, never removed: a
 deleted entry leaves the totals, the queues and the conflict set, nothing
-restores it, and "void" is retired from the contract (§16.30). Gaps not yet
+restores it, and "void" is retired from the contract (§16.30). **D-064** — catching up on the download half: a per-organisation monotonic `changeSeq` taken in the writing transaction, a `GET /v1/sync` feed of the caller's own entries (deletions included) ordered by it, no cursor meaning from the beginning, the number never exposed, privileged lists live-only and never persisted, and coordination actions requiring connectivity (§16.31). Gaps not yet
 raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -1234,8 +1233,7 @@ time rather than filled in by assumption.
 17. Finalize database schema and constraints.
 18. Define endpoint names, HTTP methods, request/response DTOs,
     validation rules, and error codes.
-19. Design offline sync operations, cursor/change tracking,
-    retry/idempotency handling, and conflict responses.
+19. ~~Design offline sync operations, cursor/change tracking, retry/idempotency handling, and conflict responses.~~ **Resolved 25 November 2026 — retry and idempotency are the entry id and `version` (§16.16, D-049), conflict responses are `409 VERSION_MISMATCH` with `changedFields` (§16.28, D-061), and change tracking is a per-organisation `changeSeq` with a pull feed of the caller's own entries (§16.31, D-064).**
 20. Define API versioning, pagination, security controls, deployment,
     backups, and monitoring.
 
@@ -2239,10 +2237,7 @@ The following items remain unresolved. They should be addressed before or during
 27. Design the first-administrator bootstrap process. **Now a per-instance installation step (§16.17, D-050); the process is still undesigned.**
 28. Finalize database schema, constraints, and transaction requirements.
 29. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
-30. Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses. **Retry and idempotency resolved 23 November 2026 — the entry id is the
-deduplication record and `version` guards writes (§16.16, D-049). Conflict
-responses settled 25 November 2026 (§16.28, D-061); change tracking remains
-open.**
+30. ~~Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses.~~ **Resolved 25 November 2026 — retry and idempotency are the entry id as the deduplication record with `version` guarding writes (§16.16, D-049), conflict responses are `409 VERSION_MISMATCH` carrying `current` and `changedFields` (§16.28, D-061), and change tracking is a per-organisation `changeSeq` with a pull feed of the caller's own entries, deletions included (§16.31, D-064).**
 31. Define API versioning, security controls, deployment, backups, and monitoring. **Deployment is per instance (§16.17, D-050), so API version skew between an installed app and an instance that upgrades on its own schedule is a supported state rather than a hypothetical. Versioning is contract-blocking, not operational polish.** **URL versioning settled 24 November 2026: every route is prefixed `/v1`, and every path in this record is written that way.** What remains open is the compatibility and deprecation policy — what an old client does against a `/v2` instance, and for how long `/v1` is served.
 
 Items may be combined or deferred where appropriate. The list is a planning aid, not a requirement to settle every item before drafting any part of the API contract.
@@ -2272,20 +2267,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
 §16.26), item 5 (preserved invalid submissions, §16.27), item 6
-(concurrent-edit reconciliation, §16.28) and item 21 (overlap and conflict
-values, §16.29) and item 20 (deletion, §16.30). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30) and item 30 (change tracking, §16.31). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed but for
-conflict values: the state machine (item 1, §16.25), material change
-(item 2, §16.26), preserved invalid submissions (item 5, §16.27) and
-concurrent-edit reconciliation (item 6, §16.28) conflict values
-(item 21, §16.29) and deletion (item 20, §16.30) are settled, leaving
-offline change tracking (§15.12 item 30) as the next one to take.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) and change tracking (item 30, §16.31) are settled, leaving who may edit or reject another volunteer's entry (item 14) as the next one to take.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -4952,8 +4941,7 @@ have closed the app (B10 owns delivery).
 
 **Resolves:** §15.12 item 6's reconciliation half — with D-049's detection the
 item is closed — and §15.5.4's last open question. It clears the "Left open"
-clauses in §16.26 and §16.27, and settles §15.12 item 30's conflict-response
-half, leaving change tracking there. It constrains §16.4 (`changedFields` is a
+clauses in §16.26 and §16.27, and settles §15.12 item 30's conflict-response half; change tracking is settled separately (§16.31, D-064). It constrains §16.4 (`changedFields` is a
 `details` key on one existing code, with no new status and no new code),
 §16.22 (the `409` body gains one key and keeps its shape), D-058 (a stale
 decision is re-taken, never re-applied), D-060 (a refused edit is a blocked
@@ -5067,9 +5055,7 @@ delivery behind it, or in the entries themselves.
     This is a contract obligation on clients, stated here because the warning
     is the only announcement the system makes: (a) on `201 Created` for the
     submission, (b) on `200` with `Idempotency-Replay: true` for a retry of
-    that same submission, and (c) in the per-item result of a bulk sync
-    (§15.12 item 30), so a flushed offline outbox does not swallow the flag on
-    every entry at once. A client that shows "Saved" and discards the body has
+    that same submission, and (c) in the per-item result of a bulk sync (§16.31, D-064), so a flushed offline outbox does not swallow the flag on every entry at once. A client that shows "Saved" and discards the body has
     taken the decision to tell nobody.
 11. **No new code, route or permission.** A conflict adds no error code, no
     endpoint and no authority rule: whoever may read the entry may see its
@@ -5126,8 +5112,7 @@ GET /v1/time-entries?volunteerId=…&from=2026-11-01&to=2026-11-30&hasConflict=t
 Authorization: Bearer …
 ```
 
-The bulk-sync item result carries the same two fields; item 30 still owns the
-rest of that result's shape, so this is the part it must include:
+The bulk-sync item result carries the same two fields; the rest of that result is the client's own record of the ordinary responses (§16.31, D-064), so this is the part it must include:
 
 ```json
 {
@@ -5204,8 +5189,7 @@ reserved with a flag, answers D-047's deferred question about whether an
 unresolved conflict blocks approval, and narrows §15.12 item 14 to approval to
 edit or reject. It constrains §16.22 rule 4 and §16.16 (a replay carries the
 derived fields, which is how a lost response still warns), §16.27 rule 6 (a
-conflict is never a refusal, and the flag is computed like any read), §15.12
-item 30 (its per-item result must carry `hasConflict` and `conflicts`), B10
+conflict is never a refusal, and the flag is computed like any read), §16.31 (a flushed outbox's per-item result must carry `hasConflict` and `conflicts`), B10
 (no conflict notification), B11 (the flag is not an audit event, while every
 write that creates one still is), B9 (a conflicted hour counts like any other)
 and B15 (the index the computed filter needs).
@@ -5451,6 +5435,283 @@ total), B11 (one audit row per deletion, carrying the reason), B10 (no
 deletion notification in the MVP), §16.22 (the `204` rule still covers only
 routes that remove a row) and B15 (the partial index on the live set).
 
+## 16.31 Catching up: one counter, your own entries, and nothing privileged on the device
+
+**Confirmed decision (D-064) — 25 November 2026.**
+
+§7.1 has required since the record began that the client "must also download
+server-side changes; synchronization is not only uploading local changes",
+and §7.6 left the protocol unsaid on purpose: no giant all-purpose
+`/v1/sync`, and synchronization designed once the domain was clear. It is
+clear now — an entry has an id (D-049), a `version` (§16.16), a total order
+(§16.3), a state machine (§16.25), an advisory conflict (§16.29) and a
+deletion (§16.30) — so the download half has one question left: a phone was
+away for three days, and how does it learn what changed without downloading
+everything?
+
+The answer is deliberately small: **a counter that only rises, a feed of the
+caller's own entries ordered by it, and a rule that nothing a role grants is
+kept on the device.**
+
+**The case this protects.** Dee records Monday to Wednesday at a rural
+placement with no signal — forty entries queued. While she is away Nadia,
+who holds that project's coordinator grant, approves two of them, corrects a
+third's end time from 17:00 to 18:00, and deletes a fourth as a duplicate.
+Dee walks back into signal. Without a change feed her app must either
+re-download every entry she has ever written — on a rural connection, on
+every launch — or trust its cache, in which case it shows approved hours as
+pending, a deleted entry as live, Tuesday's total wrong by two hours, and
+keeps offering to resubmit the deletion. With the feed she asks one question,
+receives four rows, and the four are the four that changed.
+
+**Decision in one line: a monotonic `changeSeq` per organisation, taken in
+the writing transaction; a `GET /v1/sync` feed of the caller's own entries,
+deletions included, ordered by it; no cursor meaning from the beginning; the
+number never exposed; privileged lists live-only and never persisted; and
+coordination actions requiring connectivity.**
+
+**Rules.**
+
+1. **The counter is a row, not a clock.** One counter row holds the last
+   value. A write that changes an entry's read shape takes the next value and
+   stamps the entry's `change_seq` with it, in the same transaction as the
+   write. No timestamp, no zone, no tie-break, no rewriting of history: the
+   only two things a change feed must never do are hand out a number twice
+   and hand them out in the wrong order, and a counter does neither by
+   construction.
+2. **A write that writes nothing takes no number.** A replayed create under
+   `Idempotency-Replay` (§16.22), a second approval (§16.25) and a repeat
+   delete (§16.30) change nothing, so the feed stays quiet for them.
+   Everything that bumps `version` bumps `changeSeq` with it — including an
+   immaterial `notes`-only edit (D-059), which changes what a read returns
+   even though it moves no state.
+3. **Every write path takes one, and this is the rule most likely to be
+   broken.** An approval or a deletion performed by a coordinator is a write
+   to *the volunteer's* row. If the increment is wired only into the routes a
+   volunteer calls, Dee's phone shows `pending` for ever while the queue and
+   the reports say `approved`, and no request anywhere returns an error. The
+   feed's correctness is a property of every writer, not of the feed route.
+4. **`GET /v1/sync` is a page of the caller's entries, ordered by
+   `changeSeq` ascending, in the ordinary envelope.** It takes `cursor` and
+   `pageSize` and nothing else — no filters, no `since`, no `sort`. The body
+   is `items`, `nextCursor`, `pageSize` (D-040, D-054), with `pageSize`
+   defaulting to 50 and capped at 100 as everywhere (§16.20). A row that
+   changed twice appears twice in a catch-up; the client keeps the highest
+   `version` it has seen and ignores an older one, which is also what makes
+   replaying a page harmless.
+5. **The feed is subject-scoped, not actor-scoped.** "Own" means the entry's
+   author is the caller. A row appears because the row is theirs and
+   *something* changed it — their submission, a coordinator's approval, an
+   administrator's correction, a deletion — never because the caller is the
+   one who changed it. Roles do not widen the feed, and the sync route never
+   asks what a caller's role is; §16.18's authority stays on the routes that
+   act.
+6. **No cursor means from the beginning, so the feed is also the first
+   sync.** A new phone, a reinstalled app and a person returning after a
+   month use one route, and paging to `nextCursor: null` is a complete mirror
+   of the caller's own entries. Deleted entries are included, in a first sync
+   too: a client that has never held a row cannot otherwise be told that it
+   is gone.
+7. **The sequence is not in the contract.** No `changeSeq` member in any
+   representation, no `since` parameter, no header. The only handle is the
+   opaque cursor (§16.2), which never expires and is bound to the feed as its
+   own collection under D-054's `c` field. Exposing the number would invite a
+   client to compute its own frontier — and to compare numbers belonging to
+   different rows, or to an instance that has been rebuilt from a backup.
+8. **Deletion is reported, which is why a list cannot do this job.** A
+   deleted row travels with `deletedAt`, `deletedBy` and `deleteReason` set
+   and `approvalStatus` untouched (D-063). Lists exclude it (§16.30); the
+   feed is the only place a phone can learn that a row it holds has been
+   withdrawn, and the only way it can stop offering to resubmit it.
+9. **Nothing a role grants is kept on the device.** Persisted locally: the
+   caller's own entries and the outbox. Never persisted: another volunteer's
+   entries, an approval queue, the users list, the audit log, assignment
+   requests. Those are fetched live and dropped when the app closes, when the
+   session ends (§16.23), on any `401` or `403`, and whenever access narrows.
+   The outbox is never cleared by any of those (D-056): it is the person's own
+   unsent work, and the two rules point in opposite directions on purpose.
+10. **Coordination actions require connectivity.** Approve, reject, delete or
+    edit another volunteer's entry, decide an assignment request, archive or
+    restore a project, grant or end a coordination: no queue, no optimistic
+    tick, no "will send later". Offline, the control is unavailable and says
+    so. Queued actions are the caller's own entry writes only — create, edit,
+    delete, submit — under the ordinary rules (§16.16, §16.27, §16.28).
+11. **The feed does not replace a list.** `GET /v1/time-entries` answers
+    "show me my November, newest first"; `/v1/sync` answers "bring me up to
+    date". The orderings differ because the questions do — the feed is
+    ordered by when a row changed (§16.3 orders by work time) — and a screen
+    that browses history still calls the list.
+12. **Nothing here adds a write route.** The outbox is the ordinary routes
+    replayed one entry per request (§16.16, §16.22, §16.27, §16.28); D-062's
+    "bulk-sync item result" is the client's own record of those responses.
+    The giant endpoint §7.6 declined stays declined: this is one narrow read
+    for one collection.
+13. **A person is not two clients.** A volunteer who coordinates, and an
+    administrator who volunteers, hold one outbox and one feed. Their
+    coordination work needs signal; their own hours do not. The sync layer
+    never switches modes, because the only thing it ever handles is the
+    caller's own claims about their own time.
+
+**The shapes.**
+
+A first sync — no cursor, so from the beginning:
+
+```http
+GET /v1/sync?pageSize=100 HTTP/1.1
+Authorization: Bearer …
+```
+
+```json
+{
+  "items": [
+    {
+      "id": "2b7d5c1e-8f3a-4c92-b0d4-1e6f8a9c7d20",
+      "volunteerId": "9c21…",
+      "workDate": "2026-11-21",
+      "startedAt": "2026-11-21T10:00:00Z",
+      "endedAt": "2026-11-21T13:00:00Z",
+      "durationSeconds": 10800,
+      "projectId": "0d9a…",
+      "activityId": "5f2b…",
+      "notes": null,
+      "approvalStatus": "pending",
+      "version": 1,
+      "hasConflict": false,
+      "conflicts": [],
+      "submittedAt": "2026-11-23T08:10:11Z",
+      "updatedAt": "2026-11-23T08:10:11Z",
+      "deletedAt": null,
+      "deletedBy": null,
+      "deleteReason": null
+    }
+  ],
+  "nextCursor": null,
+  "pageSize": 100
+}
+```
+
+Dee's catch-up, after three days away — two rows changed, one of them by
+someone else, one of them deleted:
+
+```http
+GET /v1/sync?cursor=eyJjIjoic3luYyIsImtb… HTTP/1.1
+Authorization: Bearer …
+```
+
+```json
+{
+  "items": [
+    {
+      "id": "0f6a…", "volunteerId": "9c21…", "workDate": "2026-11-19",
+      "startedAt": "2026-11-19T09:00:00Z", "endedAt": "2026-11-19T12:00:00Z",
+      "durationSeconds": 10800, "projectId": "0d9a…", "activityId": "5f2b…",
+      "notes": null, "approvalStatus": "approved", "version": 4,
+      "hasConflict": false, "conflicts": [],
+      "submittedAt": "2026-11-19T18:02:00Z", "updatedAt": "2026-11-24T09:40:12Z",
+      "deletedAt": null, "deletedBy": null, "deleteReason": null
+    },
+    {
+      "id": "77b2…", "volunteerId": "9c21…", "workDate": "2026-11-20",
+      "startedAt": "2026-11-20T09:00:00Z", "endedAt": "2026-11-20T12:00:00Z",
+      "durationSeconds": 10800, "projectId": "0d9a…", "activityId": "5f2b…",
+      "notes": null, "approvalStatus": "pending", "version": 3,
+      "hasConflict": false, "conflicts": [],
+      "submittedAt": "2026-11-20T17:55:00Z", "updatedAt": "2026-11-24T09:41:03Z",
+      "deletedAt": "2026-11-24T09:41:03Z", "deletedBy": "4e8f…",
+      "deleteReason": "Duplicate of the 09:00 entry"
+    }
+  ],
+  "nextCursor": null,
+  "pageSize": 50
+}
+```
+
+The same person's coordination view, which is not a feed and is not kept:
+
+```http
+GET /v1/time-entries?approvalStatus=pending&projectId=0d9a…&pageSize=50 HTTP/1.1
+Authorization: Bearer …
+```
+
+and, after the grant ends, from a device that still holds a cached page:
+
+```http
+→ 403 FORBIDDEN
+{ "error": { "code": "FORBIDDEN", "message": "…", "requestId": "…" } }
+```
+
+The client drops the view. It never gets a page it may keep, so it has
+nothing to be wrong about later.
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **Monotonic counter with a pull feed of the caller's own entries (recommended)** | One integer and one index; a precise answer to "what changed"; deletions reportable; no clock, no tie, no zone | One row serialises every entry write on the instance; a first sync downloads the person's whole history; the client must be idempotent by `version` |
+| Reusing `updatedAt` (or a `since` timestamp on the list) | Nothing new to store | Same-second ties lose rows, a clock correction hides everything in the gap, a row written late is skipped, and a deleted entry never appears at all — the one case the feed exists for |
+| A full event log ("approved by X at T", "end time 17:00 → 18:00") | Replay of intent, and a possible future undo | A second history that can disagree with the audit log (B11), a writer in every path, retention rules, and it answers a question nobody has asked — the feed only needs *what is now true* |
+| Extending the feed to notifications, requests, projects and users | One client loop for everything | Forces the counter onto every table, and forces decisions that are still open — notification retention (§15.12 item 25), delivery (B10), audit contents and readers (B11) — in the wrong order |
+| Mirroring the coordinator's queue on the device | A coordinator can review on the train | Cached copies of other people's hours that outlive the grant that allowed them; no request is ever made that could refuse |
+| Queuing coordination actions, guarded by `version` | No approval is ever taken against an unseen row | A flaky hour becomes a queue of `409`s, on a screen the person has already left; the safe variant is additive later |
+| A push channel (websocket) instead of a pull | Live queues | A socket per phone, presence, reconnect and missed events; a pull after reconnect gives the same answer with no state to lose |
+| A `collection`-agnostic `/v1/sync` that also uploads | One route for both directions | It is the giant endpoint §7.6 declined, and it would put business state and sync state in one request (D-028) |
+
+**Accepted consequences.**
+
+- **One row serialises entry writes.** The counter is the instance's write
+  ceiling. At one organisation's scale that is a row update per write; it is
+  named here so that nobody is surprised by it under a bulk import.
+- **A first sync is the caller's whole history, deleted entries included.**
+  Bounded by one person's own claims, paid once per install, and the price of
+  the same route serving first install and catch-up.
+- **A row can appear twice in one catch-up.** Idempotence by `version` is a
+  client obligation, not a server guarantee.
+- **The feed has no retention and no truncation.** A cursor from a year ago
+  still works. If the counter is ever reset — a restore from backup, an
+  instance rebuild — clients must be forced to re-sync rather than trusted to
+  notice; that is an operational rule, and B15 owns the mechanism.
+- **Coordination needs signal.** A coordinator in a basement walks upstairs.
+  That asymmetry is deliberate: a volunteer losing an hour's work cannot
+  recreate a shift from memory, while a coordinator retrying an approval
+  loses ten seconds.
+- **An offline device keeps believing it has access until it next speaks.**
+  Revocation is enforced by refusal on the next request, not by a pushed
+  event — which is exactly why nothing privileged is stored to be read in the
+  meantime.
+- **Two clients, one person.** The volunteer's feed carries rows they cannot
+  act on in a coordination capacity and vice versa; the API does not reconcile
+  the two views, because they are two screens over one set of rows.
+
+**Left open.** Whether a future `collection` discriminator extends the same
+route to notifications or requests (a later decision; the cursor's `c` field
+leaves the door open, and neither has a reason to need it yet); whether an
+administrator needs a cross-volunteer feed for operational catch-up (rejected
+for the MVP — the audit log is the record, B11); whether a first sync may
+omit deleted rows the caller has never held, which would need a first-sync
+marker in the cursor and is not worth the special case now; whether the
+sequence is a table row or a database sequence, and whether the index is on
+`(volunteer_id, change_seq)` or `change_seq` alone (B15); whether a queued
+deletion of one's own entry deserves the same "are you sure" on the device
+that the client already gives it online (a client question, not a contract
+one); whether the counter should also drive unread counts (it must not — a
+count over a paginated list is what §16.21 rule 6 refuses, and the counting
+endpoints deferred in §16.7 are the answer); and whether a conflict detected
+during a catch-up needs any announcement beyond the response itself (§16.29
+says no, and this decision does not revisit it).
+
+**Resolves:** §15.12 item 30 — its change-tracking half, which was the last
+one — and with it §13 item 19. It answers §7.1's download obligation and
+§7.6's deferred protocol note without selecting the giant endpoint §7.6
+declined, and it settles the download half of synchronization that D-049,
+D-061 and D-063 had each left standing. It constrains B15 (one counter row
+and one index on `change_seq`), B10 (notifications stay out of the feed and
+remain the only "come and look" channel), B11 (the feed is not the audit log:
+a counter says a row changed, not who changed it or why), §16.21 (the feed is
+not a list and the list contract is unchanged), §16.23 (an ended session
+pauses the feed and still never clears the outbox), §16.30 (deleted rows
+travel in the feed) and §16.18 (a role grants actions, never breadth of
+offline storage).
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -5474,12 +5735,12 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | The record discusses totals throughout but never defines a reported hour |
-| **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery. §16.29 (D-062) records that an advisory conflict raises no notification, so this list has one fewer entry |
+| **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery. §16.29 (D-062) records that an advisory conflict raises no notification, so this list has one fewer entry, and §16.31 (D-064) keeps notifications out of the change feed |
 | **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | Four decisions already name it as an output without specifying it |
 | **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | **Resolved — D-055 (§16.22).** Every mutation returns the changed resource in its read shape; creates are `201` + `Location`, replays `200` + `Idempotency-Replay` (by client id or by the uniqueness constraint), `409` keeps D-049's `current` copy, no mutation returns counts, and archival's impact comes from a confirmation read. Deletion is the only `204` |
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
 | **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | **Resolved — D-056 (§16.23).** Bearer tokens on every business route and no cookie, because the MVP has no browser client; a 30-minute access token, a single-use rotating refresh token with a 120-second replay grace, a 90-day idle and a 180-day absolute limit, and `sid` checked on every request so a revocation lands on the next call. Sessions are listed and ended from the phone, every authentication failure is the same `401 UNAUTHENTICATED`, and MFA is deferred |
-| **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires | **Implementation** | §15.12 item 28 names the schema; the operational half is unlisted |
+| **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires and the `change_seq` index §16.31's feed needs | **Implementation** | §15.12 item 28 names the schema; the operational half is unlisted |
 | **B16** | Backdating window: how far in the past an entry may be dated or submitted | **Contract** | **Resolved — D-057 (§16.24).** No maximum age and no submission deadline: the work date must be covered by the volunteer's assignment and must not fall in an archived interval (`409 DATE_NOT_ELIGIBLE`), and the only clock rule is a five-minute tolerance on future instants (`400 DATE_IN_FUTURE`) plus one day for a duration-only work date. Lateness is read from `submittedAt` rather than stored as a flag |
 | **B17** | Daily or weekly maximum hours, separate from the per-entry ceiling | **Feature** | Surfaced while taking up B1 and set aside; affects validation and reporting, not the record shape |
 | **B18** | Break deduction: whether a shift records a break that is subtracted, rather than net time as two entries | **Feature** | Surfaced while taking up B1 and set aside; a break field is a derived quantity that can disagree with the timestamps |
@@ -5494,14 +5755,8 @@ The refusal rule is settled as well (§16.27), so a submission the server
 will not accept has a defined home — the device — and no server-side table
 to design, index or purge. Reconciliation is settled too (§16.28), so a
 stale write has an answer that neither retries nor overwrites, and conflict
-values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is
-settled too (§16.30), so the entry's read shape has its last three fields and
-every total has one predicate to apply. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is settled too (§16.30), so the entry's read shape has its last three fields and every total has one predicate to apply. Catching up is settled as well (§16.31), so the download half has a feed rather than a protocol to invent and the outbox stays the ordinary routes replayed (D-055). Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
 **What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** offline change tracking (§15.12 item 30) next — with
-B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine,
-material change, preserved submissions, reconciliation, conflict values and
-deletion closed in §16.25–§16.30, and B3 deferred by scope (D-048) —
-followed by the feature-conditional items as each feature is scheduled.
+**Order proposed:** who may edit or reject another volunteer's entry (§15.12 item 14) next — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine, material change, preserved submissions, reconciliation, conflict values, deletion and change tracking closed in §16.25–§16.31, and B3 deferred by scope (D-048) — followed by the feature-conditional items as each feature is scheduled.
