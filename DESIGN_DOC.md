@@ -525,8 +525,14 @@ Allow eligible historical work through normal validation and approval. -
 Reject or flag work outside the allowed period using a structured
 result. - Do not silently discard local work.
 
-The final conflict/rejection workflow for such entries remains to be
-designed.
+The final conflict/rejection workflow for such entries remains to be designed.
+
+**Answered 25 November 2026 (§16.27, D-060):** the record is preserved on
+the device, not on the server. An ineligible work date is refused
+`409 DATE_NOT_ELIGIBLE` (§16.24, D-057); the client keeps the submission
+in a visible blocked state with the code, message and request id, and the
+volunteer corrects and resends it. Nothing is stored for a refused
+submission, and nothing is discarded silently.
 
 ------------------------------------------------------------------------
 
@@ -737,6 +743,12 @@ An offline resolution can be queued locally, but the server must
 authorize it at sync time. If permission is denied, the request and
 record should be preserved and the client should be told; it must not
 silently delete the request or entry.
+
+**Answered 25 November 2026 (§16.27, D-060):** "preserved" means held on the
+device. A permission denial is `403`, a refused-correctable outcome: the
+stored record is untouched, the request stays in a visible blocked state
+with its `code`, `message` and `X-Request-Id`, and it is resent once the
+cause is corrected. The server keeps no copy of a refused request.
 
 ### 7.6 Separate business state from synchronization state
 
@@ -951,20 +963,17 @@ entry has no lifecycle field — and the request's field names remain
 ``` json
 {
   "error": {
-    "code": "PROJECT_ASSIGNMENT_ENDED",
-    "message": "This entry falls outside the permitted project assignment period.",
+    "code": "DATE_NOT_ELIGIBLE",
+    "message": "This work date is outside your assignment to this project.",
     "details": {
-      "assignmentEndTime": "2026-10-25T17:00:00-07:00"
+      "workDate": "2026-11-19",
+      "assignmentEnd": "2026-10-25"
     }
   }
 }
 ```
 
-**Envelope resolved 15 November 2026 (§16.4, D-039).** The status code, and whether an out-of-period
-submission is represented as a rejected entry, a conflict, or a separate
-review item remain to be designed. The example illustrates the goal:
-return a stable machine-readable reason and preserve the user's
-submitted work rather than silently dropping it.
+**Envelope resolved 15 November 2026 (§16.4, D-039).** **Code and handling resolved 25 November 2026 (§16.24, D-057; §16.27, D-060):** an out-of-period submission is not a rejected entry, a conflict or a review item. It is a `409 DATE_NOT_ELIGIBLE` refusal that stores nothing; the submitted work is preserved on the device as a blocked submission carrying this `code`, its `message` and the response's `X-Request-Id`, and the volunteer corrects and resends it. The example illustrates the goal: return a stable machine-readable reason and preserve the user's submitted work rather than silently dropping it.
 
 ------------------------------------------------------------------------
 
@@ -1145,7 +1154,11 @@ This is the compact record of major decisions and their current status.
 
 > **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21); **D-055** — every mutation returns the resource it changed, replays are `200` with `Idempotency-Replay`, and archival's counts are read before the act rather than returned after it (§16.22). **D-056** — the session model: a bearer access token with a single-use rotating refresh token, and no cookie, CSRF or CORS because the MVP has no browser client (§16.23). **D-057** — no maximum age for an entry's date or its submission: eligibility bounds the past, five minutes bounds the future, and an ineligible date is `409 DATE_NOT_ELIGIBLE` (§16.24). **D-058** — the entry's state: one `approvalStatus` axis with four values, a fixed transition table, no lifecycle field, and `409 INVALID_TRANSITION` (§16.25). **D-059** — what a material edit is (the hours and the category; not
 `notes`), and that a material edit returns an approved entry to `pending`
-while a `not_required` entry keeps its handling (§16.26). Gaps not yet
+while a `not_required` entry keeps its handling (§16.26). **D-060** — a
+refused submission has three outcomes and stores nothing: a `400`, `403`,
+`404` or `409` is correctable and the client keeps the submission in a
+visible blocked state, a `429` or `5xx` is retryable with the same
+client-generated id, and overlap is never a refusal (§16.27). Gaps not yet
 raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -2146,7 +2159,12 @@ The following items remain unresolved. They should be addressed before or during
    (§16.26, D-059).**
 3. ~~Decide what happens to pending entries when organizational approval settings change.~~ **Resolved 22 November 2026 — the policy in force at submission governs; later changes affect only later submissions (§16.12, D-045).**
 4. ~~Define approval authority, including the boundaries of coordinator authority for project-less entries and other entries outside their projects.~~ **Resolved 23 November 2026 (D-051, §16.18):** approval authority is an active coordinator grant on the entry's project, excluding the entry's author, or the administrator role; project-less entries are administrator-only. Which categories of entry require approval at all remains open.
-5. Define the handling and reporting of invalid, out-of-period, or conflicting submissions that must be preserved rather than silently discarded.
+5. ~~Define the handling and reporting of invalid, out-of-period, or
+   conflicting submissions that must be preserved rather than silently
+   discarded.~~ **Resolved 25 November 2026 — three submission outcomes;
+   a refusal stores nothing and the client holds the submission in a
+   visible blocked state until it is corrected or deliberately discarded
+   (§16.27, D-060).**
 6. Decide how edits made concurrently by multiple authorized users are detected and reconciled. **Detection resolved 23 November 2026 — optimistic concurrency on an integer `version`, with `409 VERSION_MISMATCH` carrying the current representation (§16.16, D-049). The reconciliation interface for a detected edit remains open.**
 
 ### Priority 2 — Retrieval and pagination
@@ -2216,15 +2234,18 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 ## Outstanding decisions (maintained in place)
 
-Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), and item 1 (the entry state machine, §16.25) and item 2 (approval on edit,
-§16.26). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
+§16.26) and item 5 (preserved invalid submissions, §16.27). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above — the state machine (item 1), material change (item 2), preserved invalid submissions (item 5), concurrent edits (item 6) — are next in line, beginning with preserved invalid submissions (item 5).
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are nearly closed: the
+state machine (item 1, §16.25), material change (item 2, §16.26) and
+preserved invalid submissions (item 5, §16.27) are settled, leaving
+concurrent edits (item 6) as the next one to take.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2587,7 +2608,11 @@ Finishing work does not submit it. A volunteer completes an entry and submits it
 - Stopping a timer, or saving a manual entry with all its required fields, produces a draft on that device. The entry reaches the server only when the volunteer submits it.
 - The server has no draft state, no draft identifier and no draft endpoint. A time entry's first server-side existence is its submission (§15.11).
 - Drafts do not travel between a volunteer's devices, and losing the device loses the drafts. This is accepted rather than worked around with server-side draft storage.
-- Clients validate drafts locally, because the server cannot reject a draft it never sees. An invalid submission is refused as a whole with structured errors (D-039), and the draft stays on the device for correction.
+- Clients validate drafts locally, because the server cannot reject a draft it never sees. An invalid
+  submission is refused as a whole with structured errors (D-039). **A refused submission stays on the
+  device too (25 November 2026, §16.27, D-060):** nothing is stored for it, and the client marks it
+  blocked rather than discarding it, so what the volunteer typed survives a `400`, `403`, `404` or
+  `409` exactly as a draft survives an edit.
 - The offline queue carries submissions only (§7.1). Drafts are not queued for transmission.
 - Submission is an action taken by the entry's owner. Coordinators and administrators may approve or reject entries, but they do not submit on a volunteer's behalf — that would attest to hours the volunteer has not claimed.
 - A draft is invisible to approval queues, approval counts and coordinator workloads; it does not exist at all for those purposes.
@@ -4455,7 +4480,7 @@ A correction that goes back into the queue, keeping the reason the volunteer is 
 - A volunteer can be blocked waiting for a coordinator even after approval is switched off — the price of rule 5.
 - `rejectionReason` outliving the rejection makes a field whose meaning depends on `approvalStatus`.
 - Version-before-state is easy to implement the other way round and will be got wrong once, with a confusing error as a result.
-- Any material-change reapproval will extend this table rather than slot into it, which is why item 2 is next.
+- Any material-change reapproval extends this table rather than slots into it, which is what item 2 settled (D-059, §16.26).
 
 **Rejected alternatives.** A `status` axis carrying only `submitted` (a field that never changes value); a server-side `draft` state (D-044 removed it, and it would let the server hold hours nobody claimed); deriving `approvalStatus` from `approvedAt`/`reviewedBy` nulls (four states from three nullable columns is a matrix of illegal combinations); storing decisions only as audit events and computing status on read (correct history, but every list query pays for it and §15.8.6's filter becomes a join); letting any edit re-open approval (that is item 2's question, decided here by accident); and rejecting without a reason (nothing for the volunteer to correct toward).
 
@@ -4553,6 +4578,112 @@ The same entry with only its notes corrected returns `200` with `"approvalStatus
 
 **Resolves:** §15.12 item 2, and with it §13's reapproval item. It implements §6.6's confirmed direction, enables the `approved` → `pending` transition D-058 reserved, and constrains B9 (approved hours and `not_required` hours are different claims) and B11 (the edit and the approval are separate audit rows, both retained).
 
+## 16.27 A refused submission is preserved on the device, never in the database
+
+**Confirmed decision (D-060) — 25 November 2026.**
+
+§5.8, §7.5 and §10.5 each end with the same instruction, and none of them says how: an out-of-period, unauthorized or conflicting submission must be "preserved rather than silently discarded". D-044 had already removed the obvious server-side home for it — there are no drafts on the server — and D-058 removed the second one by refusing a lifecycle status, so a failed submission has nowhere to be stored even if the server wanted to keep it. §10.5's example named a code, `PROJECT_ASSIGNMENT_ENDED`, that D-057 replaced with `DATE_NOT_ELIGIBLE`, and its open note still asked whether an out-of-period submission becomes a rejected entry, a conflict or a separate review item.
+
+**The case this protects.** Dee is at the pantry on Saturday 12 November with no signal, and queues three submissions — 12 November, 19 November and 26 November — before she leaves. Her assignment actually ended on 25 October: the coordinator took her off the project when the Saturday rota changed, and her phone still has the old project in its cached list.
+
+- The first two arrive on Monday and are refused `409 DATE_NOT_ELIGIBLE`. If the app keeps only the last error for the queue, she sees one message a week later with no idea which work it was about.
+- The third is refused `429` while the queue drains, then succeeds on retry. Nothing was wrong with it, so nothing should be thrown away — but a client that treats every non-`2xx` as "invalid" deletes four hours of real work.
+- She corrects the dates on the first two and resends them against her current project. Those are the same records, with the same client-generated ids (D-049), and they are accepted. The earlier attempt was never a server record; it was a device state she has now moved out of.
+- Tom's entry overlaps Nadia's own. That is a conflict, not a refusal (D-047), and it is accepted and stored. If overlap were a refusal, the volunteer would lose the work rather than see the flag.
+
+**Decision in one line: three outcomes, only one of which leaves a record on the server; preservation is a client obligation with a visible blocked state, and the server never stores a refusal.**
+
+**The three outcomes.**
+
+| Outcome | Statuses | What the server does | What the client must do |
+|---|---|---|---|
+| **Accepted** | `201`, or `200` for a replay (`Idempotency-Replay`, D-055) | Validates, stores, returns the resource | Replace the queued item with the stored one and clear the queue entry |
+| **Refused, correctable** | `400`, `403`, `404`, `409` | Writes nothing and stores nothing | Keep the item, mark it **blocked**, show `code`, `message` and `requestId`, and wait for a human edit |
+| **Refused, retryable** | `429`, `5xx`, no response at all | May or may not have written; on `429` nothing was written | Keep the item **queued** and retry with backoff, sending the same `id` |
+
+A `401` belongs to neither class: it is a dead access token, which D-056's refresh path handles and then retries, and if the refresh also fails the item stays queued while the volunteer signs in again.
+
+**Rules.**
+
+1. **A refusal stores nothing.** No entry, no `rejected_submissions` table, no audit row, no notification, and no line in any list. The response is D-039's envelope and nothing else.
+2. **Preservation is the client's job, and it is mandatory.** A refused submission stays on the device until the volunteer either corrects it into an accepted submission or discards it deliberately. Discarding is a device action, exactly as discarding a draft is (D-044).
+3. **A blocked item is visible, not silent.** The device shows it as unsent work with the server's `code`, `message` and `X-Request-Id`, so a support question has a request to look up (D-053). A queue that silently retries or silently drops fails this rule equally.
+4. **Correctable and retryable are different states with different remedies.** A `409` must not be retried unchanged — D-057 says an ineligible date "will never be accepted" — while a `429` must be. A client that treats them alike either hammers the server or discards good work.
+5. **A refusal is terminal for the request, not for the record.** The volunteer corrects the blocked item and submits it again, reusing the same client-generated `id` because it is the same entry; a genuinely different entry gets a new id. Nothing the volunteer typed is lost by the refusal itself.
+6. **Overlap and conflict are never refusals.** A conflicting submission is accepted and stored with its conflict state (D-014, D-047). The volunteer's work is not refused because a coordinator might need to look at it.
+7. **A refused edit leaves the stored row exactly as it was.** Where the refusal is `409 VERSION_MISMATCH`, the envelope's `current` copy (D-049) tells the client what the row now is; the client's local copy is stale and must be reconciled before it resends, not overwritten with its own older version.
+8. **A resend of an accepted submission is a replay, not a refusal.** If the `id` already exists and the body matches, the response is `200` with `Idempotency-Replay` (D-055). A client whose first attempt timed out gets the record back instead of a "duplicate" error to interpret.
+9. **No server-side deadline and no server-side cleanup.** Nothing expires a blocked item on the device and nothing on the server needs purging, because nothing was stored. Ageing a blocked item is device policy, as it is for drafts.
+10. **Refusals are not evidence for anything.** They do not count toward approval queues, volunteer histories, totals or audit, and a coordinator cannot see that a volunteer tried and failed, because the deployment holds no such fact.
+
+**The shapes.**
+
+The refusal Dee's phone receives for the second submission:
+
+```http
+POST /v1/time-entries HTTP/1.1
+Authorization: Bearer eyJhbGciOi…
+Content-Type: application/json
+
+{ "id": "0d5e2c71-…", "version": 0, "workDate": "2026-11-19", "startedAt": "2026-11-19T09:00:00Z", "endedAt": "2026-11-19T13:00:00Z", "projectId": "b21f…" }
+```
+
+```http
+HTTP/1.1 409 Conflict
+Content-Type: application/json
+X-Request-Id: 018f3a6c-9d21-7c4b-8f0a-2b6c9e5d1a44
+
+{
+  "error": {
+    "code": "DATE_NOT_ELIGIBLE",
+    "message": "This work date is outside your assignment to this project.",
+    "details": { "workDate": "2026-11-19", "assignmentEnd": "2026-10-25" }
+  }
+}
+```
+
+What the device keeps for it — a client-side record, not an API resource:
+
+```json
+{
+  "localId": "q-0041",
+  "state": "blocked",
+  "body": { "id": "0d5e2c71-…", "workDate": "2026-11-19", "…": "…" },
+  "attempts": 1,
+  "lastRefusal": {
+    "status": 409,
+    "code": "DATE_NOT_ELIGIBLE",
+    "message": "This work date is outside your assignment to this project.",
+    "requestId": "018f3a6c-9d21-7c4b-8f0a-2b6c9e5d1a44",
+    "at": "2026-11-16T08:12:31Z"
+  }
+}
+```
+
+The retryable case differs in one field and one instruction: `"state": "queued"`, a last outcome of `429` with `Retry-After: 30` (D-053), and the same body resent after that interval with no edit.
+
+| Option | Dee's three queued submissions | What it costs |
+|---|---|---|
+| **A device-side blocked state, and nothing stored on the server (recommended)** | Two blocked with `409`, one retried after `429` and accepted; she corrects the two | The server cannot answer "did this volunteer try to submit?"; a lost device loses the blocked work, as it loses drafts |
+| An `unaccepted` table holding refused submissions | All three stored, visible to her and to support | Reverses D-044 in part: the server again holds hours nobody claimed, and a validation refusal gains a lifecycle |
+| Store refusals as `rejected` entries in her own history | All three appear as rejected | Conflates "a reviewer said no" with "the server could not accept this", and pollutes approval queues and totals |
+| Respond `200` with a row flagged failed | As above | A success status for a failure, and every list must filter the flag out or show it |
+| Drop the item on refusal and show a toast | Nothing kept | Exactly what §5.8, §7.5 and §10.5 forbid; her four hours are unrecoverable |
+
+**Accepted costs.**
+
+- A volunteer who loses their phone loses blocked work with it; there is no server-side copy to recover, the same accepted cost as drafts (D-044).
+- Nobody at the organisation can see that a volunteer's submissions are being refused, so a wrong cached project goes unnoticed until the volunteer calls.
+- The device is the only place a refusal's `code` and `requestId` survive, so support depends on the volunteer still having the app.
+- Clients must distinguish correctable from retryable refusals and back off on `429`; a naive "retry everything" client will hammer the buckets D-053 defines.
+- Blocked items can age indefinitely on a device with no server-side nudge and no deadline, and no route can list them.
+
+**Rejected alternatives.** An `unaccepted_submissions` table (the only option that answers "what did they try to send?", but it puts hours the volunteer has not successfully claimed back into the database and needs its own retention, visibility and audit rules, superseding D-044 in part); treating every refusal as a `rejected` entry (one word for two different acts, and approval queues and totals would then need to exclude them); accepting first and validating later (stores invalid rows so they can be explained — the same table by another name); a `200` with `"stored": false` (a success code for a failure, and every client must still branch); silent retry with a fresh `id` per attempt (turns one submission into a duplicate, or into two entries when the first attempt actually succeeded).
+
+**Left open.** Whether a permanently blocked submission should ever raise a notification to the volunteer or a coordinator (B10 owns delivery, and this decision deliberately records no fact to notify from); whether the device should show blocked items differently from unsubmitted drafts; whether a blocked item should survive sign-out on a shared device; whether `details` should carry enough for a client to propose a correction, such as the nearest eligible date, rather than only the reason; and item 6's reconciliation surface, which decides what a reviewer sees when the version they opened is not the version they decide.
+
+**Resolves:** §15.12 item 5. It closes the open statements in §5.8, §7.5 and §10.5, replaces §10.5's illustrative `PROJECT_ASSIGNMENT_ENDED` with D-057's `DATE_NOT_ELIGIBLE`, and constrains §16.11 (a refused submission is a blocked draft, not a stored one), D-039 (no new status class and no new envelope) and B10 (there is no refusal event to deliver).
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -4591,9 +4722,15 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and fed B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which leaves B11 as its main downstream: the audit list's contents and access are B11's, not B8's. B12 is settled (§16.22), so every later mutation inherits a shape rather than choosing one; B14 is settled (§16.23), so every route's authentication requirement has its shape; B16 is settled (§16.24), so every entry's date has a rule and §16.9's archived-gap refusal has a code. The entry state machine is settled (§16.25), so the submit, approve and reject routes have states to move between rather
 than a vocabulary to invent. The reapproval rule is settled too (§16.26),
-so an edit's effect on approval no longer depends on which client made it. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+so an edit's effect on approval no longer depends on which client made it.
+The refusal rule is settled as well (§16.27), so a submission the server
+will not accept has a defined home — the device — and no server-side
+table to design, index or purge. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
 **What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** preserved invalid submissions (§15.12 item 5) next,
-then concurrent edits (item 6) — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed and B3 deferred by scope (D-048) — followed by the feature-conditional items as each feature is scheduled.
+**Order proposed:** concurrent edits (§15.12 item 6) next, then overlap
+and conflict values (item 21) — with B1, B2, B4–B8, B12, B13, B14 and B16
+already closed, the state machine, material change and preserved
+submissions closed in §16.25–§16.27, and B3 deferred by scope (D-048) —
+followed by the feature-conditional items as each feature is scheduled.
