@@ -1179,7 +1179,7 @@ transaction, carrying the actor, the entity, the action, the `requestId`
 and the fields that moved with their before and after; actors survive
 anonymisation and the erasure is itself a row; read scope mirrors the
 entity's; one filtered `GET /v1/audit-log` ordered `at` then `id`; reads,
-refusals and replays are not audited (§16.34). Gaps not yet raised by any
+refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention stays open (§16.35). Gaps not yet raised by any
 section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -1470,7 +1470,7 @@ Confirmed MVP decisions:
 - Deleting a notification must not delete the underlying assignment, request, or other business record.
 - Notifications remain available until deleted or affected by a retention policy. The retention policy remains undecided.
 
-The exact notification API, delivery mechanics, and UI presentation are not yet specified.
+The exact notification API, delivery mechanics, and UI presentation are not yet specified. **Partly settled 26 November 2026:** the API and the delivery mechanics are §16.35 (D-068); UI presentation remains the client's.
 
 6.2 Volunteer assignment notifications
 
@@ -1504,7 +1504,7 @@ Other coordinators do not need to be notified about these changes under the curr
 
 6.4 Notification retention and administration
 
-Users may delete their own notifications. Whether organization administrators can manage another user's notifications remains undecided.
+Users may delete their own notifications, permanently (§16.35, D-068). Whether organization administrators can manage another user's notifications remains undecided. **Resolved 26 November 2026 — no: a mailbox is its owner's, and no route takes another person's id (§16.35, D-068).**
 
 The notification retention period and any automatic cleanup policy also remain undecided.
 
@@ -1551,7 +1551,7 @@ Identifying who created or ended an assignment, and recording reasons for assign
 The following remain undecided:
 
 - Notification retention period and automatic cleanup.
-- Whether organization administrators may manage other users' notifications.
+- Whether organization administrators may manage other users' notifications. **Resolved 26 November 2026 — no (§16.35, D-068).**
 - Detailed notification settings and presentation.
 - Whether coordinator notifications for direct volunteer self-assignment and self-removal should be mandatory or configurable.
 
@@ -2252,7 +2252,7 @@ The following items remain unresolved. They should be addressed before or during
 22. Decide whether project-less activity descriptions are stored separately from optional notes.
 23. Finalize required and optional profile fields and email-change verification behavior.
 24. **Entry submissions settled:** an approval-policy change applies only to submissions received after its effective time (§16.12, D-045). Still open: the effects of policy changes on pending assignment requests and other pending operations.
-25. Define notification retention and whether administrators can manage other users' notifications.
+25. Define notification retention and whether administrators can manage other users' notifications. **Administrator access settled 26 November 2026 — they cannot: a mailbox is the caller's own and no route takes another person's id (§16.35, D-068). Retention itself remains open.**
 
 ### Priority 5 — API contract and implementation
 
@@ -2290,16 +2290,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
 §16.26), item 5 (preserved invalid submissions, §16.27), item 6
-(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23), B16 (the backdating window, §16.24) B9 (reporting and totals, §16.33) and B11 (the audit trail, §16.34). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23), B16 (the backdating window, §16.24) B9 (reporting and totals, §16.33), B11 (the audit trail, §16.34) and B10 (notification transport, §16.35). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34), leaving the
-backlog's feature items — B10 (notification transport) and B15 (schema and
-indexes) — as the next ones to take.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34), leaving the backlog's implementation item — B15 (schema and indexes) — as the next one to take.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -6498,6 +6496,237 @@ the one envelope but its contents and access are this decision's), B10 (a
 notification's read state is not an audited write), B15 (two indexes — the
 entity's history and the organisation's feed order — and a table that is never
 pruned) and §15.12 item 29 (one route in the inventory: `GET /v1/audit-log`).
+
+## 16.35 Notifications: in-app only, written with the act, and a mailbox of one's own
+
+**Confirmed decision (D-068) — 26 November 2026.**
+
+B10 asked how a notification travels. §6.1–§6.4 fixed who hears about what, and
+D-054 (§16.21) had already fixed the list they arrive in. Nothing said how a row
+comes into being, whether reading one is a write, what deleting one does, or
+whether a mailbox belongs to its reader — so five features would each have
+answered it differently: a mailer beside every act, a "mark all read" that
+returns rows D-055 rule 9 forbids, and a notification pointing at an entry its
+reader may no longer open.
+
+**The case this protects.** Sal asks to join Thursday's pantry shift at 08:50 on
+Monday. Approval is required, and three people coordinate that project: Priya,
+Nadia and Owen. Each of them has the request in their inbox by 08:50:01 — three
+rows, written in the same transaction as the request itself, because a
+coordinator told about a request that never existed, or not told about one that
+does, is the failure this decision is about. At 09:10 Nadia approves. Sal is
+told; Nadia is not told about her own approval, so the inbox she opened to find
+Sal's request is not an inbox her own act fills. At 09:20 Owen deletes his copy
+of the request notification — it is his, nobody else's, and afterwards it is
+gone rather than hidden, because a notification has no history worth keeping.
+At 09:21 his phone replays the same delete out of a stale queue and still gets
+`204`. At 09:30 Sal's phone is in a tunnel; it does not ask, so it is not told.
+At 14:02 he opens the app and the row is there, unread, because a notification
+is a record and not a message that was either delivered or lost.
+
+**Rules.**
+
+1. **In-app only, and the app is what asks.** No email, no SMS, no push
+   notification and no server-sent stream: the only transport is the persisted
+   row and the list route D-054 fixed. The app asks on cold start, on foreground
+   resume, on pull-to-refresh and when the screen opens; order, filters and
+   paging are §16.21's and are not restated here. Nothing wakes a device, so
+   latency is bounded by the next ask — and an unread row survives a lost
+   phone, a reinstall and a second device because it lives on the server
+   (§6.1).
+2. **Written in the act's own transaction, one row per recipient, with the
+   recipient set resolved at write time.** The approval that moves an entry to
+   `approved` inserts its notification in the same transaction: there is no
+   mailer, no queue and no reconciliation job, so an approved entry cannot be
+   unannounced and a notification cannot describe an act that rolled back. A
+   notification belongs to **one** person; four coordinators on a project mean
+   four rows, not one shared row with four read flags. Recipients are whoever
+   holds the role *at the instant of the write*: a coordinator granted a minute
+   later is not told about the request that was already pending — the pending
+   queue is that catch-up route — and one removed a minute later keeps the row
+   she was already given.
+3. **Eleven types, and an explicit list of what raises nothing.** The
+   vocabulary is fixed: `ASSIGNMENT_REQUEST_SUBMITTED`,
+   `ASSIGNMENT_REQUEST_WITHDRAWN`, `ASSIGNMENT_REQUEST_APPROVED`,
+   `ASSIGNMENT_REQUEST_REJECTED`, `ASSIGNMENT_REQUEST_CANCELLED`,
+   `ASSIGNMENT_CREATED`, `ASSIGNMENT_ENDED`, `COORDINATOR_ASSIGNED`,
+   `COORDINATOR_REMOVED`, `ENTRY_APPROVED` and `ENTRY_REJECTED`. A new type is a
+   decision, not a string a caller invents. Raises nothing: an advisory overlap
+   (D-062), a refused submission (D-059), a report read (D-066), a notification
+   read or deleted, a change-feed pull (D-064), and — because there is no server
+   timer — a timer start or stop (D-048). `message` carries human-written text
+   only, which in the MVP means a rejection reason; every other type is rendered
+   from the client's own text for that type.
+4. **The actor is never notified of their own act.** Nadia's approval does not
+   arrive in Nadia's inbox. This is what keeps a coordinator's mailbox a list of
+   things to *do* rather than a log of what they have done, and it is why the
+   fan-out in rule 2 excludes the caller before it counts recipients.
+5. **Exactly once per act, by a uniqueness constraint.** The row is unique on
+   recipient, type and subject: the entry's `id` together with the `version`
+   that was approved or rejected, and the request's `id` for the five request
+   types. A retried write is a replay and inserts nothing (D-055 rule 4); a
+   later approval of the same entry at a higher `version` is a genuinely new act
+   and does notify.
+6. **Unread is `readAt`, and there is one row per person.** `readAt` is null
+   until the person marks it, and the server's instant afterwards; the filter is
+   `unreadOnly` (§16.21). One row per recipient is what makes read state
+   personal without a receipts table, and deletion personal without touching
+   anyone else's copy.
+7. **Marking read is a bulk call that returns a count; deleting is the one hard
+   delete.** `POST /v1/notifications/read` takes `{"ids": [ …1–100… ]}` or
+   `{"all": true}` and answers `{"updated": n}` with no rows (D-055 rule 9).
+   Unknown, deleted and other people's ids are skipped, so `updated` may be
+   fewer than the ids sent; repeating the call answers `200` with
+   `{"updated": 0}`. `DELETE /v1/notifications/{id}` answers `204` with no body.
+   **Deletion is a hard delete regardless of any other decision**: the row is
+   removed, not marked, because a notification is the one record with no history
+   anyone may read — D-052 keeps the record and D-063 marks entries, while this
+   row simply goes. Repeating the delete is `204` as well, since there is
+   nothing left to report; another person's id, or one already gone, is
+   `404 NOT_FOUND`. **A bulk mark-read returns no rows**, so the client sets
+   `readAt` locally for display — it knows which ids it sent — and the server's
+   value arrives on the next list fetch; read state is display state, not
+   business data.
+8. **The mailbox is the caller's, and nobody administers it.** Every route is
+   scoped to the caller's `sub` as `recipientId`; no route accepts a user id,
+   and there is no administrator view — which closes the access half of §15.12
+   item 25 (§6.4 asked whether administrators may manage another person's
+   notifications, and the answer is that they may not). Reads and deletes leave
+   no audit row (D-067) and no `changeSeq` (D-064): a mailbox is per-person, and
+   putting it in the feed would force the counter onto the one table D-064
+   deliberately kept out.
+9. **Erasure empties the mailbox; retention is still open.** A notification is
+   personal rather than organisational, so an erasure under D-052 deletes the
+   person's notifications with the rest of their personal data, and no recipient
+   id survives. Automatic retention — how long an unread row lives before it is
+   removed — remains undecided (§6.4, §15.12 item 25), and this decision sets no
+   period: until one is chosen, rows live until their owner deletes them, which
+   is what §6.1 already promised.
+
+**The shapes.** Paths and verbs are illustrative pending §15.12 item 29; the
+bodies and status codes are what this decision fixes.
+
+```http
+GET /v1/notifications?unreadOnly=true
+```
+
+```json
+{
+  "items": [
+    { "id": "5b7c…", "type": "ASSIGNMENT_REQUEST_APPROVED",
+      "createdAt": "2026-11-23T09:10:04Z", "readAt": null,
+      "entryId": null, "projectId": "a3f1…",
+      "assignmentRequestId": "c19e…", "message": null }
+  ],
+  "nextCursor": "eyJjIjoibm90aWZpY2F0aW9ucyIsImYiOiJ1bnJlYWQiLCJrIjpbIjIwMjYtMTEtMjNUMDk6MTA6MDRaIiwiNWI3YyJdfQ",
+  "pageSize": 50
+}
+```
+
+Marking two of them read, then asking again:
+
+```json
+{ "ids": ["5b7c…", "5b7d…"] }
+```
+
+```json
+{ "updated": 2 }
+```
+
+```json
+{ "all": true }
+```
+
+```json
+{ "updated": 0 }
+```
+
+Deleting one of his own:
+
+```http
+DELETE /v1/notifications/5b7c…
+```
+
+```http
+HTTP/1.1 204 No Content
+```
+
+and the second attempt, or someone else's id:
+
+```http
+HTTP/1.1 404 Not Found
+```
+
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "No such notification.",
+    "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a74"
+  }
+}
+```
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **In-app only, rows written in the act's transaction, one per recipient, hard delete (recommended)** | One route the app already has, a mailbox that matches what happened, and a delete that is simply gone | Unseen for hours when the app is closed; rows scale with recipients; no recovery from a delete |
+| Email or SMS beside it | Reach outside the app | Deliverability, templates, bounces, unsubscribe, a second copy of one fact to keep in step, and a volunteer's hours leaving the instance |
+| Push notifications | A badge that moves without a fetch | Device tokens, a second delivery path with retries and a queue — and the row is still needed, so the email/push shape is additive infrastructure the MVP does not have |
+| A mailer job after the commit | No insert on the write's path | A crash between the two leaves an approval with no notification and no error anywhere |
+| One shared row with per-person read receipts | Fewer rows | A join table, and every person's read is a write against one row everyone is reading |
+| A `deletedAt` tombstone on notifications | Uniform with entries | A hidden column every query must filter, for a row whose history nobody may read |
+| A `read: true` flag instead of `readAt` | One boolean to flip | No time, two fields that can disagree, and nothing to order or age by |
+| One mark-read route per notification | The simplest single call | Thirty round trips for a screen of thirty unread rows |
+| Server-side "mark everything before now" | The client sends no ids | It marks rows the client never saw, and it trusts a client clock |
+| Free-text `type` | Any event can be added without a decision | Unrenderable without a lookup table, and a typo becomes a new type |
+| Administrator access to another person's mailbox | Support can clear a stuck badge | One person reading another's professional messages, and erasure becomes a second reader's problem |
+
+**Accepted costs.**
+
+- **No push means a notification can sit unseen for hours.** The badge is only
+  as fresh as the last ask, and because no list returns a total (§16.21 rule 6)
+  it counts what the app has fetched — the counting endpoint deferred in §16.7
+  is still deferred.
+- **The write path fans out.** Every act that names recipients reads the
+  recipient set inside its transaction, and rows scale with recipients rather
+  than acts: 43 pending requests across four coordinators is 172 rows.
+- **A removed coordinator keeps her rows.** Some of them point at records she
+  may no longer read, so the client must handle a `403` or `404` when it follows
+  `entryId` or `assignmentRequestId`; a mailbox is what she was told, not what
+  she may still see.
+- **Late joiners are not backfilled.** A coordinator granted after a request
+  arrived learns about it from the pending queue or not at all.
+- **A mark-read that returns no rows can disagree for a moment.** The app sets
+  `readAt` itself and can differ from the server until the next fetch —
+  invisible for a dot, wrong for anything that tried to report on it.
+- **A hard delete is irreversible and leaves no trail.** The act's audit row
+  survives (D-067) while the notification about it can vanish, so "who was told
+  what" is the one question the record cannot answer.
+- **Eleven types and a "raises nothing" list must be kept in step** with §6.2
+  and §6.3; a new event in either place means a new type and a migration.
+
+**Left open.** The retention period and any automatic cleanup (§6.4, §15.12
+item 25); whether `since` and `until` bound `createdAt` or `readAt`, which
+§16.21 leaves to the contract; marking a notification unread, deliberately
+absent from the MVP; a "seen in the list" state distinct from read; whether
+coordinator notifications for approval-free self-service changes are mandatory
+or configurable (§6.2's optional case, §15.12 item 25's other half); email or
+push as a later transport, which would be additive to this row rather than a
+replacement for it; whether the counting endpoint in §16.7 carries the unread
+figure; and whether an erasure's mailbox deletion is itself audited, which
+D-067 currently says it is not.
+
+**Resolves:** backlog item B10 (§17), and the access half of §15.12 item 25 —
+administrators cannot manage another person's notifications. It gives D-054's
+"transport must not invent a second list" its answer, gives D-055 rule 9 the
+bulk shape it deferred, writes down the "raises nothing" facts D-059, D-062,
+D-064 and D-066 each assumed, and constrains B15 (three indexes: the mailbox
+order `(recipient_id, created_at desc, id desc)`, the unread filter, and the
+uniqueness constraint behind rule 5) and §15.12 item 29 (the list, the read mark
+and the delete, in one collection).
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -6521,7 +6750,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | **Resolved — D-066 (§16.33).** `approved` and `not_required` count; `pending`, `rejected` and deleted entries do not; totals are summed at read time from `workDate` in the organisation's time zone, weeks start on Sunday, and one grouped report route returns `seconds` and `entryCount` per row |
-| **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery. §16.29 (D-062) records that an advisory conflict raises no notification, so this list has one fewer entry, and §16.31 (D-064) keeps notifications out of the change feed |
+| **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery. §16.29 (D-062) records that an advisory conflict raises no notification, so this list has one fewer entry, and §16.31 (D-064) keeps notifications out of the change feed. **Resolved — D-068 (§16.35).** In-app only, with rows written in the act's own transaction, one per recipient and none for the actor's own act. Eleven fixed types and an explicit raises-nothing list; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; there is no administrator access; read state is neither audited nor in the change feed. Retention stays open (§15.12 item 25) |
 | **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | **Resolved — D-067 (§16.34).** One insert-only row per accepted write, written in the write's own transaction and never purged: actor, entity, action, `requestId`, an optional `reason` and the fields that moved with their before and after. Actors survive anonymisation and the erasure is itself a row; read scope mirrors the entity's; one filtered `GET /v1/audit-log` orders `at` then `id`; reads, refusals and replays leave no row |
 | **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | **Resolved — D-055 (§16.22).** Every mutation returns the changed resource in its read shape; creates are `201` + `Location`, replays `200` + `Idempotency-Replay` (by client id or by the uniqueness constraint), `409` keeps D-049's `current` copy, no mutation returns counts, and archival's impact comes from a confirmation read. Deletion is the only `204` |
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
@@ -6543,16 +6772,8 @@ will not accept has a defined home — the device — and no server-side table
 to design, index or purge. Reconciliation is settled too (§16.28), so a
 stale write has an answer that neither retries nor overwrites, and conflict
 values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is settled too (§16.30), so the entry's read shape has its last three fields and every total has one predicate to apply. Catching up is settled as well (§16.31), so the download half has a feed rather than a protocol to invent and the outbox stays the ordinary routes replayed (D-055). Edit authority is settled as well (§16.32), so every write route's authorization has its third clause and the project representation has the one new field it needs. Reporting is settled as well (§16.33), so B17's ceilings and B19's
-rounding each have one set of hours to act on. The audit trail is settled
-too (§16.34), so every write route has one place its record lands and
-B7's anonymisation has a row that keeps the actor. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+rounding each have one set of hours to act on. The audit trail is settled too (§16.34), so every write route has one place its record lands and B7's anonymisation has a row that keeps the actor. Notification transport is settled as well (§16.35), so an act that names recipients writes its rows in the same transaction and B15 has the three indexes the mailbox needs. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B10 and B15 do not hold up the contract, but both are cheaper to decide
-before code exists than after; B11 has left that list too (§16.34), so the
-trail's table and its indexes are now part of B15's work. B7 has left that list (§16.19).
+**What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B10 has left that list too (§16.35), so the mailbox's routes, rows and three indexes are part of B15's work, and B11's trail joined it with §16.34. B15 does not hold up the contract but is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** B10 (notification transport) next — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine, material
-change, preserved submissions, reconciliation, conflict values, deletion,
-change tracking, edit authority, reporting and the audit trail closed in
-§16.25–§16.34, and B3 deferred by scope (D-048) — then B15 (schema and
-indexes), each as its feature is scheduled.
+**Order proposed:** B15 (schema and indexes) next — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine, material change, preserved submissions, reconciliation, conflict values, deletion, change tracking, edit authority, reporting, the audit trail and notification transport closed in §16.25–§16.35, and B3 deferred by scope (D-048). It is the last backlog item, and its indexes now answer to decisions rather than to open questions.
