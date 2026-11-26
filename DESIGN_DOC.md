@@ -1173,7 +1173,7 @@ gate on approval: the client announces it on the create, the replay and each
 bulk-sync result (§16.29). **D-063** — entries are marked deleted with
 `deletedAt`, `deletedBy` and a required `deleteReason`, never removed: a
 deleted entry leaves the totals, the queues and the conflict set, nothing
-restores it, and "void" is retired from the contract (§16.30). **D-064** — catching up on the download half: a per-organisation monotonic `changeSeq` taken in the writing transaction, a `GET /v1/sync` feed of the caller's own entries (deletions included) ordered by it, no cursor meaning from the beginning, the number never exposed, privileged lists live-only and never persisted, and coordination actions requiring connectivity (§16.31). **D-065** — who may edit an entry: the author by authorship, an administrator always, and a coordinator holding an active grant on the entry's project while the organisation's `coordinatorsMayEditEntries` setting is on; departure ends coordination and never authorship; a date move is checked against the author's assignment history; the capability is published per project as `canEditEntries` (§16.32). Gaps not yet
+restores it, and "void" is retired from the contract (§16.30). **D-064** — catching up on the download half: a per-organisation monotonic `changeSeq` taken in the writing transaction, a `GET /v1/sync` feed of the caller's own entries (deletions included) ordered by it, no cursor meaning from the beginning, the number never exposed, privileged lists live-only and never persisted, and coordination actions requiring connectivity (§16.31). **D-065** — who may edit an entry: the author by authorship, an administrator always, and a coordinator holding an active grant on the entry's project while the organisation's `coordinatorsMayEditEntries` setting is on; departure ends coordination and never authorship; a date move is checked against the author's assignment history; the capability over *other members'* entries is published per project as `canEditEntries` (§16.32). Gaps not yet
 raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -5813,9 +5813,7 @@ grant on the entry's project while the organisation's
          and organisation.coordinatorsMayEditEntries)
    ```
 
-   Nobody else. A project-less entry has no project to hold a grant, so it
-   is the author's or an administrator's, exactly as §16.18 already says for
-   approval and D-063 for deletion.
+   Nobody else. A project-less entry has no project to hold a grant, so it is the author's or an administrator's, exactly as §16.18 already says for approval and D-063 for deletion. The first clause is authorship and needs no grant, no assignment and no setting; the third clause is the *other members'* one, and it is what the project field in rule 10 answers.
 
 2. **Authorship is not a role and does not expire with the assignment.** The
    author reads, edits, deletes and resubmits their own rejected entry for
@@ -5894,15 +5892,27 @@ grant on the entry's project while the organisation's
    an approved one. This is D-060's habit applied to a different refusal: a
    refusal that destroys the person's work teaches them to stop trying.
 
-10. **The capability is published per project, per caller.** The project
-    representation carries `canEditEntries`: `true` for an administrator,
-    `true` for a coordinator with an active grant while the setting is on,
-    `false` otherwise — including for a coordinator whose grant has ended and
-    for one who may read the project but not its entries. It folds the grant
-    check in, so the client never re-implements rule 1. It is a courtesy for
-    the interface, never the enforcement: a client that hides the control
-    still handles the `403`, because the setting can change under an open
-    editor.
+10. **The capability is published per project, per caller, and it answers
+    about someone else's entry only.** The project representation carries
+    `canEditEntries`, which answers exactly one question: *may this caller
+    edit an entry on this project that another member wrote?* It is `true`
+    for an administrator, `true` for a coordinator with an active grant
+    while the setting is on, and `false` otherwise — including for a
+    coordinator whose grant has ended, and for a coordinator on a project
+    that is not the entry's.
+
+    **It is not a statement about the caller's own entries.** It is `false`
+    for an ordinary volunteer on a project they volunteer for, and that fact
+    says nothing about entries they wrote: the author clause of rule 1 is
+    unconditional, so a volunteer reads, edits, deletes and resubmits their
+    own work whatever this field says. A client must never use
+    `canEditEntries` to hide the edit control on a person's own entry; it
+    decides whether to show the control on **another member's** row.
+
+    It folds the grant check in, so the client never re-implements rule 1. It
+    is a courtesy for the interface, never the enforcement: a client that
+    hides the control still handles the `403`, because the setting can change
+    under an open editor.
 
 11. **With the switch off, a wrong approved entry is the volunteer's to fix,
     or an administrator's.** Approve-to-reject is not a transition (D-058)
@@ -5948,7 +5958,9 @@ The setting, in the organisation read:
 }
 ```
 
-The capability, in the project read — one boolean, computed for the caller:
+The capability, in the project read — one boolean, computed for the caller,
+and about other members' entries. This is Dee's view of the pantry she
+volunteers for:
 
 ```json
 {
@@ -5959,8 +5971,18 @@ The capability, in the project read — one boolean, computed for the caller:
 }
 ```
 
-The same field is `true` for the pantry's administrator, and for Nadia while
-the setting is on.
+What it means, per caller, for that same project:
+
+| Caller | `canEditEntries` | Reading |
+|---|---|---|
+| Dee, a volunteer there | `false` | she may not edit Tom's pantry entries; her own remain hers (rule 1) |
+| Nadia, active grant, setting on | `true` | she may edit Dee's and Tom's pantry entries |
+| Nadia, active grant, setting off | `false` | she may not edit theirs; she rejects with a reason. Her own entries are unaffected |
+| Nadia, grant ended | `false` | she may not edit theirs; her own entries are still hers |
+| An administrator | `true` | anyone's, always — the setting does not reach the role |
+
+The field never answers "may I edit my own entry", because that answer is
+always yes and comes from being its author.
 
 **Considered and rejected.**
 
@@ -6005,8 +6027,9 @@ in both places, and this decision is what §16.25's "any editor (§15.5.2)",
 §16.26's reapproval path and §16.28's stale-write hand-off resolve through.
 It confirms D-057 rule 3 from the other side (a departed volunteer may correct
 what they wrote), leaves D-063 rule 4's deletion authority untouched, and
-constrains §15.12 item 29 (the project representation gains `canEditEntries`
-and the organisation read carries the setting), B9 (totals count edits made by
+constrains §15.12 item 29 (the project representation gains `canEditEntries`,
+which answers about other members' entries only, and the organisation read
+carries the setting), B9 (totals count edits made by
 anyone this predicate admits), B11 (one audit row per edit, and the actor for
 each setting change) and §16.31 (a coordinator's edit reaches the volunteer
 through the feed, not through a stored list).
@@ -6030,7 +6053,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B3** | Timer semantics: one running timer or several, timer spanning midnight, server-authoritative start, clock skew, idle timeout, start/stop payloads | **Contract** — deferred | **Deferred — not decided (D-048, §16.15).** The MVP has no server timer, so no timer route, constraint or payload needs specifying; this row re-opens if that feature returns in a later release |
 | **B4** | Concurrency and idempotency for mutations: client-generated ids on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | **Resolved — D-049 (§16.16).** A client-generated UUID per record plus an integer `version`; no `Idempotency-Key`; state-setting operations idempotent by outcome. Offline replay (§15.12 item 30) depends on it |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | **Resolved — D-050 (§16.17).** The deployment is the tenant: each organisation runs its own instance, identity is scoped to it, and no organisation identifier appears in the API. One organisation row carries the time zone, approval policy and membership setting; no `organisation_id` columns |
-| **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator. **Amended 26 November 2026 (D-065, §16.32):** editing another member's entry is coordinator authority only while the organisation's `coordinatorsMayEditEntries` setting is on, an administrator always has it, its scope is the entry's project rather than the author's current assignment, and it is published per project as `canEditEntries` |
+| **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator. **Amended 26 November 2026 (D-065, §16.32):** editing another member's entry is coordinator authority only while the organisation's `coordinatorsMayEditEntries` setting is on, an administrator always has it, its scope is the entry's project rather than the author's current assignment, and it is published per project as `canEditEntries`, which answers about other members' entries and never about the caller's own |
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | The record discusses totals throughout but never defines a reported hour |
