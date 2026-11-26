@@ -336,6 +336,13 @@ assignments within the permissions ultimately defined.
 
 **Resolved 18 November 2026:** within their remit, a coordinator may archive projects and activities, and an organization administrator may archive anything in the organization. No administrator approval step (§16.6, D-041).
 
+**Confirmed 26 November 2026 (§16.32, D-065):** editing another
+member's entry is coordinator authority only while the organisation's
+`coordinatorsMayEditEntries` setting is on, and its scope is the entry's
+project rather than the author's current assignment. An organization
+administrator may always edit entries in their organization — the setting
+does not apply to that role — and a volunteer may always edit their own.
+
 ### 4.4 Organization-administrator permissions
 
 Organization administrators have organization-wide authority. The
@@ -1166,7 +1173,7 @@ gate on approval: the client announces it on the create, the replay and each
 bulk-sync result (§16.29). **D-063** — entries are marked deleted with
 `deletedAt`, `deletedBy` and a required `deleteReason`, never removed: a
 deleted entry leaves the totals, the queues and the conflict set, nothing
-restores it, and "void" is retired from the contract (§16.30). **D-064** — catching up on the download half: a per-organisation monotonic `changeSeq` taken in the writing transaction, a `GET /v1/sync` feed of the caller's own entries (deletions included) ordered by it, no cursor meaning from the beginning, the number never exposed, privileged lists live-only and never persisted, and coordination actions requiring connectivity (§16.31). Gaps not yet
+restores it, and "void" is retired from the contract (§16.30). **D-064** — catching up on the download half: a per-organisation monotonic `changeSeq` taken in the writing transaction, a `GET /v1/sync` feed of the caller's own entries (deletions included) ordered by it, no cursor meaning from the beginning, the number never exposed, privileged lists live-only and never persisted, and coordination actions requiring connectivity (§16.31). **D-065** — who may edit an entry: the author by authorship, an administrator always, and a coordinator holding an active grant on the entry's project while the organisation's `coordinatorsMayEditEntries` setting is on; departure ends coordination and never authorship; a date move is checked against the author's assignment history; the capability is published per project as `canEditEntries` (§16.32). Gaps not yet
 raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -1808,11 +1815,11 @@ The existing record and its audit history must be preserved.
 
 | Actor | Editing authority |
 |---|---|
-| Volunteer | May edit their own entries. |
-| Assigned coordinator | May edit entries belonging to volunteers assigned to a project they coordinate, but only when the entry relates to that project. |
-| Organization administrator | May edit any time entry in the organization. |
+| Volunteer | May edit their own entries — on any project they wrote them for, whether or not their assignment there has ended (§16.32, D-065). | | Assigned coordinator | May edit any entry on a project they coordinate, whoever wrote it and whether or not that person is still assigned — **only while the organisation's `coordinatorsMayEditEntries` setting is on**; with it off the act is `403 FORBIDDEN` and the coordinator rejects with a reason instead (§16.32, D-065). | | Organization administrator | May edit any time entry in the organization, always; the setting governs coordinators only (§16.32, D-065). |
 
 These permissions do not automatically grant approval authority or conflict-resolution authority. Those are separate permissions governed by their respective rules.
+
+**Amended 26 November 2026 (§16.32, D-065):** "entries belonging to volunteers assigned to a project they coordinate" became "any entry on a project they coordinate" — a coordinator's scope is the entry's project, not the author's current assignment — and the coordinator row acquired the organisation setting. The table governs the **edit**; reading an entry on the project and deciding it keep the authority D-051, D-058 and D-063 give them.
 
 ### 15.5.3 Editing by entry state
 
@@ -2206,7 +2213,17 @@ The following items remain unresolved. They should be addressed before or during
 11. ~~Decide who may archive projects and activities.~~ **Resolved 18 November 2026 — coordinators within their project remit, administrators organization-wide, no approval step (§16.6, D-041).**
 12. ~~Decide how archival affects active assignments, pending requests, and historical time entry.~~ **Resolved 18 November 2026 — dated boundary: volunteer assignments end, pending requests cancel, pending entries stay reviewable, pre-archival work stays valid, running timers stop into pre-filled drafts on the volunteer's device (§16.9, D-042; §16.11, D-044).**
 13. ~~Decide whether archived projects or activities can be restored.~~ **Resolved 18 November 2026 — reversible by the same authority, without reviving assignments (§16.10, D-043).**
-14. Confirm whether coordinators may resolve conflicts for volunteers assigned to their projects and how project-less entries are treated. **Narrowed 25 November 2026 (§16.29, D-062):** there is no separate resolve act — resolving is editing or rejecting (D-047) — so what remains is who may edit or reject another volunteer's entry; project-less entries follow §16.18.
+14. ~~Confirm whether coordinators may resolve conflicts for volunteers
+    assigned to their projects and how project-less entries are treated.~~
+    **Narrowed 25 November 2026 (§16.29, D-062):** there is no separate
+    resolve act — resolving is editing or rejecting (D-047) — so what
+    remained was who may edit or reject another volunteer's entry.
+    **Resolved 26 November 2026 (§16.32, D-065) —** the author by
+    authorship, an administrator always, and a coordinator holding an active
+    grant on the entry's project while the organisation's
+    `coordinatorsMayEditEntries` setting is on; a coordinator's scope is the
+    entry's project rather than the author's current assignment; project-less
+    entries are the author's or an administrator's.
 15. Finalize whether volunteer and coordinator assignments use a generalized resource or separate resources.
 16. Define the consequences of assignment departure for pending time entries and requests, beyond the established historical-work eligibility rule.
 17. Finalize timestamp and timezone semantics for assignment boundaries.
@@ -2267,14 +2284,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
 §16.26), item 5 (preserved invalid submissions, §16.27), item 6
-(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30) and item 30 (change tracking, §16.31). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) and change tracking (item 30, §16.31) are settled, leaving who may edit or reject another volunteer's entry (item 14) as the next one to take.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, leaving the backlog's feature items — B9 (reporting and totals), B10 (notification transport), B11 (the audit trail) and B15 (schema and indexes) — as the next ones to take.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -3367,6 +3384,17 @@ WHERE project_id = $1 AND user_id = $2 AND ended_at IS NULL
 
 The supporting index is `(project_id, user_id) WHERE ended_at IS NULL`.
 
+**Amended 26 November 2026 (§16.32, D-065):** for the act of editing
+*another member's* entry the formula gains the organisation's setting —
+
+    mayEditEntry(member, entry) = author(entry)
+                                 ∨ administrator
+                                 ∨ (active grant on entry.projectId
+                                    ∧ coordinatorsMayEditEntries)
+
+Every other act keeps the grant alone: reading, approving, rejecting,
+deleting and managing the project do not consult the setting.
+
 **Permission matrix.** "Coordinator" means an active grant on the project in
 question, not a status the person holds generally.
 
@@ -3375,8 +3403,7 @@ question, not a status the person holds generally.
 | Create, edit and submit own entries | yes | yes | yes |
 | Read own entries, assignments and notifications | yes | yes | yes |
 | Create a project | yes | yes | yes |
-| Read entries on that project | no | yes | yes |
-| Read entries of volunteers assigned to that project | no | yes | yes |
+| Read entries on that project, whoever wrote them and whether or not their assignment has since ended | no | yes | yes | | Edit another member's entry on that project | no | yes, if `coordinatorsMayEditEntries` is on (§16.32) | yes, always (§16.32) |
 | Approve, reject or return an entry on that project | no | yes, except their own | yes, including their own (amended 23 November 2026) |
 | Edit that project and manage its activities | no | yes | yes |
 | Add and remove volunteer assignments on that project | no | yes | yes |
@@ -5712,6 +5739,278 @@ pauses the feed and still never clears the outbox), §16.30 (deleted rows
 travel in the feed) and §16.18 (a role grants actions, never breadth of
 offline storage).
 
+## 16.32 Who may edit an entry: authorship, a grant, and an organisation switch
+
+**Confirmed decision (D-065) — 26 November 2026.**
+
+§15.12 item 14 began as a question about conflict resolution and was narrowed
+on 25 November 2026 (§16.29, D-062) to the one thing left: who may edit or
+reject another volunteer's entry. The record could not answer it. §15.5.2 gave
+a coordinator "entries belonging to volunteers assigned to a project they
+coordinate", while D-051's predicate is an active grant on the entry's
+project and says nothing about who is currently assigned; §16.26, §16.25 and
+§16.30 each delegate to "any editor (§15.5.2)" without saying what that means
+after an assignment ends. §5.5 and D-057 rule 3 meanwhile let a volunteer
+submit work dated inside an assignment that has ended, without saying whether
+they could still correct the entries they had already written.
+
+The owner settled the policy on 26 November 2026. An administrator always
+holds edit authority over anyone's entries in their organisation.
+Organisations decide whether coordinators hold it. And authorship is
+authority: a volunteer keeps their own entries wherever they were written,
+whether or not the project still lists them.
+
+**The case this protects.** Tom volunteers at the Saturday Pantry from
+February to June. On 30 June Nadia, who coordinates the pantry, ends his
+assignment because he is moving away. On 20 June he had worked 09:00–13:00
+and never logged it.
+
+- **3 July.** Tom opens the pantry under past projects and logs 20 June. The
+  server checks the date against **Tom's** assignment periods — 20 June is
+  inside them — and answers `201` with `approvalStatus: "pending"`. Under
+  "entries belonging to volunteers assigned to the project" nobody can now
+  open it: Tom is not assigned, so a coordinator row in his queue would be a
+  claim against a person the project no longer contains. The four hours
+  would sit pending for ever, short in every total, with no screen saying
+  why.
+- **5 July.** Tom corrects his approved March entry from 4 hours to 3 — he
+  double-counted. The edit succeeds on authorship alone: no grant, no
+  assignment, and the pantry may no longer be in his project list at all.
+  Because hours are material (D-059) it returns to `pending`, and it must
+  appear in Nadia's queue even though its author has left.
+- **6 July.** Nadia corrects Tom's 20 June end time. She holds an active
+  grant on the pantry, so she may. She may not move the date to 2 July: a
+  date move is validated as a create (§16.24 rule 9), and the eligibility
+  checked is **Tom's**, which ended on 30 June.
+- **November.** Hearth & Hands switches `coordinatorsMayEditEntries` off,
+  because its funder requires reported hours to be the volunteer's own
+  words. Dee types 09:00–15:00 instead of 09:00–13:00 and submits. Nadia
+  opens the queue: the row reads six hours and there is no Edit control on
+  it. She rejects with a reason — *"this reads 09:00–15:00; the shift ended
+  at 13:00"* — and Dee corrects and resubmits. Nobody but Dee rewrote her
+  words, which is the policy working. If Nadia's app had offered the control
+  anyway and let her type, the refusal that came back would have to keep her
+  text rather than throw it away.
+
+The question was never whether a coordinator may read an entry on their
+project, or decide it. It is who may rewrite the claim, and under what
+condition the organisation can take that lever away.
+
+**Decision in one line: three sources and one switch — the author by
+authorship, an administrator always, and a coordinator holding an active
+grant on the entry's project while the organisation's
+`coordinatorsMayEditEntries` setting is on.**
+
+**The rules.**
+
+1. **One predicate, three sources and a switch.**
+
+   ```
+   mayEdit(caller, entry) =
+        caller is the entry's author
+     or caller.role = administrator
+     or (active project_coordinators grant on entry.projectId
+         and organisation.coordinatorsMayEditEntries)
+   ```
+
+   Nobody else. A project-less entry has no project to hold a grant, so it
+   is the author's or an administrator's, exactly as §16.18 already says for
+   approval and D-063 for deletion.
+
+2. **Authorship is not a role and does not expire with the assignment.** The
+   author reads, edits, deletes and resubmits their own rejected entry for
+   as long as the account can sign in — on a project they left years ago, on
+   a date inside the assignment they then held. Leaving a project ends the
+   assignment and any grant they held; it changes nothing about an entry
+   they wrote. D-057 rule 3 allowed the submission after departure; this
+   rule allows the correction that follows it.
+
+3. **A coordinator's scope is the entry's project, not the author's current
+   assignment.** "Entries belonging to volunteers assigned to a project they
+   coordinate" is struck from §15.5.2, and §16.18's read row loses the same
+   phrase. Keeping it would have made every entry a departed volunteer
+   wrote unreachable by the only people who can review it — which is the
+   opposite of what item 14 was asking for.
+
+4. **Administrators always.** The setting governs the coordinator clause and
+   nothing else. An administrator's authority is §4.4's: organisation-wide,
+   not conditional on a grant, not narrowed per project, and not something
+   an organisation can switch off. An administrator who also holds a
+   coordinator grant is an administrator for this purpose.
+
+5. **The switch gates content edits and nothing else.** Reading an entry,
+   approving it, rejecting it, deleting it (D-063), archiving and restoring a
+   project (D-041), managing assignments and editing the project itself are
+   not gated. Approve and reject are how an approval policy is honoured at
+   all; deletion is a retraction with a required reason, not a rewrite of the
+   volunteer's words.
+
+6. **One boolean, organisation-wide, default on.**
+   `coordinatorsMayEditEntries` is an organisation setting recorded with the
+   others — the approval policy (D-045), the self-assignment and
+   coordinator-grant settings §4.2 and §16.18 describe, and
+   `projectCreationRequiresApproval`. It is an administrator operation,
+   recorded with the acting user and the time (B11), and it is read on the
+   request that needs it rather than copied into a session. There is no
+   per-project override in the MVP; that is §17's, not this decision's.
+
+7. **Effective on the next request, never retroactively.** A change never
+   revisits an act already taken — the rule D-051 already applies to a role
+   change. Entries edited while the setting was on stay edited, with the
+   editor's name in the audit trail; nothing is re-reviewed or reverted
+   because the switch moved.
+
+8. **A refusal is `403 FORBIDDEN`, and it names the setting.**
+
+   ```
+   POST /v1/time-entries/6f1c9a3e-…/edit
+   ```
+
+   ```
+   HTTP/1.1 403 Forbidden
+   ```
+
+   ```json
+   {
+     "error": {
+       "code": "FORBIDDEN",
+       "message": "Coordinators may not edit another member's entries in this organisation.",
+       "details": { "setting": "coordinatorsMayEditEntries" },
+       "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a63"
+     }
+   }
+   ```
+
+   Not `409 INVALID_TRANSITION`: the entry's state is not the problem. Not
+   `404`: the coordinator may read the entry. No new code — this is the
+   established answer for "authenticated but not permitted on this entry",
+   which D-063's table already uses for a coordinator outside the project —
+   and `details.setting` is one key on an existing code, the shape D-061 used
+   for `changedFields`.
+
+9. **A gated edit is never a lost edit.** The server stores nothing; the
+   client keeps the typed text on the device and offers the path that
+   exists — reject with a reason on a pending entry, or ask the volunteer on
+   an approved one. This is D-060's habit applied to a different refusal: a
+   refusal that destroys the person's work teaches them to stop trying.
+
+10. **The capability is published per project, per caller.** The project
+    representation carries `canEditEntries`: `true` for an administrator,
+    `true` for a coordinator with an active grant while the setting is on,
+    `false` otherwise — including for a coordinator whose grant has ended and
+    for one who may read the project but not its entries. It folds the grant
+    check in, so the client never re-implements rule 1. It is a courtesy for
+    the interface, never the enforcement: a client that hides the control
+    still handles the `403`, because the setting can change under an open
+    editor.
+
+11. **With the switch off, a wrong approved entry is the volunteer's to fix,
+    or an administrator's.** Approve-to-reject is not a transition (D-058)
+    and the edit is gated, so the paths that remain are: the volunteer edits
+    it — a material edit returns it to `pending`, and the coordinator then
+    reviews the fix, which keeps their authority over the hours — or an
+    administrator edits it. Deleting is not a substitute for a typo: it
+    withdraws four hours to correct a two-hour one. This is the setting's
+    cost and it is recorded as one, not engineered away.
+
+12. **A date move is validated against the author's assignment history.**
+    §16.24 rule 9 makes every date change a create for validation purposes;
+    the eligibility it checks is the assignment of the person the hours
+    belong to. A coordinator cannot move a departed volunteer's entry onto a
+    date that volunteer was never assigned, even though the coordinator's own
+    assignment covers it. Checking the caller's eligibility would pass it.
+
+13. **Departure changes nothing about the entry.** A pending entry stays
+    pending and reviewable by the project's remaining coordinators and its
+    administrators; an approved entry stays approved; nothing is reassigned,
+    auto-approved or auto-rejected when an assignment ends. What happens to a
+    departed volunteer's pending *assignment requests* remains §15.12 item
+    16's question.
+
+14. **Every edit is attributed to the person who made it.** The editor is
+    recorded whichever clause allowed the act (B11), and a coordinator's edit
+    reaches the volunteer through `GET /v1/sync` — the change is to the
+    volunteer's own row, so the feed carries it (D-064 rule 5) — never through
+    a copy of privileged data on their phone.
+
+**The shapes.**
+
+The setting, in the organisation read:
+
+```json
+{
+  "id": "org",
+  "name": "Hearth & Hands",
+  "settings": {
+    "coordinatorsMayEditEntries": false,
+    "projectCreationRequiresApproval": false
+  }
+}
+```
+
+The capability, in the project read — one boolean, computed for the caller:
+
+```json
+{
+  "id": "a3f1…",
+  "name": "Saturday Pantry",
+  "archivedAt": null,
+  "canEditEntries": false
+}
+```
+
+The same field is `true` for the pantry's administrator, and for Nadia while
+the setting is on.
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **Three sources and one switch (recommended)** | Authors keep their record; administrators are never blocked; an organisation can honour a funder's "the volunteer's own words" requirement | Two clauses and a setting on one act; the client needs the capability to draw the control |
+| Gate every coordination write, including approve and reject | "Coordinators only read" as a complete policy | An organisation with approval on has nobody but administrators who can decide anything, which is not what "don't edit my volunteers' hours" asks for |
+| Gate deletion as well, for consistency | One reading of "edit" with no exceptions | An approved claim for work that never happened could be withdrawn only by the volunteer or an administrator, and it inflates the totals until one acts |
+| Default the setting off | The safest reading of a capability that rewrites someone else's claim | Makes the behaviour §15.5.2 has documented all along the exception, and puts the correction burden on volunteers at every organisation that never asked for it |
+| Per-project override in the MVP | Matches how projects actually differ — a youth programme and a payroll-funded one | A second source for one capability, a control per project, and a rule for which wins; deferred to §17 |
+| A per-entry "nobody may edit this" flag | Consent exactly where the volunteer wants it | A column, a consent screen, a rule for a volunteer who sets it and then leaves, and a per-entry check on every write — for a policy organisations ask for once, not per entry |
+| Express it as a role | One word to check | It is not organisation-wide authority, and a grant is per project; §16.18 already spent this argument |
+
+**Accepted costs.**
+
+- **Every entry write consults the organisation row.** The setting is read on
+  the request, not carried in a token, because a session outlives it.
+- **The interface needs one new field.** `canEditEntries` must be computed,
+  not cached, and a client that ignores it will show a control that refuses —
+  correct, but a support question every time.
+- **Corrections to approved entries slow down when the switch is off.** They
+  pass through the volunteer. That is the point of the setting, and it is the
+  one case a coordinator cannot resolve alone.
+- **An organisation that flips the switch will see screens change shape
+  between launches.** The version guard and the `403` handle it; it is still
+  a visible policy rather than an invisible one, which is preferable to a
+  rule nobody can point at.
+
+**Left open.** Whether a project may override the organisation setting (and
+which wins) — a §17 item, not a gap in this decision; whether entries inside
+an already-reported period can be locked against edits by anyone, which is
+B9's reporting question rather than this one; whether an administrator using
+this authority must give a reason, as deletion requires (today only the audit
+row carries it); whether a volunteer may name someone to edit their entries
+on their behalf, which the MVP does not have; and §15.12 item 16's remaining
+questions about a departure's effect on pending entries and assignment
+requests.
+
+**Resolves:** §15.12 item 14, and with it the conflict between §15.5.2's
+"volunteers assigned to" and D-051's project predicate — the phrase is struck
+in both places, and this decision is what §16.25's "any editor (§15.5.2)",
+§16.26's reapproval path and §16.28's stale-write hand-off resolve through.
+It confirms D-057 rule 3 from the other side (a departed volunteer may correct
+what they wrote), leaves D-063 rule 4's deletion authority untouched, and
+constrains §15.12 item 29 (the project representation gains `canEditEntries`
+and the organisation read carries the setting), B9 (totals count edits made by
+anyone this predicate admits), B11 (one audit row per edit, and the actor for
+each setting change) and §16.31 (a coordinator's edit reaches the volunteer
+through the feed, not through a stored list).
+
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -5731,7 +6030,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B3** | Timer semantics: one running timer or several, timer spanning midnight, server-authoritative start, clock skew, idle timeout, start/stop payloads | **Contract** — deferred | **Deferred — not decided (D-048, §16.15).** The MVP has no server timer, so no timer route, constraint or payload needs specifying; this row re-opens if that feature returns in a later release |
 | **B4** | Concurrency and idempotency for mutations: client-generated ids on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | **Resolved — D-049 (§16.16).** A client-generated UUID per record plus an integer `version`; no `Idempotency-Key`; state-setting operations idempotent by outcome. Offline replay (§15.12 item 30) depends on it |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | **Resolved — D-050 (§16.17).** The deployment is the tenant: each organisation runs its own instance, identity is scoped to it, and no organisation identifier appears in the API. One organisation row carries the time zone, approval policy and membership setting; no `organisation_id` columns |
-| **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator |
+| **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator. **Amended 26 November 2026 (D-065, §16.32):** editing another member's entry is coordinator authority only while the organisation's `coordinatorsMayEditEntries` setting is on, an administrator always has it, its scope is the entry's project rather than the author's current assignment, and it is published per project as `canEditEntries` |
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | The record discusses totals throughout but never defines a reported hour |
@@ -5755,8 +6054,8 @@ The refusal rule is settled as well (§16.27), so a submission the server
 will not accept has a defined home — the device — and no server-side table
 to design, index or purge. Reconciliation is settled too (§16.28), so a
 stale write has an answer that neither retries nor overwrites, and conflict
-values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is settled too (§16.30), so the entry's read shape has its last three fields and every total has one predicate to apply. Catching up is settled as well (§16.31), so the download half has a feed rather than a protocol to invent and the outbox stays the ordinary routes replayed (D-055). Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is settled too (§16.30), so the entry's read shape has its last three fields and every total has one predicate to apply. Catching up is settled as well (§16.31), so the download half has a feed rather than a protocol to invent and the outbox stays the ordinary routes replayed (D-055). Edit authority is settled as well (§16.32), so every write route's authorization has its third clause and the project representation has the one new field it needs. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
 **What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** who may edit or reject another volunteer's entry (§15.12 item 14) next — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine, material change, preserved submissions, reconciliation, conflict values, deletion and change tracking closed in §16.25–§16.31, and B3 deferred by scope (D-048) — followed by the feature-conditional items as each feature is scheduled.
+**Order proposed:** B9 (reporting and totals) next — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine, material change, preserved submissions, reconciliation, conflict values, deletion, change tracking and edit authority closed in §16.25–§16.32, and B3 deferred by scope (D-048) — then B11 (the audit trail), B10 (notification transport) and B15 (schema and indexes), each as its feature is scheduled.
