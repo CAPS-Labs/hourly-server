@@ -336,9 +336,9 @@ assignments within the permissions ultimately defined.
 
 **Resolved 18 November 2026:** within their remit, a coordinator may archive projects and activities, and an organization administrator may archive anything in the organization. No administrator approval step (§16.6, D-041).
 
-**Confirmed 26 November 2026 (§16.32, D-065):** editing another
-member's entry is coordinator authority only while the organisation's
-`coordinatorsMayEditEntries` setting is on, and its scope is the entry's
+**Confirmed 26 November 2026 (§16.32, D-065):** editing or deleting
+another member's entry is coordinator authority only while the organisation's
+`coordinatorsMayEditOrDeleteEntries` setting is on, and its scope is the entry's
 project rather than the author's current assignment. An organization
 administrator may always edit entries in their organization — the setting
 does not apply to that role — and a volunteer may always edit their own.
@@ -1173,7 +1173,7 @@ gate on approval: the client announces it on the create, the replay and each
 bulk-sync result (§16.29). **D-063** — entries are marked deleted with
 `deletedAt`, `deletedBy` and a required `deleteReason`, never removed: a
 deleted entry leaves the totals, the queues and the conflict set, nothing
-restores it, and "void" is retired from the contract (§16.30). **D-064** — catching up on the download half: a per-organisation monotonic `changeSeq` taken in the writing transaction, a `GET /v1/sync` feed of the caller's own entries (deletions included) ordered by it, no cursor meaning from the beginning, the number never exposed, privileged lists live-only and never persisted, and coordination actions requiring connectivity (§16.31). **D-065** — who may edit an entry: the author by authorship, an administrator always, and a coordinator holding an active grant on the entry's project while the organisation's `coordinatorsMayEditEntries` setting is on; departure ends coordination and never authorship; a date move is checked against the author's assignment history; the capability over *other members'* entries is published per project as `canEditEntries` (§16.32). Gaps not yet
+restores it, and "void" is retired from the contract (§16.30). **D-064** — catching up on the download half: a per-organisation monotonic `changeSeq` taken in the writing transaction, a `GET /v1/sync` feed of the caller's own entries (deletions included) ordered by it, no cursor meaning from the beginning, the number never exposed, privileged lists live-only and never persisted, and coordination actions requiring connectivity (§16.31). **D-065** — who may change an entry: the author by authorship, an administrator always, and a coordinator holding an active grant on the entry's project while the organisation's `coordinatorsMayEditOrDeleteEntries` setting is on — the switch covering editing and deleting another member's entry; departure ends coordination and never authorship; a date move is checked against the author's assignment history; the capability over *other members'* entries is published per project as `canChangeOthersEntries` (§16.32). **D-066** — reported hours: an entry counts when it is `approved` or `not_required` and not deleted, totals are summed at read time from `workDate` in the organisation's time zone, weeks start on Sunday, and one grouped report route returns `seconds` and `entryCount` per row (§16.33). Gaps not yet
 raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -1815,11 +1815,11 @@ The existing record and its audit history must be preserved.
 
 | Actor | Editing authority |
 |---|---|
-| Volunteer | May edit their own entries — on any project they wrote them for, whether or not their assignment there has ended (§16.32, D-065). | | Assigned coordinator | May edit any entry on a project they coordinate, whoever wrote it and whether or not that person is still assigned — **only while the organisation's `coordinatorsMayEditEntries` setting is on**; with it off the act is `403 FORBIDDEN` and the coordinator rejects with a reason instead (§16.32, D-065). | | Organization administrator | May edit any time entry in the organization, always; the setting governs coordinators only (§16.32, D-065). |
+| Volunteer | May edit their own entries — on any project they wrote them for, whether or not their assignment there has ended (§16.32, D-065). | | Assigned coordinator | May edit any entry on a project they coordinate, whoever wrote it and whether or not that person is still assigned — **only while the organisation's `coordinatorsMayEditOrDeleteEntries` setting is on**; with it off the act is `403 FORBIDDEN` and the coordinator rejects with a reason instead (§16.32, D-065). | | Organization administrator | May edit any time entry in the organization, always; the setting governs coordinators only (§16.32, D-065). |
 
 These permissions do not automatically grant approval authority or conflict-resolution authority. Those are separate permissions governed by their respective rules.
 
-**Amended 26 November 2026 (§16.32, D-065):** "entries belonging to volunteers assigned to a project they coordinate" became "any entry on a project they coordinate" — a coordinator's scope is the entry's project, not the author's current assignment — and the coordinator row acquired the organisation setting. The table governs the **edit**; reading an entry on the project and deciding it keep the authority D-051, D-058 and D-063 give them.
+**Amended 26 November 2026 (§16.32, D-065):** "entries belonging to volunteers assigned to a project they coordinate" became "any entry on a project they coordinate" — a coordinator's scope is the entry's project, not the author's current assignment — and the coordinator row acquired the organisation setting. The table governs the **edit**; deletion by a coordinator answers to the same setting, and reading an entry on the project and deciding it keep the authority D-051, D-058 and D-063 give them.
 
 ### 15.5.3 Editing by entry state
 
@@ -2221,7 +2221,7 @@ The following items remain unresolved. They should be addressed before or during
     **Resolved 26 November 2026 (§16.32, D-065) —** the author by
     authorship, an administrator always, and a coordinator holding an active
     grant on the entry's project while the organisation's
-    `coordinatorsMayEditEntries` setting is on; a coordinator's scope is the
+    `coordinatorsMayEditOrDeleteEntries` setting is on; a coordinator's scope is the
     entry's project rather than the author's current assignment; project-less
     entries are the author's or an administrator's.
 15. Finalize whether volunteer and coordinator assignments use a generalized resource or separate resources.
@@ -2284,14 +2284,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
 §16.26), item 5 (preserved invalid submissions, §16.27), item 6
-(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23) and B16 (the backdating window, §16.24). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23), B16 (the backdating window, §16.24) and B9 (reporting and totals, §16.33). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, leaving the backlog's feature items — B9 (reporting and totals), B10 (notification transport), B11 (the audit trail) and B15 (schema and indexes) — as the next ones to take.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, leaving the backlog's feature items — B10 (notification transport), B11 (the audit trail) and B15 (schema and indexes) — as the next ones to take.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -3384,13 +3384,13 @@ WHERE project_id = $1 AND user_id = $2 AND ended_at IS NULL
 
 The supporting index is `(project_id, user_id) WHERE ended_at IS NULL`.
 
-**Amended 26 November 2026 (§16.32, D-065):** for the act of editing
-*another member's* entry the formula gains the organisation's setting —
+**Amended 26 November 2026 (§16.32, D-065):** for the acts of editing or
+deleting *another member's* entry the formula gains the organisation's setting —
 
-    mayEditEntry(member, entry) = author(entry)
+    mayChangeEntry(member, entry) = author(entry)
                                  ∨ administrator
                                  ∨ (active grant on entry.projectId
-                                    ∧ coordinatorsMayEditEntries)
+                                    ∧ coordinatorsMayEditOrDeleteEntries)
 
 Every other act keeps the grant alone: reading, approving, rejecting,
 deleting and managing the project do not consult the setting.
@@ -3403,7 +3403,7 @@ question, not a status the person holds generally.
 | Create, edit and submit own entries | yes | yes | yes |
 | Read own entries, assignments and notifications | yes | yes | yes |
 | Create a project | yes | yes | yes |
-| Read entries on that project, whoever wrote them and whether or not their assignment has since ended | no | yes | yes | | Edit another member's entry on that project | no | yes, if `coordinatorsMayEditEntries` is on (§16.32) | yes, always (§16.32) |
+| Read entries on that project, whoever wrote them and whether or not their assignment has since ended | no | yes | yes | | Edit or delete another member's entry on that project | no | yes, if `coordinatorsMayEditOrDeleteEntries` is on (§16.32) | yes, always (§16.32) |
 | Approve, reject or return an entry on that project | no | yes, except their own | yes, including their own (amended 23 November 2026) |
 | Edit that project and manage its activities | no | yes | yes |
 | Add and remove volunteer assignments on that project | no | yes | yes |
@@ -4460,7 +4460,7 @@ Content-Type: application/json
    | `rejected` | correct and resubmit | `pending` | the entry's owner only | clears `approvedAt`, `rejectedAt` and `reviewedBy`; keeps `rejectionReason`; new `submittedAt` |
    | `approved` | edit | `approved`, or `pending` if the edit is material | any editor (§15.5.2) | `version`; a material edit clears `approvedAt` and `reviewedBy` and returns the entry to the queue (D-059, §16.26) |
    | `not_required` | edit | `not_required` | any editor (§15.5.2) | `version` only |
-   | any | delete | *unchanged* — `deletedAt` is set and the status is not touched | the author, the project's coordinator, or an administrator (D-063) | `deletedAt`, `deletedBy`, `deleteReason`; no restore exists (§16.30) |
+   | any | delete | *unchanged* — `deletedAt` is set and the status is not touched | the author, the project's coordinator while the organisation's `coordinatorsMayEditOrDeleteEntries` setting is on, or an administrator (D-063, §16.32) | `deletedAt`, `deletedBy`, `deleteReason`; no restore exists (§16.30) |
 
 4. **Approval status is fixed at submission and changes only through a
 decision, a resubmission, or a material edit to an approved entry.** No
@@ -5294,8 +5294,14 @@ is switched on, and October's totals have already been reported to a funder.
    may delete any entry in it, and an administrator may delete any entry.
    Project-less entries are administrator-only, as they are for approval
    (§16.18). A coordinator deleting an entry they approved themselves is
-   allowed: D-051 bars approving one's own entry because that grants hours,
-   while deleting withdraws them.
+allowed: D-051 bars approving one's own entry because that grants hours,
+while deleting withdraws them.
+
+**Amended 26 November 2026 (§16.32, D-065):** the coordinator clause is
+conditional on the organisation's `coordinatorsMayEditOrDeleteEntries` setting. With
+it off, only the author and an administrator may delete, and the refusal is
+the `403 FORBIDDEN` §16.32 defines. The author's and administrator's clauses
+are unchanged.
 5. **The effects are four exclusions and no deletion.** A deleted entry is
    out of reported hours and totals (B9), out of every approval queue, and
    out of D-047's conflict membership — which answers the membership question
@@ -5329,7 +5335,7 @@ is switched on, and October's totals have already been reported to a funder.
     `changedFields` (D-061), and produces exactly one audit row carrying the
     actor and the reason (B11). That row is the only place the retraction is
     explained, because the reports simply stop counting the hours.
-11. **Totals are computed at read time, so a past period can change.** A
+11. **Totals are computed at read time, so a past period can change.** Which entries produce a number is settled in §16.33 (D-066). A
     December deletion changes October's total. That is the point — the
     alternative is a report that keeps hours nobody worked because a month
     boundary has passed — and it is why every total carries a predicate on
@@ -5782,7 +5788,7 @@ and never logged it.
   grant on the pantry, so she may. She may not move the date to 2 July: a
   date move is validated as a create (§16.24 rule 9), and the eligibility
   checked is **Tom's**, which ended on 30 June.
-- **November.** Hearth & Hands switches `coordinatorsMayEditEntries` off,
+- **November.** Hearth & Hands switches `coordinatorsMayEditOrDeleteEntries` off,
   because its funder requires reported hours to be the volunteer's own
   words. Dee types 09:00–15:00 instead of 09:00–13:00 and submits. Nadia
   opens the queue: the row reads six hours and there is no Edit control on
@@ -5799,21 +5805,23 @@ condition the organisation can take that lever away.
 **Decision in one line: three sources and one switch — the author by
 authorship, an administrator always, and a coordinator holding an active
 grant on the entry's project while the organisation's
-`coordinatorsMayEditEntries` setting is on.**
+`coordinatorsMayEditOrDeleteEntries` setting is on. The switch covers the two acts
+that change another member's record, editing the entry and deleting it, and
+nothing else.**
 
 **The rules.**
 
 1. **One predicate, three sources and a switch.**
 
    ```
-   mayEdit(caller, entry) =
+   mayChange(caller, entry) =
         caller is the entry's author
      or caller.role = administrator
      or (active project_coordinators grant on entry.projectId
-         and organisation.coordinatorsMayEditEntries)
+         and organisation.coordinatorsMayEditOrDeleteEntries)
    ```
 
-   Nobody else. A project-less entry has no project to hold a grant, so it is the author's or an administrator's, exactly as §16.18 already says for approval and D-063 for deletion. The first clause is authorship and needs no grant, no assignment and no setting; the third clause is the *other members'* one, and it is what the project field in rule 10 answers.
+   Nobody else. A project-less entry has no project to hold a grant, so it is the author's or an administrator's, exactly as §16.18 already says for approval and D-063 for deletion. The first clause is authorship and needs no grant, no assignment and no setting; the third clause is the *other members'* one, it covers editing and deleting alike, and it is what the project field in rule 10 answers.
 
 2. **Authorship is not a role and does not expire with the assignment.** The
    author reads, edits, deletes and resubmits their own rejected entry for
@@ -5836,21 +5844,27 @@ grant on the entry's project while the organisation's
    an organisation can switch off. An administrator who also holds a
    coordinator grant is an administrator for this purpose.
 
-5. **The switch gates content edits and nothing else.** Reading an entry,
-   approving it, rejecting it, deleting it (D-063), archiving and restoring a
-   project (D-041), managing assignments and editing the project itself are
-   not gated. Approve and reject are how an approval policy is honoured at
-   all; deletion is a retraction with a required reason, not a rewrite of the
-   volunteer's words.
+5. **The switch gates the two acts that change another member's record:
+   editing an entry and deleting it.** Reading an entry, approving it,
+   rejecting it, archiving and restoring a project (D-041), managing
+   assignments and editing the project itself are not gated. Approve and
+   reject are how an approval policy is honoured at all. Deletion is a
+   retraction with a required reason (D-063) rather than a rewrite, which is
+   why it was first left outside the switch; it is inside it now, because a
+   coordinator who may not rewrite a volunteer's hours should not be able to
+   withdraw them either.
 
 6. **One boolean, organisation-wide, default on.**
-   `coordinatorsMayEditEntries` is an organisation setting recorded with the
+   `coordinatorsMayEditOrDeleteEntries` is an organisation setting recorded with the
    others — the approval policy (D-045), the self-assignment and
    coordinator-grant settings §4.2 and §16.18 describe, and
    `projectCreationRequiresApproval`. It is an administrator operation,
    recorded with the acting user and the time (B11), and it is read on the
    request that needs it rather than copied into a session. There is no
-   per-project override in the MVP; that is §17's, not this decision's.
+   per-project override in the MVP; that is §17's, not this decision's. One
+   switch covers both acts: there is no separate delete setting, because an
+   organisation that withholds one withholds both, and a second switch would
+   add states for a policy nobody has asked to split.
 
 7. **Effective on the next request, never retroactively.** A change never
    revisits an act already taken — the rule D-051 already applies to a role
@@ -5873,7 +5887,7 @@ grant on the entry's project while the organisation's
      "error": {
        "code": "FORBIDDEN",
        "message": "Coordinators may not edit another member's entries in this organisation.",
-       "details": { "setting": "coordinatorsMayEditEntries" },
+       "details": { "setting": "coordinatorsMayEditOrDeleteEntries" },
        "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a63"
      }
    }
@@ -5884,18 +5898,22 @@ grant on the entry's project while the organisation's
    established answer for "authenticated but not permitted on this entry",
    which D-063's table already uses for a coordinator outside the project —
    and `details.setting` is one key on an existing code, the shape D-061 used
-   for `changedFields`.
+   for `changedFields`. The delete route answers identically:
+   `POST /v1/time-entries/{id}/delete` is `403 FORBIDDEN` with
+   `details.setting` naming the same setting, and the entry is untouched.
 
 9. **A gated edit is never a lost edit.** The server stores nothing; the
    client keeps the typed text on the device and offers the path that
    exists — reject with a reason on a pending entry, or ask the volunteer on
    an approved one. This is D-060's habit applied to a different refusal: a
-   refusal that destroys the person's work teaches them to stop trying.
+   refusal that destroys the person's work teaches them to stop trying. A
+   gated delete has no draft to keep, but the reason the coordinator typed
+   belongs in the message they send to whoever can act.
 
 10. **The capability is published per project, per caller, and it answers
     about someone else's entry only.** The project representation carries
-    `canEditEntries`, which answers exactly one question: *may this caller
-    edit an entry on this project that another member wrote?* It is `true`
+    `canChangeOthersEntries`, which answers exactly one question: *may this caller
+    edit or delete an entry on this project that another member wrote?* It is `true`
     for an administrator, `true` for a coordinator with an active grant
     while the setting is on, and `false` otherwise — including for a
     coordinator whose grant has ended, and for a coordinator on a project
@@ -5906,8 +5924,10 @@ grant on the entry's project while the organisation's
     says nothing about entries they wrote: the author clause of rule 1 is
     unconditional, so a volunteer reads, edits, deletes and resubmits their
     own work whatever this field says. A client must never use
-    `canEditEntries` to hide the edit control on a person's own entry; it
-    decides whether to show the control on **another member's** row.
+    `canChangeOthersEntries` to hide the edit or delete control on a person's own
+    entry; it
+    decides whether to show the edit and delete controls on **another member's**
+    row.
 
     It folds the grant check in, so the client never re-implements rule 1. It
     is a courtesy for the interface, never the enforcement: a client that
@@ -5915,13 +5935,14 @@ grant on the entry's project while the organisation's
     under an open editor.
 
 11. **With the switch off, a wrong approved entry is the volunteer's to fix,
-    or an administrator's.** Approve-to-reject is not a transition (D-058)
-    and the edit is gated, so the paths that remain are: the volunteer edits
-    it — a material edit returns it to `pending`, and the coordinator then
-    reviews the fix, which keeps their authority over the hours — or an
-    administrator edits it. Deleting is not a substitute for a typo: it
-    withdraws four hours to correct a two-hour one. This is the setting's
-    cost and it is recorded as one, not engineered away.
+    or an administrator's.** Approve-to-reject is not a transition (D-058),
+    and both the edit and the delete are gated, so the paths that remain are:
+    the volunteer edits it — a material edit returns it to `pending`, and the
+    coordinator then reviews the fix, which keeps their authority over the
+    hours — or an administrator edits or deletes it. A claim for work that
+    never happened therefore waits for one of those two rather than being
+    withdrawn by the coordinator who spotted it. That delay is the setting's
+    cost, recorded here rather than engineered away.
 
 12. **A date move is validated against the author's assignment history.**
     §16.24 rule 9 makes every date change a create for validation purposes;
@@ -5937,8 +5958,20 @@ grant on the entry's project while the organisation's
     departed volunteer's pending *assignment requests* remains §15.12 item
     16's question.
 
-14. **Every edit is attributed to the person who made it.** The editor is
-    recorded whichever clause allowed the act (B11), and a coordinator's edit
+**Amended 26 November 2026, the day it was recorded.** The section first put
+the switch around content edits only and left deletion to the coordinator
+whatever it said. The owner has since decided that deletion is guarded too —
+so the switch covers both ways a coordinator can change someone else's
+record, and so a closed editor cannot be routed around by withdrawing the
+entry instead. Two names changed with it, because a name that describes less
+than the field does is how ambiguity starts: the setting is
+`coordinatorsMayEditOrDeleteEntries` (now covering both acts) and the project field
+is `canChangeOthersEntries` (now also covering both). The earlier names are
+superseded here, in the register and in §17, and nothing else about the
+decision moves.
+
+14. **Every change is attributed to the person who made it.** The editor or deleter
+    is recorded whichever clause allowed the act (B11), and a coordinator's change
     reaches the volunteer through `GET /v1/sync` — the change is to the
     volunteer's own row, so the feed carries it (D-064 rule 5) — never through
     a copy of privileged data on their phone.
@@ -5952,7 +5985,7 @@ The setting, in the organisation read:
   "id": "org",
   "name": "Hearth & Hands",
   "settings": {
-    "coordinatorsMayEditEntries": false,
+    "coordinatorsMayEditOrDeleteEntries": false,
     "projectCreationRequiresApproval": false
   }
 }
@@ -5967,30 +6000,26 @@ volunteers for:
   "id": "a3f1…",
   "name": "Saturday Pantry",
   "archivedAt": null,
-  "canEditEntries": false
+  "canChangeOthersEntries": false
 }
 ```
 
 What it means, per caller, for that same project:
 
-| Caller | `canEditEntries` | Reading |
+| Caller | `canChangeOthersEntries` | Reading |
 |---|---|---|
-| Dee, a volunteer there | `false` | she may not edit Tom's pantry entries; her own remain hers (rule 1) |
-| Nadia, active grant, setting on | `true` | she may edit Dee's and Tom's pantry entries |
-| Nadia, active grant, setting off | `false` | she may not edit theirs; she rejects with a reason. Her own entries are unaffected |
-| Nadia, grant ended | `false` | she may not edit theirs; her own entries are still hers |
-| An administrator | `true` | anyone's, always — the setting does not reach the role |
+| Dee, a volunteer there | `false` | she may not edit or delete Tom's pantry entries; her own remain hers (rule 1) | | Nadia, active grant, setting on | `true` | she may edit or delete Dee's and Tom's pantry entries | | Nadia, active grant, setting off | `false` | neither, for theirs; she rejects with a reason. Her own entries are unaffected | | Nadia, grant ended | `false` | neither, for theirs; her own entries are still hers | | An administrator | `true` | anyone's, always — the setting does not reach the role |
 
-The field never answers "may I edit my own entry", because that answer is
-always yes and comes from being its author.
+The field never answers "may I edit or delete my own entry", because that
+answer is always yes and comes from being its author.
 
 **Considered and rejected.**
 
 | Option | What it buys | What it costs |
 |---|---|---|
-| **Three sources and one switch (recommended)** | Authors keep their record; administrators are never blocked; an organisation can honour a funder's "the volunteer's own words" requirement | Two clauses and a setting on one act; the client needs the capability to draw the control |
+| **Three sources and one switch (recommended)** | Authors keep their record; administrators are never blocked; an organisation can honour a funder's "the volunteer's own words" requirement | Two clauses and a setting on two acts; the client needs the capability to draw both controls |
 | Gate every coordination write, including approve and reject | "Coordinators only read" as a complete policy | An organisation with approval on has nobody but administrators who can decide anything, which is not what "don't edit my volunteers' hours" asks for |
-| Gate deletion as well, for consistency | One reading of "edit" with no exceptions | An approved claim for work that never happened could be withdrawn only by the volunteer or an administrator, and it inflates the totals until one acts |
+
 | Default the setting off | The safest reading of a capability that rewrites someone else's claim | Makes the behaviour §15.5.2 has documented all along the exception, and puts the correction burden on volunteers at every organisation that never asked for it |
 | Per-project override in the MVP | Matches how projects actually differ — a youth programme and a payroll-funded one | A second source for one capability, a control per project, and a rule for which wins; deferred to §17 |
 | A per-entry "nobody may edit this" flag | Consent exactly where the volunteer wants it | A column, a consent screen, a rule for a volunteer who sets it and then leaves, and a per-entry check on every write — for a policy organisations ask for once, not per entry |
@@ -6000,12 +6029,14 @@ always yes and comes from being its author.
 
 - **Every entry write consults the organisation row.** The setting is read on
   the request, not carried in a token, because a session outlives it.
-- **The interface needs one new field.** `canEditEntries` must be computed,
-  not cached, and a client that ignores it will show a control that refuses —
+- **The interface needs one new field.** `canChangeOthersEntries` must be computed,
+  not cached, and a client that ignores it will show controls that refuse —
   correct, but a support question every time.
-- **Corrections to approved entries slow down when the switch is off.** They
-  pass through the volunteer. That is the point of the setting, and it is the
-  one case a coordinator cannot resolve alone.
+- **Corrections and retractions slow down when the switch is off.** Both
+  pass through the volunteer or an administrator, so a wrong approved entry
+  and a claim for work that never happened can sit in the totals until one of
+  them acts. That is the point of the setting, and it is the one case a
+  coordinator cannot resolve alone.
 - **An organisation that flips the switch will see screens change shape
   between launches.** The version guard and the `403` handle it; it is still
   a visible policy rather than an invisible one, which is preferable to a
@@ -6013,8 +6044,9 @@ always yes and comes from being its author.
 
 **Left open.** Whether a project may override the organisation setting (and
 which wins) — a §17 item, not a gap in this decision; whether entries inside
-an already-reported period can be locked against edits by anyone, which is
-B9's reporting question rather than this one; whether an administrator using
+an already-reported period can be locked against edits or deletion by anyone,
+which §16.33 (D-066) records as its own open question rather than deciding
+here; whether an administrator using
 this authority must give a reason, as deletion requires (today only the audit
 row carries it); whether a volunteer may name someone to edit their entries
 on their behalf, which the MVP does not have; and §15.12 item 16's remaining
@@ -6026,13 +6058,232 @@ requests.
 in both places, and this decision is what §16.25's "any editor (§15.5.2)",
 §16.26's reapproval path and §16.28's stale-write hand-off resolve through.
 It confirms D-057 rule 3 from the other side (a departed volunteer may correct
-what they wrote), leaves D-063 rule 4's deletion authority untouched, and
-constrains §15.12 item 29 (the project representation gains `canEditEntries`,
+what they wrote), amends D-063 rule 4's coordinator clause so that it answers
+to the same setting (the author and administrator clauses there are
+unchanged), and constrains §15.12 item 29 (the project representation gains `canChangeOthersEntries`,
 which answers about other members' entries only, and the organisation read
-carries the setting), B9 (totals count edits made by
-anyone this predicate admits), B11 (one audit row per edit, and the actor for
+carries the setting), B9 (totals count changes made by
+anyone this predicate admits, and a gated delete withholds hours the
+coordinator cannot withdraw), B11 (one audit row per edit, and the actor for
 each setting change) and §16.31 (a coordinator's edit reaches the volunteer
 through the feed, not through a stored list).
+
+## 16.33 Reported hours: accepted entries, summed at read time
+
+**Confirmed decision (D-066) — 26 November 2026.**
+
+B9 asked what a reported hour is. The record has used the word "totals" since
+§15.6 without defining one: D-059 returns a materially edited approved entry
+to `pending`, D-063 removes a deleted entry from "the totals", §16.30 says a
+past period can change, and §16.32 now decides who may change what they count.
+B17's ceilings, B19's rounding and any export all consume the same number, so
+every one of them was inheriting a definition nobody had written.
+
+**The case this protects.** Nadia closes October for a funder on 3 November.
+
+- Three of Dee's 31 October entries were submitted on Sunday night and are
+  still `pending`; one October entry was approved and then deleted as a
+  duplicated session. The report says **186 hours**: the three unaccepted
+  claims are out, and the withdrawn one is out.
+- **5 November.** She approves the three and re-runs it: **192**. Nothing was
+  edited. The number moved because a total is a statement about what the
+  organisation has accepted, not a snapshot of what was typed.
+- Her funder's week ends on Sunday. A `groupBy=week` row labelled `2026-10-25`
+  covers 25–31 October, exactly the week the funder reports on. Weeks starting
+  Monday would split it across two rows and make Nadia explain a boundary that
+  is not hers.
+- Meanwhile a volunteer adds up her own month from the list screens and gets
+  190, because the entry she corrected mid-scroll came back on the next page.
+  §16.1's live pages make a client-summed total an estimate; the report is the
+  number.
+
+**Decision in one line: an hour is reported when its entry is `approved` or
+`not_required` and not deleted; totals are summed at read time from `workDate`
+in the organisation's time zone; weeks start on Sunday; and one grouped read
+returns `seconds` per group.**
+
+**The rules.**
+
+1. **The counted set is one predicate.** An entry counts when
+   `approvalStatus` is `approved` or `not_required` **and** `deletedAt` is
+   null. `pending`, `rejected` and deleted entries never count. Nothing else
+   — not project, not activity, not how the entry arrived — filters the set.
+
+2. **Why `not_required` counts and `pending` does not.** D-058 created
+   `not_required` because "nobody will review it" is not "a person approved
+   it"; when approval is off, submission *is* the organisation's acceptance,
+   which is what the policy in force at submission said (D-045). A `pending`
+   entry is a claim nobody has accepted yet, and counting it produces a total
+   that moves when a reviewer merely does their job — the number would change
+   without anyone changing the work.
+
+3. **Computed at read time, never stored.** There is no rollup table and no
+   cached period. Every writer would otherwise have to invalidate it,
+   including the three hardest cases already in the record: a coordinator
+   approving somebody else's row (§16.31 rule 3), a deletion that changes a
+   period nobody edited this month (D-063 rule 11), and a material edit
+   returning an approved entry to `pending` (D-059). The price is that a
+   closed period can change; a screen quoting a funder says *as of* and the
+   date it was read, rather than presenting itself as a filing.
+
+4. **A period is the entry's `workDate`, in the organisation's time zone.**
+   Not `submittedAt`: October's work submitted in November is October's, and a
+   period that follows arrival would leave the same hours in two months and
+   neither. The organisation row carries the zone (§16.17). There is no
+   per-request zone and no per-project zone; a project in another zone is a
+   reporting question for later, not a second clock in the contract.
+
+5. **Weeks start on Sunday.** Fixed for the MVP, by the owner's decision of
+   26 November 2026 (the recommendation had been Monday). A week is the seven
+   days from its Sunday, and a `week` group's `key` is that Sunday's date —
+   `2026-10-25` — so the label carries the convention and a client never has
+   to know it. ISO week numbers are not used, because ISO weeks start on
+   Monday and would label one of our weeks with the number of another.
+
+6. **Seconds are the number.** D-046 makes seconds canonical, so a report
+   returns `seconds` and never decimal hours, a rounded figure or a formatted
+   string. Rounding for a timesheet or a payroll file is B19's and happens
+   once, at export; abbreviating for display is the client's business.
+
+7. **One route, one read.** `GET /v1/reports/hours`, with `from` and `to`
+   required, `to` exclusive, both dates in the organisation's zone, and the
+   range capped at 366 days. A missing, malformed or over-long range is
+   `400 VALIDATION_ERROR` with `details.errors`.
+
+8. **One grouping per request.** `groupBy=project`, `activity`, `volunteer`
+   or `week`. Anything else is `400 VALIDATION_ERROR`. Nested groupings —
+   project within volunteer, week within project — are not in the MVP: each is
+   a second dimension on the same rows, and a client that needs one asks twice
+   with different groupings.
+
+9. **A row is `{ key, label, seconds, entryCount }`.** `key` is the project or
+   activity id, the volunteer's id, or the week's Sunday date. `label` is the
+   project's or activity's current name, or the volunteer's display name,
+   resolved at read time — a rename shows up in the next report rather than in
+   a stored copy. An entry with no project groups under `key: null` and
+   `label: "No project"`, so the rows reconcile to the ledger instead of
+   quietly dropping those hours. `entryCount` is the number of entries in the
+   row, not seconds and not distinct volunteers.
+
+10. **Order, envelope, and no grand total.** Rows are ordered by `seconds`
+    descending, then `key` ascending, in D-040's body under D-054's rules:
+    `pageSize` defaults to 50 and caps at 100, the cursor is bound to the
+    collection and the filter set (`CURSOR_QUERY_MISMATCH` otherwise), and the
+    body carries no `total`. A range total is a second number that can
+    disagree with the rows that produce it, and the entry list has none
+    either; paging the rows is how a caller sums a range.
+
+11. **What a caller may total follows what they may read** (§16.32, D-065).
+    With no filter, a caller gets their own hours. A coordinator gets the
+    projects they hold a grant on — every volunteer, and every date, not only
+    current assignments. An administrator gets the instance. A `projectId` or
+    `volunteerId` outside that scope is `403 FORBIDDEN` (§15.8.9), the same
+    answer a filter gets everywhere else; `groupBy=volunteer` is therefore
+    a coordinator's and an administrator's view, and a volunteer's own report
+    returns the one row that is theirs.
+
+12. **Archived projects and departed volunteers count.** Archival ends
+    eligibility for new work, not the work already done (D-042), and a
+    volunteer who left still has hours in the ledger. Excluding either would
+    shrink a funder's total without anybody deciding that it should.
+
+13. **A report is a read, and it is not the list.** No audit row, no
+    notification, no `changeSeq`, and nothing cached on a device for later
+    (D-064 rule 9: another volunteer's hours are privileged data). It never
+    returns entries, only sums; drilling into a row goes to
+    `GET /v1/time-entries` with the same range and a filter, which is
+    §16.31 rule 11's division between the feed and the list applied to totals
+    and entries.
+
+**The shapes.**
+
+```http
+GET /v1/reports/hours?from=2026-10-01&to=2026-11-01&groupBy=project
+Authorization: Bearer eyJhbGciOi…
+```
+
+```json
+{
+  "items": [
+    { "key": "a3f1…", "label": "Saturday Pantry", "seconds": 412200, "entryCount": 31 },
+    { "key": "b21f…", "label": "Winter Shelter",  "seconds": 158400, "entryCount": 12 },
+    { "key": null,    "label": "No project",      "seconds":  21600, "entryCount":  2 }
+  ],
+  "nextCursor": null,
+  "pageSize": 50
+}
+```
+
+The same range by week, for the funder whose weeks end on Sunday:
+
+```http
+GET /v1/reports/hours?from=2026-10-01&to=2026-11-01&groupBy=week
+```
+
+```json
+{
+  "items": [
+    { "key": "2026-10-25", "label": "Week of 25 October 2026", "seconds": 64800, "entryCount": 6 }
+  ],
+  "nextCursor": null,
+  "pageSize": 50
+}
+```
+
+A filter outside the caller's scope, which is a scope claim and not a lookup:
+
+```json
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "You may not report hours for this project.",
+    "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a63"
+  }
+}
+```
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **Predicate over `approved` and `not_required`, read time, `workDate`, Sunday weeks (recommended)** | One definition every other rule can point at; no rollup to invalidate; a funder's week is a row | A closed period can change, so a quoted figure needs its read date |
+| Count `pending` as well | A total matching "everything I logged" | Hours nobody accepted appear in a funder report, and the number drops when a reviewer rejects |
+| Count only `approved` | The strictest reading of "checked hours" | With approval off, an organisation's entire ledger reads zero — `not_required` exists for exactly this |
+| A stored rollup per period, updated by writers | Cheap reads on a large instance | Every writer must invalidate it, including a coordinator's approval of someone else's row; a missed one is a wrong number with no error anywhere |
+| Client-side aggregation from the entry list | No report route | Wrong under live pages, and `pageSize`'s cap makes a month a dozen requests |
+| Periods from `submittedAt` | Matches "what arrived this month" | October's work submitted in November falls out of October for ever |
+| ISO or Monday-start weeks | One convention with the calendar | Splits the reporting week the setting was asked to express; ISO numbers would label it wrongly |
+| A `total` member beside the rows | One number for the range, no paging | A second number that can disagree with the rows; the entry list has none either |
+| A per-entry report route | Exact rows the totals came from | It is `GET /v1/time-entries` with a filter, and a second route would drift from it |
+
+**Accepted costs.**
+
+- **A quorum of numbers moves.** Approval, deletion and a material edit all
+  change past totals, which is correct and surprising; every screen that
+  quotes a figure needs the date it was read.
+- **A 366-day cap.** A longer range is `400`, so a multi-year comparison is
+  several requests. It bounds the work one request can ask for.
+- **`label` is resolved per read.** Two reports run a week apart can label the
+  same project differently after a rename, and neither is wrong.
+- **A report and a list can differ for seconds.** Under live pages an entry
+  submitted between the two reads appears in one and not the other; the report
+  is as-of its read, and deduplicating is D-035's client obligation, not a
+  total's.
+
+**Left open.** Whether hours inside an already-reported period can be locked
+against edits or deletion — the companion of §16.32's left-open item, and the
+only thing that would make a quoted figure stable; whether a project may carry
+its own reporting time zone; daily and weekly *ceilings* on hours (B17), which
+this decision gives a set to measure rather than deciding; decimal hours and
+boundary rounding at export (B19); and CSV or PDF export, which §16.7
+deferred and which would consume this shape.
+
+**Resolves:** backlog item B9, and §16.30 rule 11's "totals" with it — a past
+period can change because it is recomputed from entries, and this decision
+says which entries. It settles the "reported hours" language D-059 and D-063
+each leaned on, gives B17 one set to measure and B19 exact seconds to round,
+and constrains §16.7 (an export ships this predicate and these shapes), §15.8
+(a list still carries no total) and B11 (a report leaves no audit row).
 
 ------------------------------------------------------------------------
 
@@ -6053,10 +6304,10 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B3** | Timer semantics: one running timer or several, timer spanning midnight, server-authoritative start, clock skew, idle timeout, start/stop payloads | **Contract** — deferred | **Deferred — not decided (D-048, §16.15).** The MVP has no server timer, so no timer route, constraint or payload needs specifying; this row re-opens if that feature returns in a later release |
 | **B4** | Concurrency and idempotency for mutations: client-generated ids on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | **Resolved — D-049 (§16.16).** A client-generated UUID per record plus an integer `version`; no `Idempotency-Key`; state-setting operations idempotent by outcome. Offline replay (§15.12 item 30) depends on it |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | **Resolved — D-050 (§16.17).** The deployment is the tenant: each organisation runs its own instance, identity is scoped to it, and no organisation identifier appears in the API. One organisation row carries the time zone, approval policy and membership setting; no `organisation_id` columns |
-| **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator. **Amended 26 November 2026 (D-065, §16.32):** editing another member's entry is coordinator authority only while the organisation's `coordinatorsMayEditEntries` setting is on, an administrator always has it, its scope is the entry's project rather than the author's current assignment, and it is published per project as `canEditEntries`, which answers about other members' entries and never about the caller's own |
+| **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator. **Amended 26 November 2026 (D-065, §16.32):** editing or deleting another member's entry is coordinator authority only while the organisation's `coordinatorsMayEditOrDeleteEntries` setting is on, an administrator always has it, its scope is the entry's project rather than the author's current assignment, and it is published per project as `canChangeOthersEntries`, which answers about other members' entries and never about the caller's own |
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
-| **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | The record discusses totals throughout but never defines a reported hour |
+| **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | **Resolved — D-066 (§16.33).** `approved` and `not_required` count; `pending`, `rejected` and deleted entries do not; totals are summed at read time from `workDate` in the organisation's time zone, weeks start on Sunday, and one grouped report route returns `seconds` and `entryCount` per row |
 | **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery. §16.29 (D-062) records that an advisory conflict raises no notification, so this list has one fewer entry, and §16.31 (D-064) keeps notifications out of the change feed |
 | **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | Four decisions already name it as an output without specifying it |
 | **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | **Resolved — D-055 (§16.22).** Every mutation returns the changed resource in its read shape; creates are `201` + `Location`, replays `200` + `Idempotency-Replay` (by client id or by the uniqueness constraint), `409` keeps D-049's `current` copy, no mutation returns counts, and archival's impact comes from a confirmation read. Deletion is the only `204` |
@@ -6077,8 +6328,8 @@ The refusal rule is settled as well (§16.27), so a submission the server
 will not accept has a defined home — the device — and no server-side table
 to design, index or purge. Reconciliation is settled too (§16.28), so a
 stale write has an answer that neither retries nor overwrites, and conflict
-values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is settled too (§16.30), so the entry's read shape has its last three fields and every total has one predicate to apply. Catching up is settled as well (§16.31), so the download half has a feed rather than a protocol to invent and the outbox stays the ordinary routes replayed (D-055). Edit authority is settled as well (§16.32), so every write route's authorization has its third clause and the project representation has the one new field it needs. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is settled too (§16.30), so the entry's read shape has its last three fields and every total has one predicate to apply. Catching up is settled as well (§16.31), so the download half has a feed rather than a protocol to invent and the outbox stays the ordinary routes replayed (D-055). Edit authority is settled as well (§16.32), so every write route's authorization has its third clause and the project representation has the one new field it needs. Reporting is settled as well (§16.33), so B17's ceilings and B19's rounding each have one set of hours to act on. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
 **What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
 
-**Order proposed:** B9 (reporting and totals) next — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine, material change, preserved submissions, reconciliation, conflict values, deletion, change tracking and edit authority closed in §16.25–§16.32, and B3 deferred by scope (D-048) — then B11 (the audit trail), B10 (notification transport) and B15 (schema and indexes), each as its feature is scheduled.
+**Order proposed:** B11 (the audit trail) next — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine, material change, preserved submissions, reconciliation, conflict values, deletion, change tracking, edit authority and reporting closed in §16.25–§16.33, and B3 deferred by scope (D-048) — then B10 (notification transport) and B15 (schema and indexes), each as its feature is scheduled.
