@@ -1173,8 +1173,14 @@ gate on approval: the client announces it on the create, the replay and each
 bulk-sync result (§16.29). **D-063** — entries are marked deleted with
 `deletedAt`, `deletedBy` and a required `deleteReason`, never removed: a
 deleted entry leaves the totals, the queues and the conflict set, nothing
-restores it, and "void" is retired from the contract (§16.30). **D-064** — catching up on the download half: a per-organisation monotonic `changeSeq` taken in the writing transaction, a `GET /v1/sync` feed of the caller's own entries (deletions included) ordered by it, no cursor meaning from the beginning, the number never exposed, privileged lists live-only and never persisted, and coordination actions requiring connectivity (§16.31). **D-065** — who may change an entry: the author by authorship, an administrator always, and a coordinator holding an active grant on the entry's project while the organisation's `coordinatorsMayEditOrDeleteEntries` setting is on — the switch covering editing and deleting another member's entry; departure ends coordination and never authorship; a date move is checked against the author's assignment history; the capability over *other members'* entries is published per project as `canChangeOthersEntries` (§16.32). **D-066** — reported hours: an entry counts when it is `approved` or `not_required` and not deleted, totals are summed at read time from `workDate` in the organisation's time zone, weeks start on Sunday, and one grouped report route returns `seconds` and `entryCount` per row (§16.33). Gaps not yet
-raised by any section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+restores it, and "void" is retired from the contract (§16.30). **D-064** — catching up on the download half: a per-organisation monotonic `changeSeq` taken in the writing transaction, a `GET /v1/sync` feed of the caller's own entries (deletions included) ordered by it, no cursor meaning from the beginning, the number never exposed, privileged lists live-only and never persisted, and coordination actions requiring connectivity (§16.31). **D-065** — who may change an entry: the author by authorship, an administrator always, and a coordinator holding an active grant on the entry's project while the organisation's `coordinatorsMayEditOrDeleteEntries` setting is on — the switch covering editing and deleting another member's entry; departure ends coordination and never authorship; a date move is checked against the author's assignment history; the capability over *other members'* entries is published per project as `canChangeOthersEntries` (§16.32). **D-066** — reported hours: an entry counts when it is `approved` or `not_required` and not deleted, totals are summed at read time from `workDate` in the organisation's time zone, weeks start on Sunday, and one grouped report route returns `seconds` and `entryCount` per row (§16.33). **D-067** — the audit trail: one
+insert-only row per accepted write, written in the write's own
+transaction, carrying the actor, the entity, the action, the `requestId`
+and the fields that moved with their before and after; actors survive
+anonymisation and the erasure is itself a row; read scope mirrors the
+entity's; one filtered `GET /v1/audit-log` ordered `at` then `id`; reads,
+refusals and replays are not audited (§16.34). Gaps not yet raised by any
+section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -2284,14 +2290,16 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
 §16.26), item 5 (preserved invalid submissions, §16.27), item 6
-(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23), B16 (the backdating window, §16.24) and B9 (reporting and totals, §16.33). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23), B16 (the backdating window, §16.24) B9 (reporting and totals, §16.33) and B11 (the audit trail, §16.34). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, leaving the backlog's feature items — B10 (notification transport), B11 (the audit trail) and B15 (schema and indexes) — as the next ones to take.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34), leaving the
+backlog's feature items — B10 (notification transport) and B15 (schema and
+indexes) — as the next ones to take.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -6134,11 +6142,19 @@ returns `seconds` per group.**
    reporting question for later, not a second clock in the contract.
 
 5. **Weeks start on Sunday.** Fixed for the MVP, by the owner's decision of
-   26 November 2026 (the recommendation had been Monday). A week is the seven
-   days from its Sunday, and a `week` group's `key` is that Sunday's date —
-   `2026-10-25` — so the label carries the convention and a client never has
-   to know it. ISO week numbers are not used, because ISO weeks start on
-   Monday and would label one of our weeks with the number of another.
+   26 November 2026 (the recommendation had been Monday). A week is the
+   seven days from its Sunday, and a `week` group's `key` is that Sunday's
+   date — `2026-10-25` — so the label carries the convention and a client
+   never has to know it. ISO week numbers are not used, because ISO weeks
+   start on Monday and would label one of our weeks with the number of
+   another.
+
+   **This is a reporting convention only.** It fixes how a `week` group is
+   cut and nothing else: B17's weekly ceilings must follow the
+   organisation's legal or payroll week, which may start on Monday, so a
+   limit is never enforced against this Sunday boundary. A weekly cap
+   measured on reporting weeks would let the seventh day of a
+   Monday-to-Sunday rota fall outside the cap it is measured by.
 
 6. **Seconds are the number.** D-046 makes seconds canonical, so a report
    returns `seconds` and never decimal hours, a rounded figure or a formatted
@@ -6285,6 +6301,203 @@ each leaned on, gives B17 one set to measure and B19 exact seconds to round,
 and constrains §16.7 (an export ships this predicate and these shapes), §15.8
 (a list still carries no total) and B11 (a report leaves no audit row).
 
+## 16.34 The audit trail: one row per write, and who may read it
+
+**Confirmed decision (D-067) — 26 November 2026.**
+
+B11 asked what the audit trail is. Six decisions already name it as an output
+without saying what a row holds: D-043's restore, D-052's erasure, D-059's
+material edit, D-063's deletion, D-065's gated change and D-066's exclusion of
+reports. A trail written by every one of them and specified by none is a table
+that cannot be drafted, an access rule nobody can test, and — because the
+record is never deleted (D-052) — a growing pile with no defined shape.
+
+**The case this protects.** A funder's auditor visits in February and asks
+what happened to three of Dee's October entries.
+
+- The entry now reads `deletedAt: "2026-11-05…"`, `deletedBy: "n4d1…"` and a
+  `deleteReason` — the last write only. It does not say the hours were 7, then
+  6; that Nadia approved it on 3 November; or that she deleted it two days
+  later, after the funder's period had closed.
+- The trail answers with four rows against the same `entityId`, oldest first:
+  `created`, `updated` with `{"seconds": {"before": 25200, "after": 21600}}`,
+  `approved`, then `deleted` with the reason. Each carries the `requestId` the
+  client already saw on the response, so a support question about one tap is
+  answered from one column.
+- The volunteer who made the entries has since asked to be erased. Her user
+  row reads "Former member" (D-052), but the four rows still name her
+  `actorId`: the work stays attributable to a person who existed rather than
+  to nobody, and the erasure is a fifth row naming the administrator who
+  performed it.
+
+**Decision in one line: every accepted write leaves one insert-only row, in
+the write's own transaction, carrying who, what, when, on which entity and
+which fields moved; actors outlive anonymisation; and one filtered, read-only
+collection shows a caller the rows their own read scope already allows.**
+
+**The rules.**
+
+1. **One row per accepted write, in the write's own transaction.** The row is
+   committed with the change or not at all, so a trail can neither record a
+   write that rolled back nor miss one that committed. There is no after-commit
+   hook, no queue and no best-effort write: the cost is one insert on the
+   write's path, and the benefit is that the trail and the record cannot
+   disagree.
+
+2. **What a row holds.** `id` (a UUIDv7, minted the way D-053 mints request
+   ids), `at`, `actorId`, `entityType`, `entityId`, `action`, `requestId`, an
+   optional `reason`, and `changes`. `entityType` is one of `time_entry`,
+   `project`, `activity`, `assignment`, `assignment_request`,
+   `project_coordinator` or `user`. `requestId` is the same id the caller got
+   in `X-Request-Id` (D-053), which is what joins a row to a log line and a
+   support report. `changes` holds only the fields the write moved, each as
+   `{ "before": …, "after": … }`, with `before: null` on a create and
+   `after: null` on a delete: the difference, never a copy of the resource.
+   No credential material, no token, no session id and no message body is ever
+   recorded.
+
+3. **Insert-only, and never purged.** Nothing updates a row and nothing
+   deletes one — not the API, not a retention job, not an administrator. A
+   correction is a later row, which is what makes the earlier mistake still
+   visible. Rows live as long as the deployment's record does, which D-052
+   already makes indefinite.
+
+4. **Anonymisation keeps the actor.** D-052 anonymises the user row in place;
+   it does not reach the trail. `actorId` continues to resolve, to a tombstone
+   that reads "Former member", so past actions stay attributable. The erasure
+   itself is a row — `action: "erased"`, the administrator as actor, the
+   anonymised user as entity — because a record whose person disappeared with
+   no trace of the act would be the one change the trail could not explain.
+
+5. **Read scope mirrors the entity's read scope.** A caller sees a row when
+   they may already read the thing it names: a volunteer sees rows about their
+   own entries and their own membership; a coordinator sees rows for the
+   projects they hold an active grant on; an administrator sees the instance.
+   `user` rows and `project_coordinator` rows for other people are
+   administrator-only, except that a coordinator sees grants on their own
+   projects. The trail never widens anyone's view: it is the same predicate as
+   §16.18 and §16.32, applied to rows rather than entries.
+
+6. **One collection, read-only, and no write route.** `GET /v1/audit-log`
+   takes `entityType`, `entityId`, `actorId`, `action`, `from` and `to` (ISO
+   8601 instants, `to` exclusive), orders by `at` descending then `id`
+   descending, and uses D-054's envelope: `pageSize` defaults to 50 and caps at
+   100, the cursor is bound to the collection and the filter set
+   (`CURSOR_QUERY_MISMATCH` otherwise), and the body carries no `total`.
+   There is no single-row route — drilling into one change is the collection
+   filtered by `entityId` and `action` — and no route creates a row, because
+   rows are a consequence of writes and never an API's input.
+
+7. **Reads, refusals and replays are not audited.** Lists, reports and a
+   `/v1/sync` pull change nothing, change no state and are visible in the
+   request log instead (D-053). A `4xx` is a write that did not happen
+   (D-060), so it leaves no row. An idempotent replay that returns the earlier
+   result (D-055) adds no row either: one accepted write, one row, however
+   many times the client sent it.
+
+8. **A fixed action vocabulary.** `created`, `updated`, `deleted`,
+   `submitted`, `approved`, `rejected`, `restored`, `archived`, `granted`,
+   `revoked`, `erased`. A client filters on these strings, so a new action is
+   a decision and a contract change, never a word a feature invents on the
+   way past.
+
+**The shapes.**
+
+```http
+GET /v1/audit-log?entityType=time_entry&entityId=8c2a…&from=2026-10-01T00:00:00Z&to=2026-12-01T00:00:00Z
+Authorization: Bearer eyJhbGciOi…
+```
+
+```json
+{
+  "items": [
+    {
+      "id": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a63",
+      "at": "2026-11-05T16:41:02.118Z",
+      "actorId": "n4d1…",
+      "entityType": "time_entry",
+      "entityId": "8c2a…",
+      "action": "deleted",
+      "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a70",
+      "reason": "Duplicate of the 31 October session",
+      "changes": { "deletedAt": { "before": null, "after": "2026-11-05T16:41:02.118Z" } }
+    },
+    {
+      "id": "0193a0f3-2c44-7a01-9b7e-0f2c8d5e6b11",
+      "at": "2026-11-03T09:02:44.006Z",
+      "actorId": "n4d1…",
+      "entityType": "time_entry",
+      "entityId": "8c2a…",
+      "action": "approved",
+      "requestId": "0193a0f3-2c44-7a01-9b7e-0f2c8d5e6b20",
+      "changes": { "approvalStatus": { "before": "pending", "after": "approved" } }
+    }
+  ],
+  "nextCursor": null,
+  "pageSize": 50
+}
+```
+
+A volunteer asking for someone else's entry, which is the ordinary scope
+refusal and not a separate audit rule:
+
+```json
+{
+  "error": {
+    "code": "FORBIDDEN",
+    "message": "You may not read this entry's history.",
+    "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a71"
+  }
+}
+```
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **One insert-only row per accepted write, in the transaction (recommended)** | A history that matches the record exactly, one shape for every entity, and one route to read it | One insert on every write's path, and a table that only grows |
+| Keep only the fields already on the entity (`deletedBy`, `updatedAt`, `version`) | No second table | The last write only; the approval before the edit, and the edit before the delete, are gone |
+| One table per entity type | Columns that fit each entity | Six routes, six access rules and six drafts of the same idea |
+| A JSON blob per row with free-text action and message | Any feature can record anything without a decision | Unindexable, unfilterable, and the client parses prose to find an approval |
+| Write the row after the commit, from a queue | No insert on the write's path | A crash between the two leaves a change with no record and no error anywhere |
+| Delete rows on a retention schedule | A smaller table | The history ends before the record does, which is the one thing an audit trail is for |
+| Let volunteers read the whole trail | Transparency | One volunteer reads another's hours, corrections and deletions |
+| Audit reads, reports and sync pulls | Complete activity picture | The trail fills with non-changes and stops being a history of the record; the request log already has it |
+| Reuse `changeSeq` or `version` as the trail | One number, no second table | The feed is per-caller and entry-only; the trail is per-entity, organisation-wide and must include the erasure |
+
+**Accepted costs.**
+
+- **Every write pays an insert.** The test suite, imports and any bulk
+  operation all pay it too; one row per write is the price of the trail being
+  true rather than eventual.
+- **The table grows for ever.** D-052 already promised the record is kept, so
+  this follows from it rather than being a new promise, but it does mean B15
+  owes the trail an index and an archival answer eventually.
+- **`changes` copies old values.** A corrected typo in a name, an old project
+  title or an earlier hours figure stays readable to whoever may read the
+  entity. That is the point, and it also means an erasure does not remove a
+  former display name that once appeared in a `changes` pair: D-052's
+  anonymisation covers the user row, not what the record said at the time.
+- **A deleted entry's history stays readable.** The entry leaves the lists and
+  the totals (D-063), but its rows remain, so "deleted" is not "gone" for
+  anyone who may read it — which is what makes the deletion reviewable.
+
+**Left open.** Whether an organisation may export the trail as CSV (B19's
+rounding does not apply, so it would be the first export that needs no rule);
+whether support may search it by `requestId`, which the field allows and the
+filter list above does not yet offer; whether the trail outlives the record on
+an organisation-wide deletion, which D-052 says cannot happen through the API;
+and whether authentication events (sign-ins, failed attempts, session ends)
+belong here or stay in the request log — B10 and B14's territory rather than
+this decision's.
+
+**Resolves:** backlog item B11. It gives D-043, D-052, D-059, D-063 and D-065
+the output each already assumed, makes D-066's "no audit row for a report" a
+rule with a reason rather than an aside, and constrains B8 (the audit list uses
+the one envelope but its contents and access are this decision's), B10 (a
+notification's read state is not an audited write), B15 (two indexes — the
+entity's history and the organisation's feed order — and a table that is never
+pruned) and §15.12 item 29 (one route in the inventory: `GET /v1/audit-log`).
 ------------------------------------------------------------------------
 
 # 17. Decision backlog: gaps not yet raised
@@ -6309,7 +6522,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | **Resolved — D-066 (§16.33).** `approved` and `not_required` count; `pending`, `rejected` and deleted entries do not; totals are summed at read time from `workDate` in the organisation's time zone, weeks start on Sunday, and one grouped report route returns `seconds` and `entryCount` per row |
 | **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery. §16.29 (D-062) records that an advisory conflict raises no notification, so this list has one fewer entry, and §16.31 (D-064) keeps notifications out of the change feed |
-| **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | Four decisions already name it as an output without specifying it |
+| **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | **Resolved — D-067 (§16.34).** One insert-only row per accepted write, written in the write's own transaction and never purged: actor, entity, action, `requestId`, an optional `reason` and the fields that moved with their before and after. Actors survive anonymisation and the erasure is itself a row; read scope mirrors the entity's; one filtered `GET /v1/audit-log` orders `at` then `id`; reads, refusals and replays leave no row |
 | **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | **Resolved — D-055 (§16.22).** Every mutation returns the changed resource in its read shape; creates are `201` + `Location`, replays `200` + `Idempotency-Replay` (by client id or by the uniqueness constraint), `409` keeps D-049's `current` copy, no mutation returns counts, and archival's impact comes from a confirmation read. Deletion is the only `204` |
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
 | **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | **Resolved — D-056 (§16.23).** Bearer tokens on every business route and no cookie, because the MVP has no browser client; a 30-minute access token, a single-use rotating refresh token with a 120-second replay grace, a 90-day idle and a 180-day absolute limit, and `sid` checked on every request so a revocation lands on the next call. Sessions are listed and ended from the phone, every authentication failure is the same `401 UNAUTHENTICATED`, and MFA is deferred |
@@ -6321,15 +6534,25 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
-**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and fed B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which leaves B11 as its main downstream: the audit list's contents and access are B11's, not B8's. B12 is settled (§16.22), so every later mutation inherits a shape rather than choosing one; B14 is settled (§16.23), so every route's authentication requirement has its shape; B16 is settled (§16.24), so every entry's date has a rule and §16.9's archived-gap refusal has a code. The entry state machine is settled (§16.25), so the submit, approve and reject routes have states to move between rather
+**Dependencies between them.** B1 feeds B2, B3 (deferred) and B9, and B16–B19 surfaced from B1: an overlap is measured in the time model, and totals are summed in it. B5 is settled (§16.17) and fed B6 and B14; B6 is settled (§16.18), so every endpoint's authorization rule now has its shape. B7 is settled (§16.19) and constrains B11: an audit trail must survive anonymisation and record the erasure itself. B4 is now the convention every later endpoint inherits (§16.16); B13 is settled (§16.20) and every route inherits it too; B8 is settled (§16.21) and every other collection inherits its list shape, which left B11 as its main downstream: the audit list's contents and
+access were B11's, not B8's. B12 is settled (§16.22), so every later mutation inherits a shape rather than choosing one; B14 is settled (§16.23), so every route's authentication requirement has its shape; B16 is settled (§16.24), so every entry's date has a rule and §16.9's archived-gap refusal has a code. The entry state machine is settled (§16.25), so the submit, approve and reject routes have states to move between rather
 than a vocabulary to invent. The reapproval rule is settled too (§16.26),
 so an edit's effect on approval no longer depends on which client made it.
 The refusal rule is settled as well (§16.27), so a submission the server
 will not accept has a defined home — the device — and no server-side table
 to design, index or purge. Reconciliation is settled too (§16.28), so a
 stale write has an answer that neither retries nor overwrites, and conflict
-values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is settled too (§16.30), so the entry's read shape has its last three fields and every total has one predicate to apply. Catching up is settled as well (§16.31), so the download half has a feed rather than a protocol to invent and the outbox stays the ordinary routes replayed (D-055). Edit authority is settled as well (§16.32), so every write route's authorization has its third clause and the project representation has the one new field it needs. Reporting is settled as well (§16.33), so B17's ceilings and B19's rounding each have one set of hours to act on. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is settled too (§16.30), so the entry's read shape has its last three fields and every total has one predicate to apply. Catching up is settled as well (§16.31), so the download half has a feed rather than a protocol to invent and the outbox stays the ordinary routes replayed (D-055). Edit authority is settled as well (§16.32), so every write route's authorization has its third clause and the project representation has the one new field it needs. Reporting is settled as well (§16.33), so B17's ceilings and B19's
+rounding each have one set of hours to act on. The audit trail is settled
+too (§16.34), so every write route has one place its record lands and
+B7's anonymisation has a row that keeps the actor. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B9, B10, B11 and B15 do not hold up the contract, but every one of them is cheaper to decide before code exists than after. B7 has left that list (§16.19).
+**What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B10 and B15 do not hold up the contract, but both are cheaper to decide
+before code exists than after; B11 has left that list too (§16.34), so the
+trail's table and its indexes are now part of B15's work. B7 has left that list (§16.19).
 
-**Order proposed:** B11 (the audit trail) next — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine, material change, preserved submissions, reconciliation, conflict values, deletion, change tracking, edit authority and reporting closed in §16.25–§16.33, and B3 deferred by scope (D-048) — then B10 (notification transport) and B15 (schema and indexes), each as its feature is scheduled.
+**Order proposed:** B10 (notification transport) next — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine, material
+change, preserved submissions, reconciliation, conflict values, deletion,
+change tracking, edit authority, reporting and the audit trail closed in
+§16.25–§16.34, and B3 deferred by scope (D-048) — then B15 (schema and
+indexes), each as its feature is scheduled.
