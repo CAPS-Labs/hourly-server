@@ -5461,8 +5461,11 @@ And a write against a deleted entry:
   without care.** A query that forgets `deleted_at is null` leaks retracted
   hours into a total, and nothing in the type system stops it. B15's index
   strategy should make the live set the cheap one. **Answered 27 November 2026
-  (§16.36, D-069):** the list's index is partial on `deleted_at IS NULL`, so the
-  live set is the one the index holds.
+  (§16.36, D-069):** the list's index leads on `volunteer_id` and orders by the
+  anchor, so the live set is the cheap query — it filters `deleted_at IS NULL`
+  over rows already narrowed to one person. The index is deliberately **not**
+  partial, so §15.8.6's `deleted=true` listing reads the withdrawn rows from the
+  same index rather than a second one.
 - **Deletion is a mouthful of fields on every representation.** Three extra
   members on every entry in every list, nearly always `null`, for the sake of
   the one screen that shows a withdrawn claim.
@@ -5487,7 +5490,7 @@ that rule reserved now exists — turns §15.8.6's first filter into the
 retires "void" from the contract. It constrains B9 (deleted hours are in no
 total), B11 (one audit row per deletion, carrying the reason), B10 (no
 deletion notification in the MVP), §16.22 (the `204` rule still covers only
-routes that remove a row) and B15 (the partial index on the live set, kept in §16.36).
+routes that remove a row) and B15 (the anchor index that makes the live set cheap, kept in §16.36).
 
 ## 16.31 Catching up: one counter, your own entries, and nothing privileged on the device
 
@@ -6883,7 +6886,7 @@ a restore is visible to every client.**
 
 | Index or constraint | Serves | Why it is forced |
 |---|---|---|
-| `time_entries (volunteer_id, local_anchor DESC, id DESC) WHERE deleted_at IS NULL` | the list (§16.3), the date filter (§15.8.1), the keyset cursor, the report's range (§16.33), the overlap scan (§16.29) | one index answers every read of a person's own rows, in the order and range they are read. It is partial on the live set, which is what D-063 asked for: all four queries already exclude deleted rows, so the index holds only rows they can return |
+| `time_entries (volunteer_id, local_anchor DESC, id DESC)` | the list (§16.3) in both its live and `deleted=true` forms (§15.8.6), the date filter (§15.8.1), the keyset cursor, the report's range (§16.33), the overlap scan (§16.29) | one index answers every read of a person's own rows, in the order and range they are read. It is **not** partial: §15.8.6 exposes `deleted=true`, so the withdrawn-history listing needs the same order over exactly the rows a live-set index would exclude. Carrying them costs almost nothing, because deletion is exceptional (D-063) and every other query simply filters `deleted_at IS NULL` on the rows the index returns |
 | `time_entries (volunteer_id, change_seq)` | `GET /v1/sync` (§16.31) | the feed is always one author's rows in one order, deleted rows included; a bare `change_seq` index would read every author's writes and filter them |
 | `audit_log (entity_type, entity_id, at DESC, id DESC)` | one record's history (§16.34) | the common question is "what happened to this entry", not "what happened in this organisation" |
 | `audit_log (at DESC, id DESC)` | the organisation's trail order (§16.34) | an insert-only table grows without bound; an unfiltered read must not sort it |
@@ -6897,8 +6900,12 @@ a restore is visible to every client.**
     scoped to a handful of projects, and an index now would be a guess carrying
     a write cost on the busiest table. The users list's prefix filter (§16.21)
     scans one organisation's members, hundreds at most. Reports have no rollup
-    table and no index beyond the anchor range (§16.33). **Further indexes are
-    admitted by a measurement, not by taste:** the query plan showing a
+    table and no index beyond the anchor range (§16.33). The `deleted=true`
+    listing is served by the anchor index with a filter on the rows it returns,
+    not by a second index on the withdrawn set; if that listing ever grows large
+    enough to matter, a partial index `WHERE deleted_at IS NOT NULL` is the
+    measured addition, and rule 10's test is what would admit it. **Further
+    indexes are admitted by a measurement, not by taste:** the query plan showing a
     sequential scan at a named row count, and one sentence on what the extra
     index costs every write. That rule is what keeps the inventory at five.
 
@@ -6940,11 +6947,11 @@ CREATE TABLE instance_state (
 ALTER TABLE time_entries
   ADD COLUMN local_anchor timestamp NOT NULL;   -- local wall clock, no zone
 
--- Partial on the live set (D-063): every query that orders by the anchor
--- already filters deleted_at IS NULL, so the index holds only those rows.
+-- Not partial: the live list and §15.8.6's `deleted=true` listing are the same
+-- order over the same rows, and a live-set predicate would make one of them
+-- lose the index.
 CREATE INDEX time_entries_owner_anchor
-  ON time_entries (volunteer_id, local_anchor DESC, id DESC)
-  WHERE deleted_at IS NULL;
+  ON time_entries (volunteer_id, local_anchor DESC, id DESC);
 
 CREATE INDEX time_entries_owner_change
   ON time_entries (volunteer_id, change_seq);
@@ -6971,11 +6978,19 @@ The two reads that matter, with the index each one uses:
 SELECT …
 FROM time_entries
 WHERE volunteer_id = $1
-  AND deleted_at IS NULL                              -- the partial index needs it
+  AND deleted_at IS NULL                              -- a filter, not an index predicate
   AND local_anchor >= $2 AND local_anchor < $3        -- half-open, inclusive dates
   AND (local_anchor, id) < ($4, $5)                   -- the cursor; omitted on page one
 ORDER BY local_anchor DESC, id DESC
 LIMIT $6;
+
+-- The withdrawn listing (§15.8.6, deleted=true): the same index, the same
+-- order, the other side of the predicate.
+SELECT …
+FROM time_entries
+WHERE volunteer_id = $1 AND deleted_at IS NOT NULL
+ORDER BY local_anchor DESC, id DESC
+LIMIT $2;
 
 -- The feed.
 SELECT …
