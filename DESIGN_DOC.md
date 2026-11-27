@@ -1173,13 +1173,13 @@ gate on approval: the client announces it on the create, the replay and each
 bulk-sync result (§16.29). **D-063** — entries are marked deleted with
 `deletedAt`, `deletedBy` and a required `deleteReason`, never removed: a
 deleted entry leaves the totals, the queues and the conflict set, nothing
-restores it, and "void" is retired from the contract (§16.30). **D-064** — catching up on the download half: a per-organisation monotonic `changeSeq` taken in the writing transaction, a `GET /v1/sync` feed of the caller's own entries (deletions included) ordered by it, no cursor meaning from the beginning, the number never exposed, privileged lists live-only and never persisted, and coordination actions requiring connectivity (§16.31). **D-065** — who may change an entry: the author by authorship, an administrator always, and a coordinator holding an active grant on the entry's project while the organisation's `coordinatorsMayEditOrDeleteEntries` setting is on — the switch covering editing and deleting another member's entry; departure ends coordination and never authorship; a date move is checked against the author's assignment history; the capability over *other members'* entries is published per project as `canChangeOthersEntries` (§16.32). **D-066** — reported hours: an entry counts when it is `approved` or `not_required` and not deleted, totals are summed at read time from `workDate` in the organisation's time zone, weeks start on Sunday, and one grouped report route returns `seconds` and `entryCount` per row (§16.33). **D-067** — the audit trail: one
+restores it, and "void" is retired from the contract (§16.30). **D-064** — catching up on the download half: a per-organisation monotonic `changeSeq` taken in the writing transaction, a `GET /v1/sync` feed of the caller's own entries (deletions included) ordered by it, no cursor meaning from the beginning, the number never exposed, privileged lists live-only and never persisted, and coordination actions requiring connectivity (§16.31). **D-065** — who may change an entry: the author by authorship, an administrator always, and a coordinator holding an active grant on the entry's project while the organisation's `coordinatorsMayEditOrDeleteEntries` setting is on — the switch covering editing and deleting another member's entry; departure ends coordination and never authorship; a date move is checked against the author's assignment history; the capability over *other members'* entries is published per project as `canChangeOthersEntries` (§16.32); and the setting defaults off, so a new instance withholds it until an administrator grants it (D-070, §16.37). **D-066** — reported hours: an entry counts when it is `approved` or `not_required` and not deleted, totals are summed at read time from `workDate` in the organisation's time zone, weeks start on Sunday, and one grouped report route returns `seconds` and `entryCount` per row (§16.33). **D-067** — the audit trail: one
 insert-only row per accepted write, written in the write's own
 transaction, carrying the actor, the entity, the action, the `requestId`
 and the fields that moved with their before and after; actors survive
 anonymisation and the erasure is itself a row; read scope mirrors the
 entity's; one filtered `GET /v1/audit-log` ordered `at` then `id`; reads,
-refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention stays open (§16.35). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five indexes, each named to the query that forces it, plus the notification uniqueness constraint; and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). Gaps not yet raised by any
+refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention stays open (§16.35). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). Gaps not yet raised by any
 section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -1427,7 +1427,7 @@ An assignment record should preserve at least:
 
 - The person assigned.
 - The project.
-- The assignment type or role, distinguishing volunteer and coordinator assignments.
+- The assignment's kind — in the MVP always a volunteer assignment to a project. Coordination is not an assignment type: it is a `project_coordinators` grant (`granted_by`, `granted_at`, `ended_at`), retained the same way (§16.18, D-051; corrected in §16.37, D-070).
 - The assignment start time.
 - The assignment end time, when applicable.
 - The assignment's current status.
@@ -1440,7 +1440,7 @@ Confirmed decision: Reassigning someone to a project after their previous assign
 
 The previous record must not be reactivated. Separate records preserve distinct periods of assignment and support historical reporting.
 
-These rules apply to both volunteer and coordinator assignments.
+These rules apply to volunteer assignments. A coordinator grant is also ended and never deleted, but it is a `project_coordinators` row rather than an assignment record (§16.18; §16.37, D-070).
 
 5.3 Assignment audit details
 
@@ -1609,9 +1609,13 @@ Where this section adds detail to an existing decision, the more specific rule s
 
 Membership suspension will not be implemented in the MVP. It may be considered for a future update.
 
+**Note 27 November 2026 (§16.37, D-070):** the membership `status` vocabulary includes `inactive`, so a future suspension has a value to use; no suspension route ships in the MVP.
+
 ### 15.2.2 Membership revocation
 
 **Status: Under consideration.**
+
+**Amended 27 November 2026 (§16.37, D-070):** a revoked membership takes the status `removed`, which retains the row and ends its grants (D-052). The proposed behaviour and the open questions below are unchanged.
 
 The following behavior has been proposed but has not been accepted:
 
@@ -1705,7 +1709,7 @@ Assignment records are retained after an assignment ends. Records should preserv
 
 - The person assigned.
 - The project.
-- The assignment type, distinguishing volunteer and coordinator assignments.
+- The assignment's kind, which in the MVP is one kind: a volunteer assigned to a project. Coordination is a `project_coordinators` grant, not an assignment type (§16.18, D-051; corrected in §16.37, D-070).
 - The start time.
 - The end time, if applicable.
 - The current assignment status.
@@ -2237,7 +2241,7 @@ The following items remain unresolved. They should be addressed before or during
 15. Finalize whether volunteer and coordinator assignments use a generalized resource or separate resources.
 16. Define the consequences of assignment departure for pending time entries and requests, beyond the established historical-work eligibility rule.
 17. Finalize timestamp and timezone semantics for assignment boundaries.
-18. Decide the membership-revocation rules and whether revoked memberships may be restored.
+18. Decide the membership-revocation rules and whether revoked memberships may be restored. **Vocabulary settled 27 November 2026 — a membership's status is `active`, `inactive` or `removed` (§16.37, D-070). The revocation rules and whether a removed membership may be restored remain open.**
 
 ### Priority 4 — Entry deletion and operational details
 
@@ -2262,7 +2266,7 @@ The following items remain unresolved. They should be addressed before or during
 
 26. Choose the authentication method/provider and determine whether authentication is managed or self-hosted. **Hosting resolved 23 November 2026 — each organisation runs its own instance, so authentication is self-hosted per instance (§16.17, D-050). The session layer is settled 24 November 2026 (§16.23, D-056) — bearer tokens, a single-use rotating refresh token, and a mobile-only client, so no cookie and no CORS. The credential itself remains open (§3.1).**
 27. Design the first-administrator bootstrap process. **Now a per-instance installation step (§16.17, D-050); the process is still undesigned.**
-28. Finalize database schema, constraints, and transaction requirements. **Partly settled 27 November 2026 — the engine, the stored anchor and the index inventory are fixed (§16.36, D-069). Per-table constraints and the remaining columns stay open.**
+28. ~~Finalize database schema, constraints, and transaction requirements.~~ **Resolved 27 November 2026 — the engine, the stored anchor, the migrations, the indexes and the transaction boundaries are fixed (§16.36, D-069), and the per-table constraints, the uniqueness rules and the columns each of them fixes are recorded table by table (§16.37, D-070). What no decision has introduced — the assignment interval's types, the profile fields, the anchor's zone column — stays with its own item rather than this one.**
 29. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
 30. ~~Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses.~~ **Resolved 25 November 2026 — retry and idempotency are the entry id as the deduplication record with `version` guarding writes (§16.16, D-049), conflict responses are `409 VERSION_MISMATCH` carrying `current` and `changedFields` (§16.28, D-061), and change tracking is a per-organisation `changeSeq` with a pull feed of the caller's own entries, deletions included (§16.31, D-064).**
 31. Define API versioning, security controls, deployment, backups, and monitoring. **Deployment is per instance (§16.17, D-050), so API version skew between an installed app and an instance that upgrades on its own schedule is a supported state rather than a hypothetical. Versioning is contract-blocking, not operational polish.** **URL versioning settled 24 November 2026: every route is prefixed `/v1`, and every path in this record is written that way.** What remains open is the compatibility and deprecation policy — what an old client does against a `/v2` instance, and for how long `/v1` is served.
@@ -2294,14 +2298,15 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
 §16.26), item 5 (preserved invalid submissions, §16.27), item 6
-(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23), B16 (the backdating window, §16.24) B9 (reporting and totals, §16.33), B11 (the audit trail, §16.34) B10 (notification transport, §16.35) and B15 (schema, migrations and indexes, §16.36). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23), B16 (the backdating window, §16.24) B9 (reporting and totals, §16.33), B11 (the audit trail, §16.34) B10 (notification transport, §16.35) and B15 (schema, migrations and indexes, §16.36); §16.37 (D-070) then closes §15.12 item 28 with the table-by-table constraints. Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
+3. **Anonymisation, revisited** — D-052's trade (keep the hours, destroy the identity) taken up on its own terms: what it protects, what it fails to protect, the replacement display name the record currently spells two ways, and the erasure's mailbox deletion (§16.37, D-070's handover). No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2998,11 +3003,10 @@ Content-Type: application/json
 ```json
 {
   "id": "6f1c9a3e-1b77-4b0e-9a2c-5d0f6c1e8b41",
-  "projectId": "…",
   "activityId": "…",
   "startedAt": "2026-11-21T14:00:00Z",
   "endedAt": "2026-11-21T17:00:00Z",
-  "note": "Sorting donations"
+  "notes": "Sorting donations"
 }
 ```
 
@@ -3871,9 +3875,7 @@ mistake is a refused cursor instead of a silent misreading.
 7. **The users list is administrator-only and hides what it need not show.**
    `q` matches a display name by prefix and an email address exactly — no
    free-text search in the MVP. An anonymised person appears under their
-   stable `id` with `anonymisedAt` set and the email withheld (D-052), so
-   history stays coherent without inventing a status value D-052 does not
-   define. Coordinators reach people through their project's
+   stable `id` with `anonymisedAt` set and the email withheld (D-052), so history stays coherent without inventing a status value D-052 did not define; the `status` filter is now the three-value list of §16.37 (D-070). Coordinators reach people through their project's
    assignments; a coordinator-facing directory would be a filter on this same
    route, not a fifth shape.
 8. **The audit list's shape is fixed here; its contents and its readers are
@@ -4351,7 +4353,7 @@ Dee's August submission of March work is an ordinary `201`:
 POST /v1/time-entries HTTP/1.1
 Content-Type: application/json
 
-{ "id": "6f1c9a3e-…", "projectId": "a3f1…", "activityId": "b7d2…",
+{ "id": "6f1c9a3e-…", "activityId": "b7d2…",
   "startedAt": "2026-03-08T13:00:00Z", "endedAt": "2026-03-08T16:30:00Z" }
 ```
 
@@ -4593,7 +4595,7 @@ of which was §15.12 item 6's, settled in §16.28 (D-061). §6.6 had already con
 | Field | Material? | Why |
 |---|---|---|
 | `startedAt`, `endedAt`, `workDate`, duration | **Yes** | These are the hours; a change here changes the claim |
-| `projectId`, `activityId` | **Yes** | Which programme the hours are for; it changes who may review and what is reported |
+| `activityId` | **Yes** | Which programme the hours are for; moving an entry to another activity moves its project, so it changes who may review and what is reported. `projectId` is derived and cannot be set on its own (§16.37 answer 5) |
 | `activityDescription` (project-less entries) | **Yes** | On a project-less entry this *is* the substance being approved; there is nothing else to review |
 | `notes` | **No** | A note does not change the claim; making it material teaches reviewers to rubber-stamp |
 | `durationSeconds`, `updatedAt`, `version` | not applicable | Server-computed (D-046, D-055) |
@@ -5884,7 +5886,7 @@ nothing else.**
    coordinator who may not rewrite a volunteer's hours should not be able to
    withdraw them either.
 
-6. **One boolean, organisation-wide, default on.**
+6. **One boolean, organisation-wide, default off.**
    `coordinatorsMayEditOrDeleteEntries` is an organisation setting recorded with the
    others — the approval policy (D-045), the self-assignment and
    coordinator-grant settings §4.2 and §16.18 describe, and
@@ -5894,7 +5896,11 @@ nothing else.**
    per-project override in the MVP; that is §17's, not this decision's. One
    switch covers both acts: there is no separate delete setting, because an
    organisation that withholds one withholds both, and a second switch would
-   add states for a policy nobody has asked to split.
+   add states for a policy nobody has asked to split. **Amended 27 November
+   2026 (§16.37, D-070):** the default is `false`, not `true` — this section
+   first recorded it on while the organisation read below already showed
+   `false`, and the owner has settled it off. A capability that rewrites or
+   withdraws another member's claim is granted, never assumed.
 
 7. **Effective on the next request, never retroactively.** A change never
    revisits an act already taken — the rule D-051 already applies to a role
@@ -6050,7 +6056,7 @@ answer is always yes and comes from being its author.
 | **Three sources and one switch (recommended)** | Authors keep their record; administrators are never blocked; an organisation can honour a funder's "the volunteer's own words" requirement | Two clauses and a setting on two acts; the client needs the capability to draw both controls |
 | Gate every coordination write, including approve and reject | "Coordinators only read" as a complete policy | An organisation with approval on has nobody but administrators who can decide anything, which is not what "don't edit my volunteers' hours" asks for |
 
-| Default the setting off | The safest reading of a capability that rewrites someone else's claim | Makes the behaviour §15.5.2 has documented all along the exception, and puts the correction burden on volunteers at every organisation that never asked for it |
+| Default the setting on | Makes §15.5.2's long-documented behaviour the rule rather than the exception | The most powerful act in the record — rewriting or withdrawing another member's claim — is on without anyone choosing it, and every organisation that disagrees must find the switch (§16.37 answer 6 defaults it off) |
 | Per-project override in the MVP | Matches how projects actually differ — a youth programme and a payroll-funded one | A second source for one capability, a control per project, and a rule for which wins; deferred to §17 |
 | A per-entry "nobody may edit this" flag | Consent exactly where the volunteer wants it | A column, a consent screen, a rule for a volunteer who sets it and then leaves, and a per-entry check on every write — for a policy organisations ask for once, not per entry |
 | Express it as a role | One word to check | It is not organisation-wide authority, and a grant is per project; §16.18 already spent this argument |
@@ -6794,7 +6800,7 @@ been told "nothing new" for ever, and nobody would have seen an error.
 
 **Decision in one line: PostgreSQL; one `local_anchor` per entry written at
 save time; migrations that add, fill and later remove, behind a version guard
-and a rehearsed restore; five indexes; and an install epoch in every cursor so
+and a rehearsed restore; five performance indexes and four uniqueness rules; and an install epoch in every cursor so
 a restore is visible to every client.**
 
 **Rules.**
@@ -6881,8 +6887,11 @@ a restore is visible to every client.**
    can drop a column as easily as a backward one. The real undo is the restore,
    which is why it is rehearsed.
 
-10. **Five indexes, and no others.** Each is named to the query that forces
-    it; the sixth row is a rule the engine enforces, not a tuning knob.
+10. **Five performance indexes and four uniqueness rules, and no others.**
+    Each index is named to the query that forces it; the four unique rows are
+    rules the engine enforces, not tuning knobs. **Amended 27 November 2026
+    (§16.37, D-070):** the inventory gained three uniqueness constraints when
+    the tables were constrained; the performance indexes remain five.
 
 | Index or constraint | Serves | Why it is forced |
 |---|---|---|
@@ -6892,6 +6901,9 @@ a restore is visible to every client.**
 | `audit_log (at DESC, id DESC)` | the organisation's trail order (§16.34) | an insert-only table grows without bound; an unfiltered read must not sort it |
 | `notifications (recipient_id, created_at DESC, id DESC)` | the mailbox (§16.35, §16.21) | one person's rows, newest first; `unreadOnly` filters rows this index has already narrowed |
 | `notifications (recipient_id, type, subject_id, subject_version)` **unique** | exactly once per act (§16.35 rule 5) | the rule is enforced by the engine or it is not enforced. `subject_version` is `0`, never null, for the five request types: a unique index treats nulls as distinct, so a null there would let the same request be announced twice |
+| `memberships (user_id)` **unique, partial** `WHERE status <> 'removed'` | one live membership per person (§16.37 answer 1) | a removed row is retained (D-052) and a rejoin adds a new one, so the predicate, not the column, is what makes a person have one membership at a time |
+| `users (lower(email))` **unique, partial** `WHERE anonymised_at IS NULL` | a real address is never blocked by an anonymised placeholder (D-052's accepted cost) | case-folded because the same address in two cases is one address; partial because the placeholder must be allowed to repeat |
+| `assignment_requests (volunteer_id, project_id)` **unique, partial** `WHERE status = 'pending'` | at most one pending request per person per project (§16.37 answer 7) | a double tap or a replayed queue must resolve to one request a coordinator can decide once; resolved rows stay outside the predicate so history accumulates |
 
 11. **What is deliberately not indexed.** `hasConflict` and `conflicts`
     (§16.29) are computed by comparing pairs of rows; no column exists to
@@ -6907,7 +6919,8 @@ a restore is visible to every client.**
     measured addition, and rule 10's test is what would admit it. **Further
     indexes are admitted by a measurement, not by taste:** the query plan showing a
     sequential scan at a named row count, and one sentence on what the extra
-    index costs every write. That rule is what keeps the inventory at five.
+    index costs every write. That rule is what keeps the performance inventory at
+five.
 
 12. **The cursor carries an install epoch.** D-037's payload gains `e`: an
     integer held beside the change counter and bumped whenever the database is
@@ -7070,10 +7083,9 @@ nor a complete new one.
   transaction, and can be left invalid by a failure, which the installer must
   notice and retry.
 
-**Left open.** The table-by-table DDL beyond the columns named here — every
-constraint other decisions imply (one active coordinator grant per person per
-project, the grant and assignment intervals) belongs to §15.12 item 28 and is
-not enumerated here; whether an entry's anchor also keeps the zone name it was
+**Left open.** ~~The table-by-table DDL beyond the columns named here~~ —
+enumerated in §16.37 (D-070), which also adds three uniqueness constraints to
+rule 10's inventory; whether an entry's anchor also keeps the zone name it was
 written under, so a time zone change can be explained years later (a fourth
 small column, and adding it later is a fill-only migration); whether
 `time_entries` should be partitioned by year at some row count; backup cadence,
@@ -7094,9 +7106,372 @@ two left-open questions — a row rather than a sequence, and
 restore mechanism that decision assigned here. It sizes the overlap scan D-062
 called "B15's index", keeps D-067's two audit indexes and D-068's mailbox order
 and uniqueness constraint, and drops the separate unread index D-068 assumed
-(it filtered rows the mailbox index had already found). It settles the engine,
-column and index halves of §15.12 item 28; the table-by-table constraints and
-the remaining columns stay open.
+(it filtered rows the mailbox index had already found). It settled the engine,
+column and index halves of §15.12 item 28; §16.37 (D-070) closes the item with
+the table-by-table constraints.
+
+------------------------------------------------------------------------
+
+
+## 16.37 The tables and their constraints: eight answers, and what the engine holds
+
+**Confirmed decision (D-070) — 27 November 2026.**
+
+§16.36 settled the engine, the anchor, the migration habit and five performance
+indexes, and said in as many words that "the table-by-table DDL beyond the
+columns named here … belongs to §15.12 item 28 and is not enumerated here".
+Item 28 asks for three things and had one and a half: the schema (a third), the
+constraints (nothing), and the transaction requirements (D-069 rule 13). What
+was left is the part a first migration would otherwise invent at whatever
+moment the code needed a column: which columns may not be null, which pairs
+must agree, which rows may coexist, and which of the record's rules the
+database can hold on its own.
+
+Eight questions were open when this was taken up, and the owner answered all
+eight in one pass: what a membership's status may be, whether a project's name
+must be unique, what a coordinator's authorization actually is, whether an
+entry stores its project, what the coordinator edit switch defaults to, how
+many pending assignment requests one person may have on one project, what the
+entry's free-text field is called, and when anonymisation gets a second look.
+
+**The case this protects.** Hearth & Hands is three years old. An
+administrator imports a mailing list and half the rows are people who already
+have accounts. Two volunteers on a flaky connection each send the same
+assignment request twice, and the coordinator's queue shows four rows for two
+people. A restored backup leaves a grant whose `ended_by` is set and whose
+`ended_at` is not. Marisol is erased, and the placeholder address written over
+hers must not collide with a real volunteer who later registers. None of these
+is a validation rule the API can be trusted to remember in every route: they
+are shapes. Either the database refuses the state or it keeps it for ever, and
+the difference is decided here, once, rather than in whichever handler was
+written last.
+
+**Decision in one line: eight answers — a membership's status is `active`,
+`inactive` or `removed`; a project's name need not be unique; a coordinator is
+a grant and never an assignment type; `time_entries` stores no `project_id`
+because its activity is its project claim; the coordinator edit switch defaults
+off; one person may have one pending assignment request per project; the
+entry's field is `notes`; and anonymisation is handed to a review of its own —
+and, from those answers, the table-by-table constraints, with the engine
+holding the ones it can and each one it cannot named and checked somewhere
+else.**
+
+**The eight answers.**
+
+1. **A membership's status is one of three values: `active`, `inactive`,
+   `removed`.** `active` is a membership in force: it authenticates and acts
+   within its role. `inactive` is a membership that exists and confers
+   nothing — the state §3.2 calls "pending" while an administrator has not yet
+   approved a join, and the value a suspension would use if §15.2.1's deferred
+   feature ever ships. `removed` is a membership that has ended, by departure
+   or by erasure (D-052 rule 1): the role closes, the grants end, the sessions
+   stop being usable, and the row stays. There is no fourth value and no
+   separate `pending` flag: an approval is a transition from `inactive` to
+   `active`, and the membership's `joined_at` says when the row appeared.
+   Because a removed membership is retained and rejoining creates a new one
+   (D-052), the uniqueness rule is partial — **at most one non-removed
+   membership per person** — and the role lives on the membership, where §3.3
+   put it, not on the user row.
+
+2. **Anonymisation is handed to its own review, and nothing about it is
+   changed here.** This decision records the handover rather than the answer:
+   D-052's trade — keep the hours, destroy the identity — has not been argued
+   against its alternatives since it was taken, and the record already shows
+   two signs of that. The anonymised person is called "Former volunteer" in
+   §16.19 rule 2 and "Former member" in §16.34 rule 4, and no decision chose
+   between them; and the export D-052 publishes carries a membership `status`
+   that, until answer 1, had no value list to draw from. The review that
+   follows this section takes up what anonymisation protects, what it fails to
+   protect, what the replacement name should be, and whether the erasure's
+   mailbox deletion (which D-068 says is not audited) should stay unaudited.
+   The two names and the export's status are left exactly as they are until
+   then, deliberately, rather than half-fixed here.
+
+3. **A project's name need not be unique.** Two projects in one organisation
+   may share a name, and the database has no constraint against it. Names are
+   for people, not for lookup: every route addresses a project by id, the
+   archive and restore acts take an id, and the two "Saturday Pantry" rows a
+   real organisation keeps — one for the pantry, one for its deliveries — are
+   distinguished by their activities, not their labels. A unique index here
+   would force an administrator to rename a project to satisfy a constraint
+   nobody asked for, and the failure would arrive as a `409` on a rename rather
+   than as a duplicate anybody minded. Emptiness is still refused:
+   `CHECK (length(btrim(name)) > 0)`.
+
+4. **A coordinator is a grant, not an assignment type.** D-051 has said this
+   since it was written, and two older lists still said otherwise: §5.1's
+   assignment record preserved "the assignment type or role, distinguishing
+   volunteer and coordinator assignments", and §15.3.6 repeated it. Both are
+   corrected. There is one kind of assignment — a volunteer assigned to a
+   project — and coordination is a `project_coordinators` row with
+   `granted_by`, `granted_at` and `ended_at` (D-051). The two histories are
+   retained the same way (ended, never deleted), and they are two tables
+   because they answer two questions: who was on the project, and who
+   authorized work on it.
+
+5. **`time_entries` stores no `project_id`.** An activity belongs to exactly
+   one project (`activities.project_id` is `NOT NULL`), so an entry's project
+   is its activity's project, and a second column would be a copy that can
+   disagree with the row it copies. This is the same argument D-069 made
+   against a derived `work_date` and in favour of one anchor: one claim, one
+   place. It also removes a whole class of bad state — an entry whose
+   `project_id` names one project and whose `activity_id` belongs to another —
+   and with it the composite `(project_id, activity_id)` foreign key that
+   would otherwise have been needed to prevent it. `projectId` stays in every
+   read shape and in the `projectId` list filter, derived through the activity;
+   it is not accepted in a create or edit body, where the activity is the only
+   claim the client makes. A project-less entry has no activity at all and
+   carries `activity_description` instead, which is why the two are exclusive
+   and one of them is required.
+
+6. **The coordinator edit switch defaults off.** §16.32 rule 6 recorded it as
+   "default on", and the organisation read in the same section already showed
+   `false`. The owner has settled it on the side the record was displaying: a
+   new instance does not let a coordinator rewrite or withdraw another
+   member's hours until an administrator turns it on. The reasoning that once
+   argued for on — that it makes §15.5.2's long-documented behaviour the rule
+   rather than the exception — is now the cost rather than the benefit: the
+   capability is powerful, it is the only one in the record that lets one
+   person rewrite another's claim, and a default that has to be switched off
+   is a default nobody chose. §16.32 is amended in both places.
+
+7. **At most one pending assignment request per person per project.** A
+   partial unique index on `(volunteer_id, project_id) WHERE status =
+   'pending'` makes a double tap, a replayed offline queue and two open
+   screens resolve to one row: the second insert fails and the API answers
+   with the existing request (D-055's replay shape) rather than creating a
+   duplicate for a coordinator to decide twice. Resolved and withdrawn
+   requests are outside the predicate, so history accumulates as §15.3.5 and
+   §15.3.6 require, and a person refused once may ask again.
+
+8. **The entry's free-text field is `notes`.** D-049's create example sent
+   `note` while every other mention — D-054's register line, D-059's
+   materiality table, D-052's export — used `notes`. The field is `notes`
+   everywhere: one spelling, one column, no alias.
+
+**The constraints, table by table.** "The engine holds" is what a `CHECK`, a
+`UNIQUE`, a `NOT NULL` or a foreign key enforces on every write, including one
+made by a migration, a console or a future route nobody has written yet.
+
+| Table | Columns fixed here | What the engine holds | Why |
+|---|---|---|---|
+| `organisation` | `only_row`, `name`, `timezone`, the settings of D-045 and §4.2, `coordinators_may_edit_or_delete_entries`, `project_creation_requires_approval` | single row (`only_row` primary key with `CHECK (only_row)`); both settings `NOT NULL DEFAULT false` | one instance is one organisation (D-050); a setting that is null has no meaning, and answer 6 fixes one of the two defaults |
+| `users` | `id`, `email`, `display_name`, `anonymised_at` | partial unique on `lower(email) WHERE anonymised_at IS NULL` | D-052's accepted cost, now enforced: an anonymised placeholder can never block a real address, and two live accounts cannot share one |
+| `memberships` | `id`, `user_id`, `role`, `status`, `joined_at`, `removed_at` | `role IN ('volunteer','administrator')`; `status IN ('active','inactive','removed')`; `removed_at` set exactly when `removed`; partial unique `(user_id) WHERE status <> 'removed'` | answer 1: one live membership per person, and a rejoin after removal |
+| `projects` | `id`, `name`, `created_by`, `archived_at` | `name` non-empty; no uniqueness | answer 3 |
+| `activities` | `id`, `project_id`, `name`, `archived_at` | `project_id NOT NULL`; `name` non-empty | this `NOT NULL` is what lets `time_entries` drop `project_id` (answer 5) |
+| `project_coordinators` | as D-051 already fixed them | partial unique `(project_id, user_id) WHERE ended_at IS NULL`; `ended_at` and `ended_by` set together; `granted_at <= ended_at` when ended | one active grant per person per project, and a grant that cannot claim to have ended without saying who ended it |
+| `volunteer_assignments` | `id`, `volunteer_id`, `project_id`, the interval's start and end, `ended_by` | both foreign keys `RESTRICT`; end not before start; `ended_at` and `ended_by` set together; no overlap rule | the assignment interval's column types wait for §13 item 4; the shape is fixed and the eligibility arithmetic is not |
+| `assignment_requests` | `id`, `volunteer_id`, `project_id`, `status`, `requested_at`, `decided_at`, `decided_by` | `status IN ('pending','approved','rejected','withdrawn')`; `(status = 'pending') = (decided_at IS NULL)`; `decided_at` and `decided_by` set together; partial unique `(volunteer_id, project_id) WHERE status = 'pending'` | answer 7, plus a decision that cannot be undated. A withdrawal stamps both fields with the volunteer, because a null there would read as "never decided" |
+| `time_entries` | `id`, `volunteer_id`, `activity_id`, `activity_description`, `started_at`, `ended_at`, `duration_seconds`, `local_anchor`, `notes`, `approval_status`, `submitted_at`, `approved_at`, `rejected_at`, `reviewed_by`, `rejection_reason`, `deleted_at`, `deleted_by`, `delete_reason`, `change_seq`, `version` | the five groups of checks below | the entry is where the record's rules meet, and none of them may depend on a route remembering |
+| `notifications` | `id`, `recipient_id`, `type`, `subject_id`, `subject_version`, `created_at`, `read_at` | `type` in D-068's eleven; unique `(recipient_id, type, subject_id, subject_version)`; `recipient_id` foreign key `RESTRICT` | exactly once per act (D-068 rule 5), and a mailbox that cannot outlive the person it was addressed to |
+| `audit_log` | `id`, `at`, `actor_id`, `entity_type`, `entity_id`, `action`, `request_id`, `reason`, `changes` | `entity_type` in D-067's seven; `action` in D-067's eleven; `actor_id` foreign key `RESTRICT`; **no** foreign key on `entity_id`; `UPDATE` and `DELETE` revoked from the application role | insert-only is a privilege, not a promise (D-067 rule 3); the entity id is polymorphic, so no key can hold it |
+| `sessions` | as §16.23 sketched them | `user_id` foreign key `RESTRICT`; `revoked_at` as a tombstone; no membership check | a session outlives nothing and ends its own way; whether the membership is still active is a per-request check, not a column |
+
+`instance_state` (§16.36) keeps the single-row check D-069 gave it and needs
+nothing further: its three columns are the schema version, the change counter
+and the cursor epoch, and no other table references them.
+
+**The five groups of checks on `time_entries`**, which is where the record's
+rules actually meet:
+
+1. **The claim is one claim.** Exactly one of `activity_id` and
+   `activity_description` is set.
+2. **The shape of an entry is one of two shapes.** `started_at` and `ended_at`
+   are either both set or both null; `duration_seconds > 0`; `local_anchor` is
+   `NOT NULL` (D-069).
+3. **The decision fields agree with the status.** At most one of `approved_at`
+   and `rejected_at`. `approved` requires `approved_at` and `reviewed_by`;
+   `rejected` requires `rejected_at` and `reviewed_by`; `pending` and
+   `not_required` carry neither timestamp and no reviewer, because D-059 clears
+   both when a material edit reopens approval and D-058 clears them on
+   resubmission. `rejection_reason` is allowed only on `rejected` and
+   `pending` — it survives a resubmission (D-058 rule 7) and is cleared by an
+   approval.
+4. **Deletion is all three fields or none.** `deleted_at`, `deleted_by` and
+   `delete_reason` are set together (D-063 rule 2), and `approval_status` is
+   untouched by deletion.
+5. **Nothing about the author.** No check forbids `reviewed_by = volunteer_id`:
+   D-051 amended lets an administrator approve their own entry, and the
+   database cannot tell a role from a column in the same row anyway. That rule
+   lives in the authorization layer, with the rest of the role logic.
+
+**The shapes.** Illustrative in naming, exact in intent: the constraints the
+table above compresses, written where a migration author will look for them.
+
+```sql
+-- One live membership per person; a removed one stays, and a rejoin adds a row.
+CREATE TABLE memberships (
+  id          uuid PRIMARY KEY,
+  user_id     uuid NOT NULL REFERENCES users(id),
+  role        text NOT NULL CHECK (role IN ('volunteer','administrator')),
+  status      text NOT NULL CHECK (status IN ('active','inactive','removed')),
+  joined_at   timestamptz NOT NULL,
+  removed_at  timestamptz,
+  CHECK ((status = 'removed') = (removed_at IS NOT NULL))
+);
+
+CREATE UNIQUE INDEX memberships_one_live
+  ON memberships (user_id) WHERE status <> 'removed';
+
+-- D-052's placeholder address must not block a real one.
+CREATE UNIQUE INDEX users_email_live
+  ON users (lower(email)) WHERE anonymised_at IS NULL;
+
+-- The entry. No project_id: the activity is the project claim (answer 5).
+CREATE TABLE time_entries (
+  id                   uuid PRIMARY KEY,
+  volunteer_id         uuid NOT NULL REFERENCES users(id),
+  activity_id          uuid REFERENCES activities(id),
+  activity_description text,
+  started_at           timestamptz,
+  ended_at             timestamptz,
+  duration_seconds     integer NOT NULL CHECK (duration_seconds > 0),
+  local_anchor         timestamp NOT NULL,
+  notes                text,
+  approval_status      text NOT NULL
+                         CHECK (approval_status IN
+                           ('pending','approved','rejected','not_required')),
+  submitted_at         timestamptz NOT NULL,
+  approved_at          timestamptz,
+  rejected_at          timestamptz,
+  reviewed_by          uuid REFERENCES users(id),
+  rejection_reason     text,
+  deleted_at           timestamptz,
+  deleted_by           uuid REFERENCES users(id),
+  delete_reason        text,
+  change_seq           bigint  NOT NULL,
+  version              integer NOT NULL CHECK (version >= 1),
+
+  -- 1. one claim
+  CHECK (num_nonnulls(activity_id, activity_description) = 1),
+  -- 2. two shapes, and a positive length
+  CHECK (num_nonnulls(started_at, ended_at) IN (0, 2)),
+  -- 3. the decision fields
+  CHECK (num_nonnulls(approved_at, rejected_at) <= 1),
+  CHECK (approval_status <> 'pending'
+         OR num_nonnulls(approved_at, rejected_at, reviewed_by) = 0),
+  CHECK (approval_status <> 'not_required'
+         OR num_nonnulls(approved_at, rejected_at, reviewed_by) = 0),
+  CHECK (approval_status <> 'approved'
+         OR (approved_at IS NOT NULL AND reviewed_by IS NOT NULL)),
+  CHECK (approval_status <> 'rejected'
+         OR (rejected_at IS NOT NULL AND reviewed_by IS NOT NULL)),
+  CHECK (rejection_reason IS NULL OR approval_status IN ('rejected','pending')),
+  -- 4. deletion is the three fields or none
+  CHECK (num_nonnulls(deleted_at, deleted_by, delete_reason) IN (0, 3))
+);
+
+-- One pending request per person per project (answer 7).
+CREATE UNIQUE INDEX assignment_requests_one_pending
+  ON assignment_requests (volunteer_id, project_id) WHERE status = 'pending';
+
+-- Insert-only by privilege, not by trigger (D-067 rule 3).
+REVOKE UPDATE, DELETE ON audit_log FROM app_role;
+```
+
+**What is deliberately not a constraint.** These are the rules the database
+cannot hold, and pretending otherwise would be worse than saying so:
+
+- **Overlap.** No exclusion constraint and no range type: an overlap is derived
+  on read, advisory and never stored (D-062), and two concurrent inserts can
+  both pass the application's pair check. That race is accepted, because the
+  answer is a warning rather than a refusal (D-060).
+- **Eligibility.** Whether a work date falls inside an assignment and outside
+  an archived interval is an arithmetic join against two other tables over
+  time; it stays in the API layer, where `409 DATE_NOT_ELIGIBLE` already
+  lives (D-057).
+- **Self-approval for coordinators.** A check cannot read the approver's role
+  or grant. D-051's rule stays where the authority is computed.
+- **The last administrator.** `COUNT(*)` over memberships is not a row check,
+  and a constraint that counted rows would need a trigger and a lock. It stays
+  an API rule inside the transaction that demotes (D-051).
+- **Notification fan-out.** Who is told is resolved at write time from grants
+  and roles (D-068); no column can state it.
+- **Audit immutability by trigger.** A trigger is code in the database that
+  the next migration must carry; revoking `UPDATE` and `DELETE` from the
+  application role is smaller, and a row is equally unchangeable either way.
+- **Project-name uniqueness.** Answer 3, above.
+- **Withdrawal rules.** That an approved or rejected request cannot be
+  withdrawn (§4.4) is a transition rule, not a shape; the check would have to
+  know what the row used to be.
+
+**Rejected alternatives.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **The constraints above, per table, with the unenforceable ones named (recommended)** | Every state the engine can refuse, it refuses; the rest are written down with their owner | Twelve tables to constrain, and a migration must be written and tested for each |
+| No constraints beyond primary and foreign keys | Nothing to maintain, and every rule lives in one layer | Every rule depends on every route remembering it; an import, a fix in a console or a new route breaches it silently |
+| Keep `project_id` on `time_entries` beside `activity_id` | The project filter needs no join | Two columns that can disagree, and a composite foreign key to stop them; answer 5 removes the class instead |
+| Enforce coordinator/activity agreement with a composite `(project_id, activity_id)` key | The activity must belong to the stated project | Needs a redundant column and a redundant unique key, to prevent an inconsistency that dropping the column prevents outright |
+| Unqualified `UNIQUE (user_id)` on memberships | One row per person, simply | A person who is removed and rejoins cannot be represented, contradicting D-052 |
+| A status lookup table | Values editable without a migration | Values are contract enums; a lookup makes them data the API must validate anyway, and a typo becomes a row |
+| Uniqueness on project names | No two "Saturday Pantry" rows | Renames fail for a collision nobody minded, and the organisation cannot record what it actually calls its projects |
+| A trigger for audit immutability | The rule is visible in the schema | Database code to maintain and migrate, for a guarantee a privilege already gives |
+| An exclusion constraint on entry intervals | Overlap impossible at the storage layer | A range type, an extension, and a refusal where D-062 chose a warning; plus a migration cost on the hottest table |
+| Defaulting the coordinator switch on | Fewer settings to find | Answer 6: the powerful act is the one that must be asked for |
+
+**Accepted costs.**
+
+- **Two joins for one field.** `projectId` in every entry read and every
+  `projectId` filter is `activities.project_id`, so the list pays a lookup on
+  the activity's primary key. The filter is unindexed on the entry side
+  (D-069 rule 11), which is the same "measure it first" position the
+  coordinator queue already occupies.
+- **A status value with no route.** `inactive` exists so that a join awaiting
+  approval has a representation (§3.2) and a future suspension has a value;
+  §15.2.1 defers the feature, so an MVP instance will hold `inactive` rows and
+  have no screen that produces them.
+- **The database does not see everything.** Six named rules live in the API,
+  and an import or a console can still write an overlapping entry or demote the
+  last administrator.
+- **A default that hides a capability.** An organisation that wants
+  coordinators to correct entries must find a setting, and until it does, its
+  coordinators meet a `403` that names it.
+- **Twelve tables of constraints to keep in step with the contract.** Every
+  future field joins one of the five groups above or is deliberately left out,
+  and a constraint that outlives its decision becomes a migration.
+
+**Left open.** The assignment interval's column types and effective-time
+semantics (§13 item 4); whether a removed membership may be restored and how
+(§15.12 item 18 — the vocabulary now exists, the rules do not); the required
+and optional profile fields (§15.12 item 23), of which only `email`,
+`display_name` and `anonymised_at` are fixed here; whether an entry's anchor
+also keeps the zone name it was written under (D-069); whether a suspension
+route ever ships (§15.2.1); the anonymisation review this decision hands over
+(answer 2); and whether an import (D-036) writes rows through these constraints
+or beside them.
+
+**Handed over: the anonymisation review.** The next item is D-052 on its own
+terms — what anonymising a person protects, what it fails to protect, and what
+it costs the organisation that relies on it. The questions it starts from are
+the ones this section could not answer without re-opening a decision: the
+replacement display name ("Former volunteer" in §16.19, "Former member" in
+§16.34, and no decision choosing between them); whether a placeholder address
+in a column that keeps its uniqueness is the right shape at all, now that the
+index is partial; what remains identifying after erasure — the hours, the
+grants, the audit rows that still resolve `actorId` — and whether that is the
+protection the record claims; whether the erased person's notifications should
+be deleted, which D-068 decides but does not justify; and whether the erasure
+itself belongs in the trail as an auditable act or, as D-068 has it, leaves the
+mailbox deletion unaudited.
+
+**Resolves:** §15.12 item 28, in full — schema, constraints and transaction
+requirements. D-069 fixed the engine, the anchor, the migrations, the indexes
+and the transaction boundaries; this fixes the tables and the rules the engine
+holds, and names each rule it cannot with the layer that does. It amends
+§16.36 rule 10 and the inventory beneath it (four uniqueness constraints
+rather than one; the performance indexes stay five), and its "left open" note
+that the table-by-table DDL was not enumerated. It amends §16.32 rule 6 and its
+rejected table, and settles the default its own organisation read already
+displayed. It corrects §5.1 and
+§15.3.6, which still described a coordinator as an assignment type. It fixes
+the entry's create body and the materiality table to match answer 5, and the
+field name in D-049's example to match answer 8. It gives D-052's partial email
+uniqueness an index, D-068's mailbox its recipient key, D-067's trail its
+privilege instead of a trigger, and D-051's grant its two-pair
+`ended_at`/`ended_by` check. §17's B15 row records that the table-by-table half
+landed here.
 
 ------------------------------------------------------------------------
 
@@ -7117,7 +7492,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B3** | Timer semantics: one running timer or several, timer spanning midnight, server-authoritative start, clock skew, idle timeout, start/stop payloads | **Contract** — deferred | **Deferred — not decided (D-048, §16.15).** The MVP has no server timer, so no timer route, constraint or payload needs specifying; this row re-opens if that feature returns in a later release |
 | **B4** | Concurrency and idempotency for mutations: client-generated ids on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | **Resolved — D-049 (§16.16).** A client-generated UUID per record plus an integer `version`; no `Idempotency-Key`; state-setting operations idempotent by outcome. Offline replay (§15.12 item 30) depends on it |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | **Resolved — D-050 (§16.17).** The deployment is the tenant: each organisation runs its own instance, identity is scoped to it, and no organisation identifier appears in the API. One organisation row carries the time zone, approval policy and membership setting; no `organisation_id` columns |
-| **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator. **Amended 26 November 2026 (D-065, §16.32):** editing or deleting another member's entry is coordinator authority only while the organisation's `coordinatorsMayEditOrDeleteEntries` setting is on, an administrator always has it, its scope is the entry's project rather than the author's current assignment, and it is published per project as `canChangeOthersEntries`, which answers about other members' entries and never about the caller's own |
+| **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator. **Amended 26 November 2026 (D-065, §16.32):** editing or deleting another member's entry is coordinator authority only while the organisation's `coordinatorsMayEditOrDeleteEntries` setting is on, an administrator always has it, its scope is the entry's project rather than the author's current assignment, and it is published per project as `canChangeOthersEntries`, which answers about other members' entries and never about the caller's own. The setting defaults off (D-070, §16.37) |
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | **Resolved — D-066 (§16.33).** `approved` and `not_required` count; `pending`, `rejected` and deleted entries do not; totals are summed at read time from `workDate` in the organisation's time zone, weeks start on Sunday, and one grouped report route returns `seconds` and `entryCount` per row |
@@ -7126,7 +7501,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | **Resolved — D-055 (§16.22).** Every mutation returns the changed resource in its read shape; creates are `201` + `Location`, replays `200` + `Idempotency-Replay` (by client id or by the uniqueness constraint), `409` keeps D-049's `current` copy, no mutation returns counts, and archival's impact comes from a confirmation read. Deletion is the only `204` |
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
 | **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | **Resolved — D-056 (§16.23).** Bearer tokens on every business route and no cookie, because the MVP has no browser client; a 30-minute access token, a single-use rotating refresh token with a 120-second replay grace, a 90-day idle and a 180-day absolute limit, and `sid` checked on every request so a revocation lands on the next call. Sessions are listed and ended from the phone, every authentication failure is the same `401 UNAUTHENTICATED`, and MFA is deferred |
-| **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires and the `change_seq` index §16.31's feed needs | **Implementation** | §15.12 item 28 named the schema; the operational half was unlisted. **Resolved — D-069 (§16.36).** PostgreSQL; one stored `local_anchor` instead of a derived date and time, so the order, the date filter and the cursor read one value; add-fill-remove migrations with a version guard, a boot-time advisory lock and a rehearsed restore; five performance indexes plus the notification uniqueness constraint; and an install epoch in every cursor so a restore forces a re-sync |
+| **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires and the `change_seq` index §16.31's feed needs | **Implementation** | §15.12 item 28 named the schema; the operational half was unlisted. **Resolved — D-069 (§16.36).** PostgreSQL; one stored `local_anchor` instead of a derived date and time, so the order, the date filter and the cursor read one value; add-fill-remove migrations with a version guard, a boot-time advisory lock and a rehearsed restore; five performance indexes plus four uniqueness rules; and an install epoch in every cursor so a restore forces a re-sync; the per-table constraints are recorded in §16.37 (D-070) |
 | **B16** | Backdating window: how far in the past an entry may be dated or submitted | **Contract** | **Resolved — D-057 (§16.24).** No maximum age and no submission deadline: the work date must be covered by the volunteer's assignment and must not fall in an archived interval (`409 DATE_NOT_ELIGIBLE`), and the only clock rule is a five-minute tolerance on future instants (`400 DATE_IN_FUTURE`) plus one day for a duration-only work date. Lateness is read from `submittedAt` rather than stored as a flag |
 | **B17** | Daily or weekly maximum hours, separate from the per-entry ceiling | **Feature** | Surfaced while taking up B1 and set aside; affects validation and reporting, not the record shape |
 | **B18** | Break deduction: whether a shift records a break that is subtracted, rather than net time as two entries | **Feature** | Surfaced while taking up B1 and set aside; a break field is a derived quantity that can disagree with the timestamps |
@@ -7147,4 +7522,4 @@ rounding each have one set of hours to act on. The audit trail is settled too (�
 
 **What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B10 has left that list too (§16.35), so the mailbox's routes, rows and two indexes were part of B15's work, and B11's trail joined it with §16.34. All of it is now decided (§16.36, D-069), which is why this list is closed. B7 has left that list (§16.19).
 
-**Order proposed:** none — the backlog is closed. B15 was the last item and is resolved (§16.36, D-069), with B3 deferred by scope (D-048) and B17–B19 set aside as features. Every item B1–B19 is therefore settled or deferred by scope, and the work that remains is §15.12 item 28's table-by-table constraints and item 29's contract drafting.
+**Order proposed:** none — the backlog is closed. B15 was the last item and is resolved (§16.36, D-069), with B3 deferred by scope (D-048) and B17–B19 set aside as features. Every item B1–B19 is therefore settled or deferred by scope, and the work that remains is §15.12 item 29's contract drafting, the table-by-table constraints having landed in §16.37 (D-070).
