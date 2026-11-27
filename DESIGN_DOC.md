@@ -1158,7 +1158,7 @@ This is the compact record of major decisions and their current status.
 
 ------------------------------------------------------------------------
 
-> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, start-time anchor with duration-only entries last within their date (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21); **D-055** — every mutation returns the resource it changed, replays are `200` with `Idempotency-Replay`, and archival's counts are read before the act rather than returned after it (§16.22). **D-056** — the session model: a bearer access token with a single-use rotating refresh token, and no cookie, CSRF or CORS because the MVP has no browser client (§16.23). **D-057** — no maximum age for an entry's date or its submission: eligibility bounds the past, five minutes bounds the future, and an ineligible date is `409 DATE_NOT_ELIGIBLE` (§16.24). **D-058** — the entry's state: one `approvalStatus` axis with four values, a fixed transition table, no lifecycle field, and `409 INVALID_TRANSITION` (§16.25). **D-059** — what a material edit is (the hours and the category; not
+> **Register status (22 November 2026):** this table is maintained only through D-034. Decisions taken after it are recorded in §15, which assigns no IDs, and in §16, which continues the sequence. For findability, the identifiers added so far are: **D-035** — time-entry retrieval consistency, live results (§16.1); **D-036** — import/export mechanism, deferred (§16.7); **D-037** — cursor encoding, opaque signed tokens (§16.2); **D-038** — entry ordering, one stored local anchor with duration-only entries at the bottom of their date, amended 27 November 2026 by D-069 (§16.3); **D-039** — error envelope, status and code mapping (§16.4); **D-040** — paginated list response body (§16.5); **D-041** — project and activity archive authority (§16.6); **D-042** — effects of archival on assignments, requests, and timers (§16.9); **D-043** — restoring archived projects and activities (§16.10); **D-044** — explicit submission of entries (§16.11); **D-045** — approval policy applies at submission (§16.12); **D-046** — time and duration model, seconds as the canonical unit (§16.13); **D-047** — definition of an overlap, advisory and volunteer-wide (§16.14); **D-048** — stopwatch instead of a server timer (§16.15), which supersedes D-012 and D-014 in part; **D-049** — mutation identity and concurrency, client-generated UUIDs plus an integer `version` (§16.16); **D-050** — identity scoped to the organisation's own instance, onboarding by email address and server address (§16.17); **D-051** — roles limited to volunteer and administrator, coordination held as project grants in `project_coordinators` (§16.18); **D-052** — retention and erasure, the record retained while the person is anonymised (§16.19); **D-053** — request identity and load control, server-minted UUIDv7 request ids with per-user and per-address token buckets and size caps (§16.20); **D-054** — one list contract for every collection, a fixed order per collection and cursors bound to their collection and filters (§16.21); **D-055** — every mutation returns the resource it changed, replays are `200` with `Idempotency-Replay`, and archival's counts are read before the act rather than returned after it (§16.22). **D-056** — the session model: a bearer access token with a single-use rotating refresh token, and no cookie, CSRF or CORS because the MVP has no browser client (§16.23). **D-057** — no maximum age for an entry's date or its submission: eligibility bounds the past, five minutes bounds the future, and an ineligible date is `409 DATE_NOT_ELIGIBLE` (§16.24). **D-058** — the entry's state: one `approvalStatus` axis with four values, a fixed transition table, no lifecycle field, and `409 INVALID_TRANSITION` (§16.25). **D-059** — what a material edit is (the hours and the category; not
 `notes`), and that a material edit returns an approved entry to `pending`
 while a `not_required` entry keeps its handling (§16.26). **D-060** — a
 refused submission has three outcomes and stores nothing: a `400`, `403`,
@@ -1179,7 +1179,7 @@ transaction, carrying the actor, the entity, the action, the `requestId`
 and the fields that moved with their before and after; actors survive
 anonymisation and the erasure is itself a row; read scope mirrors the
 entity's; one filtered `GET /v1/audit-log` ordered `at` then `id`; reads,
-refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention stays open (§16.35). Gaps not yet raised by any
+refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention stays open (§16.35). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five indexes, each named to the query that forces it, plus the notification uniqueness constraint; and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). Gaps not yet raised by any
 section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -1951,7 +1951,7 @@ Time entries are ordered newest first by default, based on when the work occurre
 - Duration-only entries are ordered using their work dates.
 - A deterministic tie-breaker, such as entry ID, will be used to make ordering predictable for cursor-based pagination.
 
-**Resolved 15 November 2026 (§16.3, D-038):** ordering is by work date, then effective start time, then entry ID; duration-only entries sort last within their date.
+**Resolved 15 November 2026 (§16.3, D-038):** ordering is by work date, then effective start time, then entry ID; duration-only entries sort last within their date. **Amended 27 November 2026 (D-069, §16.36):** both are read from one stored local anchor, so the cursor is `[anchor, entry id]`.
 
 ### 15.7.6 Cursor and query consistency
 
@@ -1986,10 +1986,12 @@ Two approaches were discussed:
 
 Both timestamp-based and duration-only entries use the same work-date filter.
 
-- Timestamp-based entries derive their work date using the organization's configured time zone.
-- Duration-only entries use their stored work date.
+- Every entry carries a local anchor, and its work date is the anchor's date.
+- The filter is a half-open range over the anchor, built from the requested inclusive dates.
 
 This lets clients retrieve entries for a reporting period without needing different filter semantics for each entry format.
+
+**Amended 27 November 2026 (D-069, §16.36):** the two bullets above replace the earlier pair — a timestamped entry deriving its date in the organisation's zone at request time, and a duration-only entry reading a stored date. There is now one derivation, done once when the entry is written, and no filter branches on entry kind.
 
 ### 15.8.2 Inclusive date ranges
 
@@ -1999,7 +2001,9 @@ Start and end dates are inclusive.
 
 For example, requesting entries from `2026-10-01` through `2026-10-31` includes entries on both dates.
 
-The server will translate these calendar-date boundaries into appropriate internal timestamp boundaries using the organization's configured time zone.
+The boundaries are the local midnights of the requested dates, compared directly with the stored local anchor.
+
+**Amended 27 November 2026 (D-069, §16.36):** the earlier form translated these boundaries into internal timestamps using the organization's configured time zone. With the anchor stored as a local reading, the boundaries are local midnights and no translation happens at request time.
 
 ### 15.8.3 Submission-time filters
 
@@ -2258,7 +2262,7 @@ The following items remain unresolved. They should be addressed before or during
 
 26. Choose the authentication method/provider and determine whether authentication is managed or self-hosted. **Hosting resolved 23 November 2026 — each organisation runs its own instance, so authentication is self-hosted per instance (§16.17, D-050). The session layer is settled 24 November 2026 (§16.23, D-056) — bearer tokens, a single-use rotating refresh token, and a mobile-only client, so no cookie and no CORS. The credential itself remains open (§3.1).**
 27. Design the first-administrator bootstrap process. **Now a per-instance installation step (§16.17, D-050); the process is still undesigned.**
-28. Finalize database schema, constraints, and transaction requirements.
+28. Finalize database schema, constraints, and transaction requirements. **Partly settled 27 November 2026 — the engine, the stored anchor and the index inventory are fixed (§16.36, D-069). Per-table constraints and the remaining columns stay open.**
 29. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
 30. ~~Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses.~~ **Resolved 25 November 2026 — retry and idempotency are the entry id as the deduplication record with `version` guarding writes (§16.16, D-049), conflict responses are `409 VERSION_MISMATCH` carrying `current` and `changedFields` (§16.28, D-061), and change tracking is a per-organisation `changeSeq` with a pull feed of the caller's own entries, deletions included (§16.31, D-064).**
 31. Define API versioning, security controls, deployment, backups, and monitoring. **Deployment is per instance (§16.17, D-050), so API version skew between an installed app and an instance that upgrades on its own schedule is a supported state rather than a hypothetical. Versioning is contract-blocking, not operational polish.** **URL versioning settled 24 November 2026: every route is prefixed `/v1`, and every path in this record is written that way.** What remains open is the compatibility and deprecation policy — what an old client does against a `/v2` instance, and for how long `/v1` is served.
@@ -2290,14 +2294,14 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
 §16.26), item 5 (preserved invalid submissions, §16.27), item 6
-(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23), B16 (the backdating window, §16.24) B9 (reporting and totals, §16.33), B11 (the audit trail, §16.34) and B10 (notification transport, §16.35). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23), B16 (the backdating window, §16.24) B9 (reporting and totals, §16.33), B11 (the audit trail, §16.34) B10 (notification transport, §16.35) and B15 (schema, migrations and indexes, §16.36). Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34), leaving the backlog's implementation item — B15 (schema and indexes) — as the next one to take.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2336,14 +2340,15 @@ Time-entry cursors are opaque, stateless, signed tokens. A cursor is not stored 
 **Payload fields:**
 
 - `v` — format version (integer), so the payload can change without breaking clients holding older cursors.
-- `k` — the ordering tuple of the last row returned, fixed in §16.3: `[work date, effective time, entry ID]`. It is a total-order tuple ending in the entry ID tie-breaker.
+- `k` — the ordering tuple of the last row returned, fixed in §16.3: `[local anchor, entry ID]` (§16.36, D-069). It is a total-order tuple ending in the entry ID tie-breaker.
 - `q` — fingerprint of the normalised filter set and sort order, HMAC-SHA256 truncated to 16 bytes.
+- `e` — the installation's cursor epoch: an integer bumped when the database is restored or rebuilt, so a cursor minted before the restore is refused rather than silently honoured (§16.36, D-069). **Added 27 November 2026 (D-069).**
 
 **Rules:**
 
 - The fingerprint covers filters and sort order only. `pageSize` is excluded, so a client may change page size mid-scroll without an error.
 - Tokens longer than 1 KiB are rejected before parsing.
-- Cursors have no expiry. Because retrieval is live (§16.1) and a cursor is only a keyset position, an old cursor remains valid and resumes from that position after any length of time.
+- Cursors have no expiry. Because retrieval is live (§16.1) and a cursor is only a keyset position, an old cursor remains valid and resumes from that position after any length of time. A restore is the one exception, and it is detected rather than timed: the epoch in `e` no longer matches, so the cursor fails cleanly instead of resuming into a history that moved (§16.36, D-069).
 - Cursors are signed but not encrypted. Their contents — entry ID, sort value, and a fingerprint of filters the caller itself supplied — are not secret.
 - Integrity is for diagnosability, not access control. A malformed or tampered token produces a clean error instead of a surprising page. Authorization is re-evaluated on every request (§4.5); a cursor never conveys or widens access.
 - Key rotation uses the `kid` prefix: the previous key is accepted during rotation, and cursors minted before rotation fail cleanly as `INVALID_CURSOR`, after which the client restarts pagination. The signing key is a 32-byte secret from configuration, never from source.
@@ -2351,7 +2356,7 @@ Time-entry cursors are opaque, stateless, signed tokens. A cursor is not stored 
 
 **Error behaviour (codes fixed here; envelope deferred to the error-envelope decision):**
 
-- `400 INVALID_CURSOR` — undecodable, bad signature, unknown version, or oversize. Remedy: restart pagination.
+- `400 INVALID_CURSOR` — undecodable, bad signature, unknown version, oversize, or an install epoch that no longer matches (§16.36, D-069). Remedy: restart pagination.
 - `400 CURSOR_QUERY_MISMATCH` — fingerprint does not match the supplied filters or sort order (§15.7.6). Remedy: a client bug or a filter change without a reset; it must not be silently accepted.
 
 **Considered and rejected:**
@@ -2363,36 +2368,39 @@ Time-entry cursors are opaque, stateless, signed tokens. A cursor is not stored 
 
 ## 16.3 Entry ordering: mixed timestamp and duration-only
 
-**Confirmed decision (D-038) — 15 November 2026.**
+**Confirmed decision (D-038) — 15 November 2026. Amended 27 November 2026 (D-069, §16.36).**
 
-Time-entry lists are ordered newest first by work date, then time within the day, then entry ID:
+Time-entry lists are ordered newest first by one stored value — the entry's **local anchor**, the local date and time of the work on the organisation's clock — then by entry ID:
 
 ```sql
-ORDER BY work_date DESC,
-         COALESCE(local_start_time, '00:00:00') DESC,
-         entry_id DESC
+ORDER BY local_anchor DESC,
+         id DESC
 ```
 
-- `work_date` and `local_start_time` are derived from the entry's start instant in the organisation's configured time zone, using the same derivation §15.8.1 requires for filtering. Deriving both the same way is part of the decision: filtering and ordering must never disagree about which date an entry belongs to.
-- Timestamped entries are anchored at their **start**, not their end.
-- Duration-only entries sort **after** every timed entry on the same date, because they make the least precise claim about when the work happened. The server does not invent a time of day (§6.5).
+**Why this was amended.** The original form derived the date and the time at read time from the start instant, and said three paragraphs later that the schema would have to index that derivation. Both halves could not hold: an index is a pre-sorted shelf, and a value computed during the query has no shelf to stand on. Ordering by one value written at save time is what makes the ordering indexable, and it is what removes the `COALESCE`, the third cursor element and the branch between the two kinds of entry. §16.36 records the column, the index and the check that keeps it honest.
+
+- `local_anchor` is written by the server when the entry is created or a date-bearing field of it changes — never at read time and never by a client (§16.36 rule 2).
+- A timestamped entry is anchored at its **start**, not its end: 10:00–13:00 on 21 November, as the pantry's clock reads it, is anchored at `2026-11-21 10:00:00`, whatever that instant is in UTC.
+- A duration-only entry is anchored at its work date, `00:00:00`, because it makes the least precise claim about when the work happened. The server does not invent a time of day (§6.5). Descending, it lands at the bottom of its date group — except against a timed entry beginning at exactly `00:00:00` local, which ties with it and is separated by the entry ID.
+- Filtering and ordering read the same column, so they cannot disagree about which date an entry belongs to (§15.8.1).
 - The entry ID terminates the ordering, making it total and stable — the property D-035's guarantee depends on.
 
-**Cursor tuple.** D-037's `k` is therefore:
+**Cursor tuple.** D-037's `k` is therefore two parts, not three:
 
 ```
-k = [ "YYYY-MM-DD", "HH:MM:SS.mmm", "<entry-id>" ]
+k = [ "2026-11-21T10:00:00", "<entry-id>" ]
 ```
 
-Duration-only entries encode the start-of-day sentinel value used in the ordering expression, never a null, so cursor comparison stays a plain row comparison and cannot be tripped by NULL semantics.
+The anchor is always present — a duration-only entry carries the start-of-day value rather than a null — so cursor comparison is a plain row comparison on `(local_anchor, id)` that NULL semantics cannot trip.
 
-**Consequences for schema and indexing (§15.12 item 28):** ordering and date filtering both need the derived date and effective time, so the schema must support generated columns or functional indexes over `COALESCE(work_date, (start_at AT TIME ZONE org_tz)::date)` and the matching time expression. This is a schema constraint, not a query-time detail.
+**Consequences for schema and indexing (§15.12 item 28):** ordering, the date filter and the cursor all read `local_anchor`, so one index — `(volunteer_id, local_anchor DESC, id DESC)` — answers the list, and the date filter is a half-open range on the same column (§16.36, D-069). No ordering clause carries an expression, no `COALESCE` appears in a query, and no index has to be rebuilt when the organisation's time zone changes.
 
 **Accepted consequences:**
 
 - "Newest first" means newest **started**. A session beginning at 16:00 and ending at 20:00 sorts below a ten-minute entry at 19:00.
 - Duration-only entries cluster at the bottom of their date group.
-- Ordering is derived at query time from the organisation's time zone, so a change of zone reinterprets history. Storing a derived local date was rejected: it duplicates the source of truth and can drift from the instant it came from.
+- **The order is fixed when the entry is written.** A later change to the organisation's time zone applies to entries written after it and leaves earlier anchors where they were filed, so an October report does not change because a setting changed in December (§16.36 rule 4).
+- **The anchor is a copy, and copies can drift.** It is a second record of a fact the instant already holds. It is accepted because it has one writer, one direction and a check — a job comparing it against `started_at AT TIME ZONE zone` — and because the alternative is an ordering that cannot be indexed at all. **Amended 27 November 2026 (D-069, §16.36):** the original bullet rejected the stored copy as a duplicate of the source of truth and then required it to be indexed; the amendment removes that contradiction in favour of one stored value with one writer.
 
 **Considered and rejected:**
 
@@ -2727,18 +2735,18 @@ off (§16.25, D-058).
 
 **Confirmed decision (D-046) — 22 November 2026.**
 
-An entry's length is stored as a **whole number of seconds**. A timestamp entry stores two absolute instants and the server derives the duration from them; a duration-only entry stores a work date and a duration, and has no instants at all. Nothing is stored in minutes, and nothing is stored as local wall-clock time.
+An entry's length is stored as a **whole number of seconds**. A timestamp entry stores two absolute instants and the server derives the duration from them; a duration-only entry stores a work date and a duration, and has no instants at all. Nothing is stored in minutes, and no length is measured in local wall-clock time. **Amended 27 November 2026 (D-069, §16.36):** every entry also carries a local anchor — the work's local date and time — for ordering, filtering and display only. It is never a basis for duration, which stays a function of the instants, or of the stored duration for a duration-only entry.
 
 **Rules:**
 
 - **Instants.** `startedAt` and `endedAt` are absolute instants in UTC at second precision, with no fractional seconds. They are stored as given, never shifted into a zone.
 - **Canonical duration.** `durationSeconds`, a positive integer, is the length of every entry. Totals, date filters, overlap checks and any export all measure in it.
 - **Derived, not supplied.** A timestamp entry's client sends the two instants only. The server computes `durationSeconds = endedAt − startedAt` in the API business layer, at creation and again whenever either instant changes. The result is persisted, not recomputed on read.
-- **Duration-only entries.** The client sends a work date and `durationMinutes`; the server stores the date and `durationMinutes × 60`. There are no instants to subtract, which is precisely why duration is a stored field rather than a computed one.
+- **Duration-only entries.** The client sends a work date and `durationMinutes`; the server stores the anchor (that date at `00:00:00`, §16.36) and `durationMinutes × 60`. There are no instants to subtract, which is precisely why duration is a stored field rather than a computed one.
 - **Consistency invariant.** Where both instants exist, `durationSeconds` must equal their difference. A check flags any row where the two diverge; divergence is a defect, not an accepted state.
 - **Limits.** An entry must be at least 60 seconds and at most 86,400 seconds (24 hours). Below the minimum it is not work worth recording; above it, it is a timer left running. Out-of-range entries are rejected at validation, never truncated to fit.
 - **Midnight.** An entry may cross midnight. It remains one entry and is attributed in full to the date of its start; it is never split into two.
-- **Time zone.** One organisation time zone interprets local times — for work dates, display, the `local_start_time` ordering in D-038, and the date filters in §15.8. Elapsed time never depends on it.
+- **Time zone.** One organisation time zone interprets local times — for work dates, display, the `local_anchor` ordering in D-038, and the date filters in §15.8. Elapsed time never depends on it.
 - **Daylight saving.** Because length comes from the instants, a shift across a change is measured correctly. A local time that is ambiguous or does not exist is displayed as such and is not blocked.
 - **Validation, not policy.** These are field-level rules. Whether a backdated entry is allowed, whether an edit needs reapproval (§13 item 2), and any daily cap are decided elsewhere.
 
@@ -2753,7 +2761,7 @@ An entry's length is stored as a **whole number of seconds**. A timestamp entry 
 
 **Considered and rejected:**
 
-- **Store local wall-clock times.** Matches how a volunteer describes their day, but makes every duration depend on a zone and a daylight-saving lookup, and leaves ambiguity twice a year that no schema can resolve.
+- **Store local wall-clock times.** Matches how a volunteer describes their day, but makes every duration depend on a zone and a daylight-saving lookup, and leaves ambiguity twice a year that no schema can resolve. (The anchor in §16.36 is the opposite arrangement, not this one: the instants remain the source and the local reading is written from them.)
 - **Minutes as the canonical unit.** Rounds on every entry, and rounding each entry before summing is not the same as summing first: small losses accumulate into totals nobody can account for.
 - **Accept a client-supplied duration for timestamp entries.** Convenient, but it lets a client claim hours its own instants contradict, and an offline client may compute against a stale clock.
 - **A per-project or per-volunteer time zone.** Allows distributed teams, but makes "the hours for this date" depend on which project the time is attributed to, and multiplies the daylight-saving edge cases.
@@ -2884,7 +2892,7 @@ fits a tight MVP deadline.
 
 - **Duration-only MVP** (a date and a number of minutes, no instants).
 Smallest possible server surface, but it forfeits the overlap model
-(D-047), the `local_start_time` ordering (D-038), and any ability to
+(D-047), the `local_anchor` ordering (D-038), and any ability to
 reconstruct what was recorded when hours are disputed — and instants that
 were never captured cannot be recovered later, so the loss is permanent
 rather than deferred.
@@ -5185,8 +5193,10 @@ The bulk-sync item result carries the same two fields; the rest of that result i
 
 - **A read costs a comparison.** Each entry read looks at the volunteer's
   entries for the surrounding window, so the flag is not free per row. That
-  is B15's index to size; the alternative is a stored value that must be
-  recomputed by every writer instead.
+  is the index §16.36 sizes: the overlap scan reads the volunteer's own rows by
+  `(volunteer_id, local_anchor)` and applies an interval predicate on the
+  instants, because no interval index is built for it. The alternative is a
+  stored value that must be recomputed by every writer instead.
 - **The flag can change with no version and no audit row.** A client that
   diffs its cache must treat `hasConflict` and `conflicts` as view data, and
   any future "unseen conflict" counter cannot be stored either — it would be
@@ -5214,7 +5224,9 @@ disputes show up); whether each member of `conflicts` should also carry
 larger body and a field that names something the caller may not be allowed to
 see); ~~whether item 20's voiding, if it exists, removes a voided entry from
 membership~~ (answered 25 November 2026, §16.30, D-063: a deleted entry leaves
-the conflict set); and B15's index for the computed filter.
+the conflict set); and whether the computed flag ever needs an index of its own
+— **answered 27 November 2026 (§16.36, D-069):** it cannot have one, because
+the flag is computed per read over rows the anchor index has already found.
 
 **Resolves:** §15.12 item 21. It supersedes §15.8.6's third filter in part
 (boolean, not status), replaces the "conflict status" axis §16.25 rule 13
@@ -5225,7 +5237,8 @@ derived fields, which is how a lost response still warns), §16.27 rule 6 (a
 conflict is never a refusal, and the flag is computed like any read), §16.31 (a flushed outbox's per-item result must carry `hasConflict` and `conflicts`), B10
 (no conflict notification), B11 (the flag is not an audit event, while every
 write that creates one still is), B9 (a conflicted hour counts like any other)
-and B15 (the index the computed filter needs).
+and B15 (§16.36, D-069: no index is built for the computed flag; the overlap
+scan uses the anchor index).
 
 ## 16.30 Deletion: a timestamp, not a fifth status
 
@@ -5447,7 +5460,9 @@ And a write against a deleted entry:
 - **Three nullable columns join the schema and no filter can use them
   without care.** A query that forgets `deleted_at is null` leaks retracted
   hours into a total, and nothing in the type system stops it. B15's index
-  strategy should make the live set the cheap one.
+  strategy should make the live set the cheap one. **Answered 27 November 2026
+  (§16.36, D-069):** the list's index is partial on `deleted_at IS NULL`, so the
+  live set is the one the index holds.
 - **Deletion is a mouthful of fields on every representation.** Three extra
   members on every entry in every list, nearly always `null`, for the sake of
   the one screen that shows a withdrawn claim.
@@ -5472,7 +5487,7 @@ that rule reserved now exists — turns §15.8.6's first filter into the
 retires "void" from the contract. It constrains B9 (deleted hours are in no
 total), B11 (one audit row per deletion, carrying the reason), B10 (no
 deletion notification in the MVP), §16.22 (the `204` rule still covers only
-routes that remove a row) and B15 (the partial index on the live set).
+routes that remove a row) and B15 (the partial index on the live set, kept in §16.36).
 
 ## 16.31 Catching up: one counter, your own entries, and nothing privileged on the device
 
@@ -5708,7 +5723,10 @@ nothing to be wrong about later.
 - **The feed has no retention and no truncation.** A cursor from a year ago
   still works. If the counter is ever reset — a restore from backup, an
   instance rebuild — clients must be forced to re-sync rather than trusted to
-  notice; that is an operational rule, and B15 owns the mechanism.
+  notice; that is an operational rule. **Answered 27 November 2026 (§16.36,
+  D-069):** the mechanism is an install epoch in every cursor, bumped on a
+  restore, so a cursor from before the restore is refused and the client
+  re-syncs.
 - **Coordination needs signal.** A coordinator in a basement walks upstairs.
   That asymmetry is deliberate: a volunteer losing an hour's work cannot
   recreate a shift from memory, while a coordinator retrying an approval
@@ -5729,7 +5747,10 @@ for the MVP — the audit log is the record, B11); whether a first sync may
 omit deleted rows the caller has never held, which would need a first-sync
 marker in the cursor and is not worth the special case now; whether the
 sequence is a table row or a database sequence, and whether the index is on
-`(volunteer_id, change_seq)` or `change_seq` alone (B15); whether a queued
+`(volunteer_id, change_seq)` or `change_seq` alone — **answered 27 November
+2026 (§16.36, D-069):** a row in the instance's single state row, and the index
+on `(volunteer_id, change_seq)`, because every read of the feed is scoped to
+one author; whether a queued
 deletion of one's own entry deserves the same "are you sure" on the device
 that the client already gives it online (a client question, not a contract
 one); whether the counter should also drive unread counts (it must not — a
@@ -6494,8 +6515,8 @@ the output each already assumed, makes D-066's "no audit row for a report" a
 rule with a reason rather than an aside, and constrains B8 (the audit list uses
 the one envelope but its contents and access are this decision's), B10 (a
 notification's read state is not an audited write), B15 (two indexes — the
-entity's history and the organisation's feed order — and a table that is never
-pruned) and §15.12 item 29 (one route in the inventory: `GET /v1/audit-log`).
+entity's history and the organisation's feed order, both kept in §16.36 — and a
+table that is never pruned) and §15.12 item 29 (one route in the inventory: `GET /v1/audit-log`).
 
 ## 16.35 Notifications: in-app only, written with the act, and a mailbox of one's own
 
@@ -6722,10 +6743,345 @@ D-067 currently says it is not.
 administrators cannot manage another person's notifications. It gives D-054's
 "transport must not invent a second list" its answer, gives D-055 rule 9 the
 bulk shape it deferred, writes down the "raises nothing" facts D-059, D-062,
-D-064 and D-066 each assumed, and constrains B15 (three indexes: the mailbox
-order `(recipient_id, created_at desc, id desc)`, the unread filter, and the
-uniqueness constraint behind rule 5) and §15.12 item 29 (the list, the read mark
+D-064 and D-066 each assumed, and constrains B15 (the mailbox order `(recipient_id, created_at desc, id
+desc)` and the uniqueness constraint behind rule 5; **§16.36 (D-069) keeps both
+and drops the separate unread index**, since `readAt IS NULL` filters rows the
+mailbox index has already narrowed to one person) and §15.12 item 29 (the list, the read mark
 and the delete, in one collection).
+
+------------------------------------------------------------------------
+
+
+## 16.36 Schema, migrations and indexes: one anchor, add-only changes, five indexes
+
+**Confirmed decision (D-069) — 27 November 2026.**
+
+B15 was the last item in the backlog and the only one whose subject was not
+behaviour but the database underneath it: which engine, how it changes once
+real hours are in it, and which indexes exist. Two earlier decisions had
+already half-answered it. §16.3 (D-038) rejected storing a derived local date
+— "it duplicates the source of truth and can drift from the instant it came
+from" — and then, three sentences later, required the schema to index exactly
+that derived date. §16.31 (D-064) left "whether the sequence is a table row or
+a database sequence, and whether the index is on `(volunteer_id, change_seq)`
+or `change_seq` alone" to this decision, along with the mechanism that forces
+a re-sync after a restore. §16.29, §16.34 and §16.35 each named the indexes
+their own tables need. Left alone, all of it would have been settled by
+whoever wrote the first migration, in whatever order the code happened to
+need it.
+
+The answer is smaller than the proposal it replaces: **one stored local anchor
+instead of a derived date and a derived time, migrations that only add and
+fill and remove later, and five indexes, each named to the query it serves.**
+Everything else waits for a measurement.
+
+**The case this protects.** Nadia coordinates a pantry with 180 volunteers and
+three years of entries — 240,000 rows in `time_entries`. Dee opens her list for
+November. The server reads her eleven rows from one index and stops; it does
+not read her history, translate timestamps for it, or sort the result in
+memory. The page arrives in the time it takes to read eleven rows.
+
+Then, at 02:00 on Thursday, the installer restores Tuesday's backup. Every
+phone in the organisation holds a sync cursor pointing at change 91,442 in a
+feed that now ends at 89,900. The first phone to ask is told its cursor is
+invalid and re-syncs from the beginning; it shows an approval that happened on
+Wednesday as pending again, because in this database it has not happened yet.
+Without the epoch that cursor would have been honoured, the phone would have
+been told "nothing new" for ever, and nobody would have seen an error.
+
+**Decision in one line: PostgreSQL; one `local_anchor` per entry written at
+save time; migrations that add, fill and later remove, behind a version guard
+and a rehearsed restore; five indexes; and an install epoch in every cursor so
+a restore is visible to every client.**
+
+**Rules.**
+
+1. **Engine: PostgreSQL, one database per instance.** D-050 makes the
+   deployment the tenant, so there is one database per organisation and no
+   cross-tenant query to design for. Postgres is chosen for the three things
+   this decision actually uses: transactional DDL, so a failed migration leaves
+   the schema as it was; `timestamptz` with `AT TIME ZONE`, which is the one
+   conversion the record needs and the only place it needs it; and a unique
+   index, which is how the mailbox's exactly-once rule (D-068 rule 5) is
+   enforced rather than hoped for.
+
+2. **The entry carries one local anchor.** `local_anchor` is a `timestamp`
+   **without** time zone: the wall-clock local date and time the work is filed
+   under. For a timestamped entry it is `started_at AT TIME ZONE
+   organisation.timezone`. For a duration-only entry it is the work date at
+   `00:00:00`. It is written by the server in the API business layer, in the
+   same statement as the entry's other columns, and is never accepted from a
+   client. It is recomputed only when a field it derives from changes —
+   `startedAt`, or a duration-only entry's date. There is no `work_date` column
+   and no `local_start_time` column: the API's `workDate` is
+   `local_anchor::date`, and the ordering time is the anchor itself.
+
+3. **The anchor is a projection, never a source.** Elapsed time comes from the
+   instants (D-046); the anchor contributes nothing to `durationSeconds`, to a
+   total (§16.33) or to an overlap (§16.29). It is a second copy of one fact —
+   the local reading of `started_at` — and the record accepts that copy for one
+   reason: a converted value can only be sorted and range-filtered with an
+   index if it is already written down. The copy is safe because it has one
+   writer (the server), one direction (instant to anchor) and a check: a
+   periodic job compares every row's anchor against `started_at AT TIME ZONE
+   zone` and reports divergences as defects, exactly as D-046's duration
+   invariant does. A client can never write it, so it cannot drift from a
+   client's clock.
+
+4. **The time zone is applied at write time and never again.** A change to the
+   organisation's time zone applies to entries written afterwards; existing
+   anchors keep the local reading they were filed under. This is the opposite
+   of what §16.3 accepted before its amendment ("a change of zone reinterprets
+   history"), and it is deliberate: an October report must not change because a
+   setting was changed in December. The setting stays editable — no lock and no
+   "set once" flag — but its effect is now bounded, and the interface must not
+   promise that old entries will move.
+
+5. **Every entry query reads the anchor, and there are four of them.** The list
+   orders by it and pages on it (§16.3); the date filter is a half-open range
+   on it (§15.8.1); the report groups by `local_anchor::date` (§16.33); the
+   overlap check scans a volunteer's rows by it (§16.29). Because filtering,
+   ordering and paging read the same column, they cannot disagree about which
+   date an entry belongs to — the property §16.3 has required since it was
+   written, now obtained from one value instead of two derivations.
+
+6. **Migrations add, fill, remove — in three releases.** A column that replaces
+   another is added and written in one release, backfilled in that release or
+   the next, made `NOT NULL` and indexed once the backfill is clean, and the
+   old column is dropped only after no code reads it. Never add and drop in one
+   release. A migration that must not run inside a transaction —
+   `CREATE INDEX CONCURRENTLY` on a table with rows — is marked as such and run
+   alone, outside the wrapper, because Postgres refuses it inside one.
+
+7. **The server refuses to start against a database newer than itself.** The
+   installed `schema_version` and the version the code carries are compared at
+   boot. If the database's is greater, the server logs one line naming both
+   numbers and exits non-zero. It does not guess, and it does not "try anyway".
+   Per-instance upgrades (D-050) make this a real state rather than a
+   hypothetical: a binary that meets a newer database must fail where an
+   installer can see it, not half-read tables whose shape it does not know.
+
+8. **Migrations run at boot, under an advisory lock, one transaction each.** A
+   single `pg_advisory_lock` is taken, the applied set is read, pending
+   migrations are applied in numeric order, each in its own transaction with
+   its number recorded, and the lock is released. Two server processes starting
+   at once is the normal case after a restart; the lock makes it one migration
+   run. A migration that fails rolls back only itself, and the server exits
+   rather than serving a half-migrated schema.
+
+9. **Back up before a migration, and rehearse the restore.** A migration that
+   can destroy data — a drop, a narrowing type, a backfill that deletes —
+   ships only with a verified restore of the previous release's backup, tested
+   on a copy. A green backup job is not verification. There are no
+   down-migrations as an obligation (the rejected table says why), and no
+   "forward-only" rule either: it cannot be checked, and a forward migration
+   can drop a column as easily as a backward one. The real undo is the restore,
+   which is why it is rehearsed.
+
+10. **Five indexes, and no others.** Each is named to the query that forces
+    it; the sixth row is a rule the engine enforces, not a tuning knob.
+
+| Index or constraint | Serves | Why it is forced |
+|---|---|---|
+| `time_entries (volunteer_id, local_anchor DESC, id DESC) WHERE deleted_at IS NULL` | the list (§16.3), the date filter (§15.8.1), the keyset cursor, the report's range (§16.33), the overlap scan (§16.29) | one index answers every read of a person's own rows, in the order and range they are read. It is partial on the live set, which is what D-063 asked for: all four queries already exclude deleted rows, so the index holds only rows they can return |
+| `time_entries (volunteer_id, change_seq)` | `GET /v1/sync` (§16.31) | the feed is always one author's rows in one order, deleted rows included; a bare `change_seq` index would read every author's writes and filter them |
+| `audit_log (entity_type, entity_id, at DESC, id DESC)` | one record's history (§16.34) | the common question is "what happened to this entry", not "what happened in this organisation" |
+| `audit_log (at DESC, id DESC)` | the organisation's trail order (§16.34) | an insert-only table grows without bound; an unfiltered read must not sort it |
+| `notifications (recipient_id, created_at DESC, id DESC)` | the mailbox (§16.35, §16.21) | one person's rows, newest first; `unreadOnly` filters rows this index has already narrowed |
+| `notifications (recipient_id, type, subject_id, subject_version)` **unique** | exactly once per act (§16.35 rule 5) | the rule is enforced by the engine or it is not enforced. `subject_version` is `0`, never null, for the five request types: a unique index treats nulls as distinct, so a null there would let the same request be announced twice |
+
+11. **What is deliberately not indexed.** `hasConflict` and `conflicts`
+    (§16.29) are computed by comparing pairs of rows; no column exists to
+    index and none is added. The coordinator's pending queue filtered by
+    project is left out until it is measured — it is a filter over rows already
+    scoped to a handful of projects, and an index now would be a guess carrying
+    a write cost on the busiest table. The users list's prefix filter (§16.21)
+    scans one organisation's members, hundreds at most. Reports have no rollup
+    table and no index beyond the anchor range (§16.33). **Further indexes are
+    admitted by a measurement, not by taste:** the query plan showing a
+    sequential scan at a named row count, and one sentence on what the extra
+    index costs every write. That rule is what keeps the inventory at five.
+
+12. **The cursor carries an install epoch.** D-037's payload gains `e`: an
+    integer held beside the change counter and bumped whenever the database is
+    restored from a backup, rebuilt, or replaced by an import (D-036). A cursor
+    whose `e` differs from the current value is refused as `400
+    INVALID_CURSOR`, and the client restarts — for `/v1/sync`, that is a first
+    sync. Without it a restore rewinds `change_seq`, and a phone holding a
+    cursor from after the restore is told "nothing new" for ever, with no error
+    anywhere. It is the only server state a cursor depends on, and it is one
+    integer per installation, not one per token. Rejected: comparing the
+    cursor's position with the highest number in the feed, which cannot work
+    for the list cursor (an anchor is not a counter) and would fail silently
+    for the feed one.
+
+13. **Transactions: the decisions already name which writes are one.** An entry
+    write and its `change_seq` (D-064 rule 1); an entry write and its audit row
+    (D-067 rule 1); an act, its notification rows and its audit row (D-068 rule
+    2); a deletion, its audit row and its `changeSeq` (D-063, D-067). This
+    decision adds no transaction boundary and no isolation level: read
+    committed, with the counter row's update serialising entry writes as D-064
+    already accepted. Concurrency is guarded by `version` (D-049), not by
+    locking a row a person is editing.
+
+**The shapes.** Column and index definitions, illustrative in naming and exact
+in intent.
+
+```sql
+-- The instance's counters, in one row. D-064's "a row, not a clock".
+CREATE TABLE instance_state (
+  only_row        boolean PRIMARY KEY DEFAULT true CHECK (only_row),
+  schema_version  integer NOT NULL,
+  change_seq      bigint  NOT NULL,
+  cursor_epoch    integer NOT NULL
+);
+
+-- The anchor. work_date and local_start_time are gone: workDate is its date.
+ALTER TABLE time_entries
+  ADD COLUMN local_anchor timestamp NOT NULL;   -- local wall clock, no zone
+
+-- Partial on the live set (D-063): every query that orders by the anchor
+-- already filters deleted_at IS NULL, so the index holds only those rows.
+CREATE INDEX time_entries_owner_anchor
+  ON time_entries (volunteer_id, local_anchor DESC, id DESC)
+  WHERE deleted_at IS NULL;
+
+CREATE INDEX time_entries_owner_change
+  ON time_entries (volunteer_id, change_seq);
+
+CREATE INDEX audit_log_entity
+  ON audit_log (entity_type, entity_id, at DESC, id DESC);
+
+CREATE INDEX audit_log_feed
+  ON audit_log (at DESC, id DESC);
+
+CREATE INDEX notifications_mailbox
+  ON notifications (recipient_id, created_at DESC, id DESC);
+
+CREATE UNIQUE INDEX notifications_once
+  ON notifications (recipient_id, type, subject_id, subject_version);
+  -- subject_version is 0 for the request types: a unique index treats nulls
+  -- as distinct, and a null would defeat exactly-once.
+```
+
+The two reads that matter, with the index each one uses:
+
+```sql
+-- The list, the date filter and the cursor, in one index scan.
+SELECT …
+FROM time_entries
+WHERE volunteer_id = $1
+  AND deleted_at IS NULL                              -- the partial index needs it
+  AND local_anchor >= $2 AND local_anchor < $3        -- half-open, inclusive dates
+  AND (local_anchor, id) < ($4, $5)                   -- the cursor; omitted on page one
+ORDER BY local_anchor DESC, id DESC
+LIMIT $6;
+
+-- The feed.
+SELECT …
+FROM time_entries
+WHERE volunteer_id = $1 AND change_seq > $2
+ORDER BY change_seq
+LIMIT $3;
+```
+
+A cursor's payload, as D-037 defines it and this decision extends it:
+
+```json
+{ "v": 1, "k": ["2026-11-21T10:00:00", "2b7d5c1e-…"], "q": "…", "e": 4 }
+```
+
+**Adding a column to a table that already has rows.** The anchor is the first
+migration this project will actually run against real hours, so it is the
+worked example:
+
+- **Release N.** Add `local_anchor` as nullable. Every write path sets it —
+  create, edit, import — in the same statement as the fields it derives from.
+  Backfill existing rows in batches, newest first, so the busiest data is
+  correct first. Serve reads from the old derivation while the backfill runs.
+- **Release N–N+1.** Add the comparison check (anchor against the instant,
+  §16.36 rule 3) and run it until it reports nothing. Set `NOT NULL`. Build
+  `time_entries_owner_anchor` with `CREATE INDEX CONCURRENTLY`, in its own
+  non-transactional migration. Switch the list, the filter and the cursor to
+  the anchor.
+- **Release N+2.** Drop `work_date` and `local_start_time`, after a release in
+  which no code read them and no query named them. Not before.
+
+That is the whole rule 6, applied. The two intermediate releases are the price
+of never having a window in which the system has neither a working old path
+nor a complete new one.
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **One stored anchor, written at save time (recommended)** | One sort key, one filter, one cursor element, one index; ordering stops depending on the zone setting after the fact | One extra column on the busiest table; a copy that needs a check; a zone change does not move history |
+| Deriving the date and time at read time, with an expression index | Nothing extra stored | Every query carries the expression; a functional index pins the zone as a literal and must be rebuilt when the setting changes; duration-only entries have no instant to convert, so a `COALESCE` and a second expression are needed anyway; the cursor is three parts; two entry kinds in every clause. This is what §16.3 originally required while rejecting the stored copy |
+| Two stored columns, `work_date` and `local_start_time` | Each readable alone; the date sorts without a cast | One fact in two columns, which can disagree; a `COALESCE` in the ordering and the cursor; a start-of-day sentinel every query must remember |
+| A generated column | No writer can forget to set it | The zone is part of the definition, so a zone change rewrites every row at once — the reinterpretation rule 4 exists to prevent — and the column still has to be indexed separately, so nothing is saved over writing it in the API layer |
+| SQLite | One file, an easy install | One writer at a time, backup-while-running becomes the installer's problem, and neither the advisory lock nor the server's multi-process deployment survives |
+| A full per-table index inventory, written now | No query is ever slow | Every index taxes the busiest table's writes, and most would answer questions nobody has asked |
+| A separate index for `readAt IS NULL` | An unread count could seek | The mailbox index already narrows to one person's rows; a second index on a table written once per act buys a filter over tens of rows |
+| A down-migration for every change | A script to run | Doubles the work to write and test; a drop or a narrowing cannot be reversed by any script; the restore is the real undo, so the restore is what gets rehearsed |
+| A house rule that migrations are forward-only | Sounds prudent | Nothing checks it, and a forward migration can delete a column as easily as a backward one |
+| A database sequence for `change_seq` | No row to update | Gaps on rollback, and no commit order: two writers can take 5 and 6 and commit 6 first, so a reader that sees 6 never sees 5 |
+| Indexing the feed on `change_seq` alone | One index for every author | Every read scans other authors' writes and filters them out |
+| Client-side detection of a restore | No server state at all | A client cannot tell "nothing new" from "history rewound", which is precisely the failure being prevented |
+
+**Accepted costs.**
+
+- **The anchor is a copy, and copies drift.** Accepted with one writer, one
+  direction and a comparison job. A divergence is a defect with a named cause,
+  not an accepted state.
+- **A time zone change leaves history where it was filed.** Correct for
+  reporting, and surprising the first time an administrator changes the setting
+  and old entries do not move.
+- **A timed entry at exactly `00:00:00` local ties with a duration-only entry
+  on that date.** The entry ID separates them. It is the only place the two
+  kinds of entry are not ordered apart, and it is what a single sort key costs.
+- **The overlap check scans a volunteer's rows.** It reads by
+  `(volunteer_id, local_anchor)` and applies an interval predicate on the
+  instants, because no interval index is built. At a few hundred rows per
+  person this is invisible; at a hundred thousand it would need a different
+  structure, and rule 11's measurement is how that would be found.
+- **Two indexes on the hottest table.** Every entry write maintains both. That
+  is the price of the list and the feed, and it is paid on the write that
+  already takes the counter row.
+- **A restore makes every active client re-sync once.** One route, its own
+  history, no data lost — and a visible pause rather than a silent wrong
+  answer.
+- **An index on a populated table is an operational step, not a boot step.**
+  `CREATE INDEX CONCURRENTLY` is slower, runs outside the migration
+  transaction, and can be left invalid by a failure, which the installer must
+  notice and retry.
+
+**Left open.** The table-by-table DDL beyond the columns named here — every
+constraint other decisions imply (one active coordinator grant per person per
+project, the grant and assignment intervals) belongs to §15.12 item 28 and is
+not enumerated here; whether an entry's anchor also keeps the zone name it was
+written under, so a time zone change can be explained years later (a fourth
+small column, and adding it later is a fill-only migration); whether
+`time_entries` should be partitioned by year at some row count; backup cadence,
+backup retention and off-instance copies (§15.12 item 31, operational); whether
+the pending-queue and users-list indexes earn their place once there is
+production-shaped data (rule 11 is the test); and whether an import (D-036)
+preserves the source's anchors or re-derives them in the target's zone —
+preserving is the default, because it cannot invent history, but the import
+mechanism is still deferred.
+
+**Resolves:** backlog item B15 (§17) — database engine, migrations and index
+strategy — and with it the implementation question D-038 left standing. It
+amends D-038 in two places (a stored anchor instead of a read-time derivation;
+the zone applied at write time instead of reinterpreting history) and amends
+D-037 twice (`k` is two parts, and the payload gains `e`). It answers D-064's
+two left-open questions — a row rather than a sequence, and
+`(volunteer_id, change_seq)` rather than `change_seq` alone — and supplies the
+restore mechanism that decision assigned here. It sizes the overlap scan D-062
+called "B15's index", keeps D-067's two audit indexes and D-068's mailbox order
+and uniqueness constraint, and drops the separate unread index D-068 assumed
+(it filtered rows the mailbox index had already found). It settles the engine,
+column and index halves of §15.12 item 28; the table-by-table constraints and
+the remaining columns stay open.
 
 ------------------------------------------------------------------------
 
@@ -6755,7 +7111,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | **Resolved — D-055 (§16.22).** Every mutation returns the changed resource in its read shape; creates are `201` + `Location`, replays `200` + `Idempotency-Replay` (by client id or by the uniqueness constraint), `409` keeps D-049's `current` copy, no mutation returns counts, and archival's impact comes from a confirmation read. Deletion is the only `204` |
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
 | **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | **Resolved — D-056 (§16.23).** Bearer tokens on every business route and no cookie, because the MVP has no browser client; a 30-minute access token, a single-use rotating refresh token with a 120-second replay grace, a 90-day idle and a 180-day absolute limit, and `sid` checked on every request so a revocation lands on the next call. Sessions are listed and ended from the phone, every authentication failure is the same `401 UNAUTHENTICATED`, and MFA is deferred |
-| **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires and the `change_seq` index §16.31's feed needs | **Implementation** | §15.12 item 28 names the schema; the operational half is unlisted |
+| **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires and the `change_seq` index §16.31's feed needs | **Implementation** | §15.12 item 28 named the schema; the operational half was unlisted. **Resolved — D-069 (§16.36).** PostgreSQL; one stored `local_anchor` instead of a derived date and time, so the order, the date filter and the cursor read one value; add-fill-remove migrations with a version guard, a boot-time advisory lock and a rehearsed restore; five performance indexes plus the notification uniqueness constraint; and an install epoch in every cursor so a restore forces a re-sync |
 | **B16** | Backdating window: how far in the past an entry may be dated or submitted | **Contract** | **Resolved — D-057 (§16.24).** No maximum age and no submission deadline: the work date must be covered by the volunteer's assignment and must not fall in an archived interval (`409 DATE_NOT_ELIGIBLE`), and the only clock rule is a five-minute tolerance on future instants (`400 DATE_IN_FUTURE`) plus one day for a duration-only work date. Lateness is read from `submittedAt` rather than stored as a flag |
 | **B17** | Daily or weekly maximum hours, separate from the per-entry ceiling | **Feature** | Surfaced while taking up B1 and set aside; affects validation and reporting, not the record shape |
 | **B18** | Break deduction: whether a shift records a break that is subtracted, rather than net time as two entries | **Feature** | Surfaced while taking up B1 and set aside; a break field is a derived quantity that can disagree with the timestamps |
@@ -6772,8 +7128,8 @@ will not accept has a defined home — the device — and no server-side table
 to design, index or purge. Reconciliation is settled too (§16.28), so a
 stale write has an answer that neither retries nor overwrites, and conflict
 values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is settled too (§16.30), so the entry's read shape has its last three fields and every total has one predicate to apply. Catching up is settled as well (§16.31), so the download half has a feed rather than a protocol to invent and the outbox stays the ordinary routes replayed (D-055). Edit authority is settled as well (§16.32), so every write route's authorization has its third clause and the project representation has the one new field it needs. Reporting is settled as well (§16.33), so B17's ceilings and B19's
-rounding each have one set of hours to act on. The audit trail is settled too (§16.34), so every write route has one place its record lands and B7's anonymisation has a row that keeps the actor. Notification transport is settled as well (§16.35), so an act that names recipients writes its rows in the same transaction and B15 has the three indexes the mailbox needs. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
+rounding each have one set of hours to act on. The audit trail is settled too (§16.34), so every write route has one place its record lands and B7's anonymisation has a row that keeps the actor. Notification transport is settled as well (§16.35), so an act that names recipients writes its rows in the same transaction and B15 has the indexes the mailbox needs (§16.36). Schema and indexes are settled too (§16.36, D-069), which closes this list. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B10 has left that list too (§16.35), so the mailbox's routes, rows and three indexes are part of B15's work, and B11's trail joined it with §16.34. B15 does not hold up the contract but is cheaper to decide before code exists than after. B7 has left that list (§16.19).
+**What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so nothing in this list now blocks the contract. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B10 has left that list too (§16.35), so the mailbox's routes, rows and two indexes were part of B15's work, and B11's trail joined it with §16.34. All of it is now decided (§16.36, D-069), which is why this list is closed. B7 has left that list (§16.19).
 
-**Order proposed:** B15 (schema and indexes) next — with B1, B2, B4–B8, B12, B13, B14 and B16 already closed, the state machine, material change, preserved submissions, reconciliation, conflict values, deletion, change tracking, edit authority, reporting, the audit trail and notification transport closed in §16.25–§16.35, and B3 deferred by scope (D-048). It is the last backlog item, and its indexes now answer to decisions rather than to open questions.
+**Order proposed:** none — the backlog is closed. B15 was the last item and is resolved (§16.36, D-069), with B3 deferred by scope (D-048) and B17–B19 set aside as features. Every item B1–B19 is therefore settled or deferred by scope, and the work that remains is §15.12 item 28's table-by-table constraints and item 29's contract drafting.
