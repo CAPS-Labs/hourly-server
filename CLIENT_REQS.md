@@ -195,6 +195,48 @@ is already open does not: the QR and its expiry are held locally, and the screen
 says plainly that it cannot see new registrations until it reconnects, rather than
 showing a stale roll as if it were current.
 
+7.11 **What a row says.** Five states, and only the first carries both actions:
+
+- **Pending** — display name, address, device label, time; Approve and Delete.
+- **Approved** — the row stays until the screen is closed or the ticket ends,
+  marked with the decision and its time, and with no actions left on it.
+  Approving is not a removal: the administrator has to be able to see that the
+  person got in, or the natural next move is to approve them again.
+- **Already a member** — a pending row whose person holds an active membership
+  here, which happens when someone approved them from another device, or when a
+  rejoin landed while the application sat unapproved. The server refuses the
+  *registration* itself with `409 ALREADY_A_MEMBER` (§16.46 rule 11), so this row
+  only ever appears when the membership became active after the person registered.
+  The row is marked, Approve is disabled and says why, and Delete is the only
+  action. **It must not read as a failure**: nothing went wrong, the roll has
+  caught up with the organisation.
+- **Rejected leaves no row.** Rejection is a deletion, not a state (§16.46 rule 6),
+  so there is no "rejected" badge to render: the row leaves the list, and the
+  confirmation says plainly what happened — the person is not a member, nothing of
+  theirs was stored, and they may register again with the same address, which was
+  released by the same transaction. An administrator who rejects by mistake
+  reopens the door rather than undoing a state, and the screen must not offer an
+  undo it cannot honour.
+- **Expired** — a pending row swept at 30 days (§16.39 rule 12) simply stops
+  appearing. The app does not invent a tombstone for it, and the ticket's own
+  expiry shows as the closed state of 7.8.
+
+7.12 **Every refusal this screen can receive.** An administrator's actions are
+privileged writes, so each code has one reading and one response; none of them is
+retried blindly.
+
+| Code | What it means here | What the screen does |
+|---|---|---|
+| `400 VALIDATION_FAILED` | The app sent something the contract forbids: a headcount over 100, a life outside 10 minutes to 4 hours, a status other than `active` | A client bug. Show the field errors from `details.errors`; never a generic failure |
+| `401 UNAUTHENTICATED` | The session ended mid-ticket | Sign out and re-enrol (C2). Unsent approvals are lost, which is right: a decision needs a live administrator |
+| `403 FORBIDDEN` | Not an administrator, or the row is outside the caller's scope | Remove the controls after it. Retrying cannot help and the screen should not have offered them |
+| `404 NOT_FOUND` | The row is stale: deleted, swept, or decided on another device | Refresh silently and drop the row. No error, no toast |
+| `409 ALREADY_A_MEMBER` | Returned to the **volunteer**, never to this screen | Never surfaces here. If the org state changed, the roll shows the "already a member" row of 7.11 |
+| `409 INVALID_TRANSITION` | Someone else already decided — approved on another device, or the application was swept — or a grant was cancelled after it was redeemed | Refresh the row; it becomes approved or disappears. Do not retry the same write |
+| `429 RATE_LIMITED` | Expected during "approve all shown" | Respect `Retry-After`, continue with the remaining rows, and leave the throttled ones undecided. A `429` must never abort the run |
+| `413 PAYLOAD_TOO_LARGE` | An import or an export, not this screen | Should be unreachable; treat as a bug and report it |
+| `500`, `503` | The decision did not happen | Keep the row, offer retry, and never mark it approved optimistically |
+
 ## C8 — Camera and permissions
 
 8.1 Camera permission is requested at the moment of scanning, with a sentence
@@ -334,3 +376,15 @@ suite:
 20. Ask for 101 places and for a five-hour life: the form refuses both before any
     request is sent, and the server refuses a forced request with
     `400 VALIDATION_FAILED`.
+21. Approve one row, then approve the same row again from a second administrator
+    device: the second call gets `409 INVALID_TRANSITION`, the row reads approved,
+    and no error is shown.
+22. Register a person, approve them from another device, then look at the first
+    device's roll: the row reads "already a member" with Approve disabled and its
+    reason, and Delete available.
+23. Delete a pending row: it leaves the roll at once, the confirmation says the
+    person is not a member and may register again, and the same address then
+    registers successfully a second time.
+24. Run "approve all shown" across three rows with one forced `429` and one forced
+    `404`: the run continues, the throttled row stays undecided, the missing row
+    disappears, and the third is approved.

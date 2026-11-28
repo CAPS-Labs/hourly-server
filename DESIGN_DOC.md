@@ -9276,14 +9276,18 @@ device, one use.**
    `POST /v1/auth/enrol` takes `{code, deviceLabel}` and returns D-056's session
    response. `POST /v1/enrolment-grants` takes `{userId}` and returns
    `{code, expiresAt, user}` for an administrator to present. `DELETE
-   /v1/enrolment-grants/{id}` cancels a grant that has not been redeemed.
+   /v1/enrolment-grants/{id}` cancels a grant that has not been redeemed; once
+   redeemed it is a spent credential rather than a missing one, and cancelling it
+   answers `409 INVALID_TRANSITION`.
    `POST /v1/me/enrolment-grants` lets a signed-in volunteer issue one for
    their own additional device, so a second phone never needs a coordinator. **Amended 28 November 2026
 (D-079, §16.46):** these are the four *grant* routes, and the claim that only one
 of them is unauthenticated is a claim about them. §16.46 adds two
 unauthenticated routes of its own for people who have no account yet, so §16.23
 rule 1 now counts four in the whole API.
-8. **Only an approved membership may receive a grant.** Approval and issue are
+8. **Only an approved membership may receive a grant.** A request naming a user
+   whose membership is not active is refused with `409 INVALID_TRANSITION` rather
+   than quietly turned into a grant nobody can use. Approval and issue are
    one act, which is why §3.2's security requirement — that a pending
    membership must not provide access merely because the person can
    authenticate — holds by construction rather than by a route-level exception.
@@ -9523,8 +9527,18 @@ the attestation the paper sign-in sheet has always used.
    when the row was created and approval does not rewrite it.
 
 7. **Approval is one act per person, and the loop belongs to the client.** It is
-   the membership status route (§16.37) with `{ "status": "active" }`, one call
-   per person. There is no bulk approval endpoint: a partial failure would need a
+   `PATCH /v1/memberships/{id}` with `{ "status": "active" }`, one call per
+   person. Its opposite is `DELETE /v1/memberships/{id}` answering `204`, because
+   a pending application has no state called rejected: it has a row or it does not
+   (rule 6), so a rejection deletes it and releases the address in the same
+   transaction. That route is **pending-only**, and any other status answers `409
+   INVALID_TRANSITION`: ending an active membership is a departure, which sets
+   `removed` and keeps the row under D-052, and deleting it would be the one thing
+   the retention model calls the record. Two refusals are worth naming. `409 INVALID_TRANSITION` when the
+   membership is no longer `pending` — someone approved it from another device, or
+   the sweep took it — and `404 NOT_FOUND` when the id is unknown or outside the
+   caller's scope, which are indistinguishable by design (§15.8.9). There is no
+   bulk approval endpoint: a partial failure would need a
    contract of its own — which of twenty succeeded, what the caller retries — and
    twenty sequential calls already have one, each idempotent because setting
    `active` twice is one state. An administrator's screen may offer "approve all
