@@ -1179,7 +1179,7 @@ transaction, carrying the actor, the entity, the action, the `requestId`
 and the fields that moved with their before and after; actors survive
 anonymisation and the erasure is itself a row; read scope mirrors the
 entity's; one filtered `GET /v1/audit-log` ordered `at` then `id`; reads,
-refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread (§16.39, D-072). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). **D-072** — retention: a period is the age at which the instance deletes a row itself, distinct from expiry, soft deletion and erasure; the organisational record and the audit trail are never deleted; a session is deleted 30 days after it ends, with its refresh-token hashes; a notification is deleted a month after it is read and, unread, at the organisation's mailbox window, whichever comes first; an organisation may set that window (1–24 months, default 12) and the window for resolved assignment requests (6 months to never, default never), shortening taking effect at the next sweep after a confirmation; nothing else is configurable; and the mechanism that enforces all of it is left open by name (§16.39). **D-073** — the retention sweep: an in-process housekeeping run in the API server, once at boot after the schema guard and daily at 03:00 in the organisation's time zone, guarded by a non-blocking advisory lock of its own so one runner deletes at a time; 500 rows per transaction and at most 10,000 per class per run; the organisation's windows and the deployment's session limits read at the start of each run; a failed batch logged and left for the next run rather than blocking startup; one log line per run and no endpoint, audit row or change-feed entry; and two `notifications` indexes admitted by §16.37 rule 10, which now counts seven (§16.40). **D-074** — the report export: `format=json|csv` on the one report route, the grouped JSON unchanged and CSV carrying the detail rows those totals were summed from, both taken from one read-only `REPEATABLE READ` transaction so the file and the report cannot disagree; synchronous and streamed, capped at 100,000 rows and 60 seconds and refused as `413 EXPORT_TOO_LARGE` before the first byte, with no job queue, no stored artifact and nothing to expire; columns `workDate, memberName, memberId, project, activity, startedAt, durationSeconds, hours, approvalStatus` with `hours` rounded once to two decimals half-up, no address and no notes, and an erased member reading "Former member"; administrators only, coordinators keeping the JSON report; one audit row per started export with `action="export"` and the filters in `changes`, written before the stream, which amends §16.34's "a report leaves no audit row" and adds `export` to its vocabulary; and the import, recommended out of the MVP, put back into scope on the same day as a decision still to be taken (§16.41). Gaps not yet raised by any
+refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread (§16.39, D-072). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). **D-072** — retention: a period is the age at which the instance deletes a row itself, distinct from expiry, soft deletion and erasure; the organisational record and the audit trail are never deleted; a session is deleted 30 days after it ends, with its refresh-token hashes; a notification is deleted a month after it is read and, unread, at the organisation's mailbox window, whichever comes first; an organisation may set that window (1–24 months, default 12) and the window for resolved assignment requests (6 months to never, default never), shortening taking effect at the next sweep after a confirmation; nothing else is configurable; and the mechanism that enforces all of it is left open by name (§16.39). **D-073** — the retention sweep: an in-process housekeeping run in the API server, once at boot after the schema guard and daily at 03:00 in the organisation's time zone, guarded by a non-blocking advisory lock of its own so one runner deletes at a time; 500 rows per transaction and at most 10,000 per class per run; the organisation's windows and the deployment's session limits read at the start of each run; a failed batch logged and left for the next run rather than blocking startup; one log line per run and no endpoint, audit row or change-feed entry; and two `notifications` indexes admitted by §16.37 rule 10, which now counts seven (§16.40). **D-074** — the report export: `format=json|csv` on the one report route, the grouped JSON unchanged and CSV carrying the detail rows those totals were summed from, both taken from one read-only `REPEATABLE READ` transaction so the file and the report cannot disagree; synchronous and streamed, capped at 100,000 rows and 60 seconds and refused as `413 EXPORT_TOO_LARGE` before the first byte, with no job queue, no stored artifact and nothing to expire; columns `workDate, memberName, memberId, project, activity, startedAt, durationSeconds, hours, approvalStatus` with `hours` rounded once to two decimals half-up, no address and no notes, and an erased member reading "Former member"; administrators only, coordinators keeping the JSON report; one audit row per started export with `action="export"` and the filters in `changes`, written before the stream, which amends §16.34's "a report leaves no audit row" and adds `export` to its vocabulary; and the import, recommended out of the MVP, put back into scope on the same day as a decision still to be taken (§16.41). **D-075** — the import: one `POST /v1/imports` taking a CSV of time entries against members, projects, activities and assignments that already exist, none of which the import creates; administrators only; every row checked by the routes' own rules (60–86,400 seconds, the five-minute future tolerance, assignment eligibility, the activity belonging to the stated project), the whole file applied or none of it, with `?dryRun=true` reporting the same problems and writing nothing; duplicates refused by the file's SHA-256 (`409 IMPORT_ALREADY_APPLIED`) and by member, work date, start and length, never silently skipped; 10,000 rows and 1 MiB within 60 seconds, refused as `413 IMPORT_TOO_LARGE`; the member is the author and the administrator the actor, with only `approved` and `not_required` rows accepted and the importer recorded as having asserted the approval; one `import` audit row per file and none per imported entry, which amends §16.34 rule 1; and no install-epoch bump, because an import only inserts (§16.42). Gaps not yet raised by any
 section are tracked as backlog items B1–B20 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -2303,13 +2303,13 @@ Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (liv
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
-1. Import/export mechanism (§16.7, D-036) — **export resolved 28 November 2026 (§16.41, D-074); import still open, and now required in the MVP.** §16.7's six questions are answered for export. The import half was put back into scope on 28 November 2026 and needs a decision of its own, which is the next item taken up here — and it is **contract-blocking** (§17 B20): a route the MVP ships cannot be missing from a contract being drafted.
+1. ~~**Import/export mechanism**~~ (§16.7, D-036) — **Resolved 28 November 2026.** Export by §16.41 (D-074) and import by §16.42 (D-075). §16.7's six questions are answered in place, B20 is closed, and the import file's requirements are written there in the language of whoever prepares the spreadsheet.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 3. ~~**Anonymisation, revisited**~~ — **Resolved 28 November 2026 (§16.38, D-071).** D-052's trade was taken up on its own terms: erasure stays as one administrator act that pseudonymises the user row, the replacement name is "Former member", the address is one sentinel, the mailbox is emptied under the erasure's single row, and what erasure cannot protect is written down instead of promised away.
 4. ~~**Retention policy**~~ — **Resolved 28 November 2026 (§16.39, D-072).** The record and the audit trail are never deleted; a session goes 30 days after it ends; a notification goes a month after it is read or at the organisation's mailbox window, never beyond 24 months; and the organisation sets that window and the window for resolved assignment requests, nothing else. §16.38's legal gap is answered for the record by deciding that it has no period, and remains open for the jurisdiction and the basis.
 5. ~~**The retention sweep**~~ — **Resolved 28 November 2026 (§16.40, D-073).** An in-process run at boot and daily at 03:00 in the organisation's time zone, one runner at a time under its own advisory lock, 500 rows a transaction and 10,000 a class a run, failures logged rather than fatal, one log line per run and no API surface. Two indexes on `notifications` are the only schema it adds.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B20), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled until B20: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24) — **and B20, the MVP's import, added 28 November 2026 and flagged contract, so drafting is blocked by that one item (D-074, §16.41).** The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table, and §16.38 (D-071) closes the anonymisation review; §16.39 (D-072) then sets the retention periods and §16.40 (D-073) the sweep that enforces them. §16.41 (D-074) then decides the report export — one read serialised as grouped JSON or detail CSV, administrator-only, synchronous and capped, and one audit row per file — and puts the import back into the MVP's scope, required and undecided.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B20), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24) — and B20, the import, added and resolved on 28 November 2026 by D-075 (§16.42), so nothing in that backlog blocks drafting. The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table, and §16.38 (D-071) closes the anonymisation review; §16.39 (D-072) then sets the retention periods and §16.40 (D-073) the sweep that enforces them. §16.41 (D-074) then decides the report export — one read serialised as grouped JSON or detail CSV, administrator-only, synchronous and capped, and one audit row per file — and puts the import back into the MVP's scope, required and undecided; §16.42 (D-075) then decides it, and the backlog's last item closes.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2455,8 +2455,8 @@ Errors use the envelope already illustrated in §10.5, now confirmed as the cont
 | `401` | `UNAUTHENTICATED` | Missing, malformed or expired credentials, a revoked or ended session, and a reused refresh token — all indistinguishable (§16.23, D-056) |
 | `403` | `FORBIDDEN` (with field codes) | Authenticated, but a supplied **filter value** lies outside the caller's scope (§15.8.9) |
 | `404` | `NOT_FOUND` | Addressed resource absent **or** outside scope — identical status and body either way |
-| `409` | `CONFLICT`, `VERSION_MISMATCH`, `DATE_NOT_ELIGIBLE`, `INVALID_TRANSITION` | State conflicts, including the in-place edit path of §15.5, an entry date outside the volunteer's eligibility (§16.24, D-057), and an approval decision the entry's state does not allow (§16.25, D-058). `VERSION_MISMATCH` alone carries `details.changedFields`, the names of the fields that moved (§16.28, D-061) |
-| `413` | `PAYLOAD_TOO_LARGE` | Body over the 1 MiB cap, refused before it is parsed (D-053, §16.20) |
+| `409` | `CONFLICT`, `VERSION_MISMATCH`, `DATE_NOT_ELIGIBLE`, `INVALID_TRANSITION`, `IMPORT_ALREADY_APPLIED` | State conflicts, including the in-place edit path of §15.5, an entry date outside the volunteer's eligibility (§16.24, D-057), and an approval decision the entry's state does not allow (§16.25, D-058). `VERSION_MISMATCH` alone carries `details.changedFields`, the names of the fields that moved (§16.28, D-061). A re-uploaded import file carries `IMPORT_ALREADY_APPLIED` (§16.42, D-075) |
+| `413` | `PAYLOAD_TOO_LARGE`, `EXPORT_TOO_LARGE`, `IMPORT_TOO_LARGE` | Body over the 1 MiB cap, refused before it is parsed (D-053, §16.20); a report export over 100,000 rows (§16.41, D-074); an import over 10,000 rows (§16.42, D-075) |
 | `429` | `RATE_LIMITED` | Token bucket exhausted; carries `Retry-After` (D-053, §16.20) |
 | `500`, `503` | `INTERNAL_ERROR`, `SERVICE_UNAVAILABLE` | No internals, no identifiers |
 
@@ -2559,9 +2559,9 @@ Archiving is part of managing a project, not a separate privilege, and it does n
 
 ## 16.7 Follow-up: import/export mechanism
 
-**Export: resolved 28 November 2026 (§16.41, D-074). Import: open, and required in the MVP (28 November 2026).**
+**Export: resolved 28 November 2026 (§16.41, D-074). Import: resolved 28 November 2026 (§16.42, D-075).**
 
-A dedicated import/export mechanism was registered here as D-036 and deliberately kept out of MVP retrieval-pagination design. Export has since been taken up as D-074 (§16.41): the report route serialises the same read as JSON or CSV, an administrator may take the file, and the record says what one row of it holds. Import was recommended out of the MVP's scope and put back in on the same day; it is required, it is not designed, and nothing here may be implemented before its own decision is taken.
+A dedicated import/export mechanism was registered here as D-036 and deliberately kept out of MVP retrieval-pagination design. Export has since been taken up as D-074 (§16.41): the report route serialises the same read as JSON or CSV, an administrator may take the file, and the record says what one row of it holds. Import was recommended out of the MVP's scope, put back in on the same day, and decided the same day as D-075 (§16.42): one CSV of time entries, every row checked by the routes' rules, the whole file or none of it, and one audit row naming the file.
 
 The six questions this section listed, answered where they are answered:
 
@@ -2569,10 +2569,10 @@ The six questions this section listed, answered where they are answered:
 - **Totals and detail rows from one read.** Yes — one read-only transaction at `REPEATABLE READ`, with the grouped sums and the detail rows taken from the same result set (§16.41 rule 2). Snapshot pagination is still not how a list works (§16.1).
 - **Large ranges and job-style exports.** No. The export is synchronous and streamed, capped at 100,000 rows and 60 seconds, and refused as `413 EXPORT_TOO_LARGE` before the first byte when the count exceeds the cap (§16.41 rule 3). Nothing is stored, so there is nothing to deliver, retain or expire.
 - **Permission model.** Administrators only, across the whole instance (§16.41 rule 5). A coordinator's reporting is the JSON report scoped to their projects, not the bulk file.
-- **Whether an import exists in the MVP.** It does — put back in scope on 28 November 2026, with its own decision outstanding (§16.41 rule 6). That rule lists what the decision must answer: who may import, what may be imported, validation through the same constraints the routes obey, attribution, anchors, the install epoch, re-running the same file, and one audit row per import.
+- **Whether an import exists in the MVP.** It does, and it is decided: one CSV of time entries against members, projects, activities and assignments that already exist; administrators only; every row validated by the routes' own rules; the whole file applied or none of it; one audit row for the file rather than one per row; and no install-epoch bump, because an import only inserts (§16.42, D-075).
 - **Audit recording.** One row per started CSV export, written before the bytes stream, naming the caller and the filters (§16.41 rule 7, amending §16.34 rule 7). The import's row belongs to the import's decision.
 
-Nothing in the import half should be implemented before that decision is taken.
+Both halves now have decisions, and §16.42 states the import file's requirements in terms an organisation can hand to whoever prepares the spreadsheet.
 
 ## 16.9 Effects of archival on assignments, requests, and timers
 
@@ -6420,7 +6420,10 @@ collection shows a caller the rows their own read scope already allows.**
    write that rolled back nor miss one that committed. There is no after-commit
    hook, no queue and no best-effort write: the cost is one insert on the
    write's path, and the benefit is that the trail and the record cannot
-   disagree.
+   disagree. **Amended 28 November 2026 (D-075, §16.42):** the import is the one
+   accepted write that leaves a single row for the batch instead of one per
+   row — it records that a file of entries was imported, by whom, which file and
+   how many rows, and does not restate that fact ten thousand times.
 
 2. **What a row holds.** `id` (a UUIDv7, minted the way D-053 mints request
    ids), `at`, `actorId`, `entityType`, `entityId`, `action`, `requestId`, an
@@ -6483,10 +6486,10 @@ collection shows a caller the rows their own read scope already allows.**
 
 8. **A fixed action vocabulary.** `created`, `updated`, `deleted`,
    `submitted`, `approved`, `rejected`, `restored`, `archived`, `granted`,
-   `revoked`, `erased`, `export`. A client filters on these strings, so a new
-   action is a decision and a contract change, never a word a feature invents
-   on the way past. `export` joined on 28 November 2026 with the report export
-   (§16.41, D-074); the import's action joins when that decision is taken.
+   `revoked`, `erased`, `export`, `import`. A client filters on these strings,
+   so a new action is a decision and a contract change, never a word a feature
+   invents on the way past. `export` and `import` joined on 28 November 2026
+   with the report export (§16.41, D-074) and the import (§16.42, D-075).
 
 **The shapes.**
 
@@ -6996,9 +6999,11 @@ seven.
 
 12. **The cursor carries an install epoch.** D-037's payload gains `e`: an
     integer held beside the change counter and bumped whenever the database is
-    restored from a backup, rebuilt, or replaced by an import (D-036; in the MVP's scope since §16.41, D-074, which
-    leaves it to the import's decision whether a row-adding import bumps the
-    epoch or only a rewrite does). A cursor
+    restored from a backup, rebuilt, or replaced by an import (D-036). **Amended 28 November 2026 (§16.42, D-075):**
+    the MVP's import only inserts, and inserted rows take new `change_seq`
+    values, so an existing cursor picks them up rather than missing them — no
+    bump. Only a restore rewinds the counter, so the bump follows a restore, or
+    a future import that rewrites or deletes, which this one never does. A cursor
     whose `e` differs from the current value is refused as `400
     INVALID_CURSOR`, and the client restarts — for `/v1/sync`, that is a first
     sync. Without it a restore rewinds `change_seq`, and a phone holding a
@@ -7519,10 +7524,11 @@ and optional profile fields (§15.12 item 23), of which only `email`,
 `display_name` and `anonymised_at` are fixed here; whether an entry's anchor
 also keeps the zone name it was written under (D-069); whether a suspension
 route ever ships (§15.2.1); the retention period and legal basis the record
-names nowhere, which §16.38 hands back to the operator (D-071); and whether an
-import (D-036) writes rows through these constraints or beside them — an
-import is now required in the MVP (§16.41, D-074), so that question has a
-decision waiting on it.
+names nowhere, which §16.38 hands back to the operator (D-071); and ~~whether
+an import (D-036) writes rows through these constraints or beside them~~ —
+**answered 28 November 2026 (§16.42, D-075):** through them. Every imported
+row is checked by the same constraints and the same routes' rules, which is
+what lets a file be refused rather than a rule be bypassed.
 
 **Handed over, and handed back: the anonymisation review (§16.38).** D-052 was
 taken up on its own terms on 28 November 2026, as D-071. It answers the
@@ -8223,7 +8229,8 @@ the MVP, whose design is a decision still to be taken.**
    on 28 November 2026. Import is in scope, is recorded as open, and takes the
    next numbered decision. It is registered as **B20 in §17 and flagged
    *contract*:** a route the MVP must ship cannot be written out of the
-   contract, so this is the one open item that blocks drafting. This rule fixes only the questions that decision
+   contract. **Resolved 28 November 2026 (§16.42, D-075)** — every question
+   below is answered there. This rule fixes only the questions that decision
    must answer, so that it is taken up against the record rather than beside
    it:
 
@@ -8336,8 +8343,8 @@ A range over the cap, refused before any output:
   migration from another system is a script somebody writes, and the record's
   constraints are the only thing it has to respect.
 
-**Left open.** The import, in full (§16.7's remaining half, registered as B20
-and contract-blocking). Whether a
+**Left open.** ~~The import, in full (§16.7's remaining half, registered as B20
+and contract-blocking)~~ — decided 28 November 2026 (§16.42, D-075). Whether a
 coordinator may ever receive a CSV for their own projects, which is an
 administrative widening if it happens. Whether the row and time caps become
 configuration (`100,000` and `60 s` are constants here), and whether a capped
@@ -8358,10 +8365,269 @@ list; §16.34 rule 7 (one read is audited) and rule 8 (`export` joins the
 vocabulary); §16.19 rule 5 (which export is which); §16.36 rule 12 (an import
 is now in scope, and the epoch question is its own); §16.37's left-open list
 (whether an import goes through the constraints); §16 head item 1 and the
-resolved list beside it; the B19 row in §17; the new B20 row there, which it registers as contract-blocking rather than resolved; and the §12 register. It reverses
+resolved list beside it; the B19 row in §17; the new B20 row there, which it registers as contract-blocking and D-075 later resolves; and the §12 register. It reverses
 the recommendation it was presented with on one point only: the import is in
 the MVP, and this record says so rather than leaving the absence to be
 inferred.
+
+------------------------------------------------------------------------
+
+## 16.42 Import: one CSV of entries, checked by the routes' rules — and what a valid file must contain
+
+**Confirmed decision (D-075) — 28 November 2026.**
+
+§16.41 put the import back into the MVP's scope and listed eight questions it
+would have to answer without answering them; B20 recorded it as the one item
+blocking the contract. This decides it — the route, the file, the checks, the
+attribution, the audit — and writes the file's requirements in the language of
+whoever prepares the spreadsheet rather than in the language of the schema,
+because an import is only as good as the file it is handed.
+
+**The case this protects.** Hearth & Hands has run for three years on a
+spreadsheet: forty volunteers, six projects, nine thousand rows of hours.
+Nobody will re-key them. The administrator uploading the file is not a
+developer — she needs to know what each column means, why a row was refused,
+and that a half-imported file cannot happen. And afterwards the record has to
+say what arrived, from which file and through whose hands, without pretending
+that nine thousand creates each happened one at a time.
+
+**Decision in one line: one `POST /v1/imports` takes a CSV of time entries
+against members, projects, activities and assignments that already exist;
+every row is checked by the routes' own rules; the whole file applies or none
+of it does; duplicates are refused by the file's fingerprint and by content;
+one `import` audit row records the file and no per-entry rows are written; and
+the import does not bump the install epoch.**
+
+**The rules.**
+
+1. **Entries only, against references that already exist.** The import creates
+   no members — people self-register and credentials are not an import's to
+   invent — and no projects, activities or assignments. Every row names a
+   member by address, a project and activity by name, or a project-less
+   description; each must already exist, and an unknown or ambiguous reference
+   is a row error. The assignment history therefore has to be in place first,
+   through the ordinary routes or a script driving them, because §16.24's
+   eligibility is what makes an imported hour mean anything. Rejected: letting
+   the file create one assignment per person and project spanning the imported
+   dates, which fabricates periods nobody entered, widens eligibility for
+   later backdated submissions, and would have to settle §13 item 4 first.
+
+2. **One CSV, the export's dialect, an exact header.** RFC 4180, UTF-8, ISO
+   8601 instants in UTC, `workDate` as the local date the hours belong to. A
+   header row is required and must carry exactly the nine column names listed
+   under *The columns* below, in any order; a missing, extra or renamed column refuses the file,
+   because a shifted column imports the wrong thing silently. `local_anchor` is
+   derived in the organisation's time zone: a CSV carries no source zone, so
+   §16.36's left-open anchor question is answered for imports by re-deriving.
+   JSON is rejected — a second shape to validate for no user.
+
+3. **The routes' rules, the whole file or none of it, and a dry run.** Every
+   row is validated by the same rules `POST /v1/time-entries` applies: the
+   60–86,400 second bounds (§16.13), the five-minute future tolerance and the
+   one-day tolerance on a duration-only work date (§16.24), assignment
+   eligibility, the activity belonging to the stated project, and §16.37's
+   decision fields. Overlap stays advisory and non-blocking (§16.14). One
+   transaction covers the file: any row error applies nothing, the response is
+   D-039's `400 VALIDATION_FAILED` — never a second validation status — with
+   up to 100 `details.errors` entries of `{path, code, message}` where `path`
+   is `rows[118].memberEmail`, and `truncated` when there were more. A dry run
+   (`?dryRun=true`) returns the same report, writes nothing and leaves no audit
+   row.
+
+4. **The member is the author, the administrator is the actor, and only
+   accepted history imports.** `volunteer` is the matched member; `submittedAt`
+   is the import instant; the importer is never the author of an entry.
+   `approvalStatus` must be `approved` or `not_required`; `pending` and
+   `rejected` are row errors, because a migration carries what was accepted and
+   an unaccepted claim belongs in the app. An imported approval sets
+   `reviewedBy` to the importing administrator and `approvedAt` to the import
+   instant, satisfying §16.37, and the audit row records the approval as
+   asserted with the file rather than performed in the app.
+
+5. **Duplicates are refused, never skipped.** The SHA-256 of the body is
+   recorded with the import, and re-uploading an applied file returns `409
+   IMPORT_ALREADY_APPLIED` naming when it was applied. Within the file and
+   against the record, two rows describing the same session — same member, work
+   date, start instant and duration — are a row error. There is no silent
+   skip: a skipped row looks exactly like a successful import.
+
+6. **Synchronous and bounded by the route's own cap.** `POST /v1/imports` takes
+   the body streamed and applies it in the request; no job, no queue, no stored
+   file, nothing to retain. The limits are 10,000 rows, 1 MiB — D-053's existing
+   body cap, which is not raised for this route — and 60 seconds; over a limit
+   is `413 IMPORT_TOO_LARGE` before the file is parsed. A larger history is
+   several imports, each complete.
+
+7. **No install-epoch bump.** §16.36 rule 12 assumed an import might bump `e`.
+   It should not: this import only inserts, and inserted rows take new
+   `change_seq` values, so an existing cursor picks them up rather than missing
+   them. Only a restore rewinds the counter. **Amended 28 November 2026 (§16.36
+   rule 12):** the bump follows a restore, or a future import that rewrites or
+   deletes, which this one never does.
+
+8. **Administrators only, one audit row for the file, and none per entry.**
+   Instance-wide, mirroring the export (§16.41 rule 5). The applied import
+   leaves one row: `action = "import"` (joining §16.34's vocabulary),
+   `entity_type = "user"`, `entity_id` = the caller, and `changes` holding
+   `{ kind, fileName, sha256, rowCount, firstWorkDate, lastWorkDate }` with
+   `before: null`. It is written in the import's transaction, so a refused or
+   dry-run file leaves nothing. Imported entries get **no** `created` row of
+   their own: one file is one act, and ten thousand rows would state one fact
+   ten thousand times. This amends §16.34 rule 1, and §16.42's accepted costs
+   own what it gives up.
+
+**What a valid import file must look like.** Written for the person preparing
+it, because this is the part an organisation will read.
+
+*The file itself.*
+
+- One plain CSV — the format Excel, Numbers and Google Sheets all save as
+  "CSV" (in Excel, choose **CSV UTF-8**). One row is one time entry.
+- The first line is the header. It must contain exactly these nine names, in
+  any order, spelled as shown: `memberEmail`, `workDate`, `startedAt`,
+  `durationSeconds`, `project`, `activity`, `description`, `approvalStatus`,
+  `notes`. A missing, extra or misspelled column is refused.
+- One entry per row. No blank rows in the middle, no totals row, no empty
+  trailing columns.
+- At most 10,000 rows and 1 MiB, and it must upload within 60 seconds. A bigger
+  history is several files — by year, by project — each one complete.
+- Dates are `YYYY-MM-DD`. Times are ISO 8601 in UTC and end in `Z`, for example
+  `2026-10-31T09:00:00Z`.
+- A cell containing a comma must be in quotes (`"Saturday Pantry, main hall"`);
+  a quote inside a cell is written twice. Leave an optional cell empty rather
+  than writing `NULL`, `-` or `n/a`.
+
+*The columns.*
+
+| Column | When it is required | What goes in it |
+|---|---|---|
+| `memberEmail` | Always | The volunteer's email address as it appears on their account; case does not matter. The person must be a current member — not someone whose membership was removed, and not an erased account. |
+| `workDate` | Always | The calendar date the hours belong to, in the organisation's time zone. For a night shift this is the date the work is attributed to, not the date it ended. |
+| `durationSeconds` | Always | How long the work lasted, in whole seconds, from 60 (one minute) to 86,400 (24 hours). Four hours is `14400`. |
+| `approvalStatus` | Always | `approved` if the hours were checked and accepted, or `not_required` if no approval was needed when they were recorded. `pending` and `rejected` cannot be imported. |
+| `project` | When `activity` is filled | The project's name as it appears in the app. If the project has since been archived, the work date must fall before the day it was archived. |
+| `activity` | When `description` is empty | The activity's name within that project, as it appears in the app. |
+| `description` | When `activity` is empty | What the work was, for an entry with no project — the same free text the app asks for on a project-less entry. |
+| `startedAt` | Optional | When the work began, as an ISO 8601 UTC time. Leave it empty when the spreadsheet only has a date and a length; the entry then sits at the bottom of its day. If filled, it may be at most five minutes ahead of the current time. |
+| `notes` | Optional | The note the app will show on the entry. |
+
+*Rules the whole file must satisfy.*
+
+- The person must have been assigned to that project on that work date. An
+  assignment that has since ended still counts for the dates it covered.
+- The activity must belong to the stated project, and both must exist under
+  exactly that name. Two projects with the same name are reported, not guessed
+  between.
+- A work date may be at most one day ahead when no start time is given.
+- Overlapping entries are allowed. The app flags overlaps for a reviewer and
+  never refuses them, and the import behaves the same way.
+- No two rows — and no row against hours already recorded — may describe the
+  same session: same person, same work date, same start time, same length.
+  Such a row is reported, never skipped.
+- Everything or nothing: one bad row means nothing from the file is imported.
+
+*What happens when something is wrong.*
+
+- The file is not imported. The response lists up to 100 problems, each naming
+  the row number (the header is row 1), the column and what to fix. Fix the
+  file and upload the whole thing again.
+- A dry run — the same upload marked `dryRun=true` — returns that list and
+  imports nothing, so a large file can be checked before it counts.
+- Uploading a file that has already been imported is refused, with a message
+  saying when it was applied.
+
+*A worked file, three valid rows.*
+
+```csv
+memberEmail,workDate,startedAt,durationSeconds,project,activity,description,approvalStatus,notes
+"dee.okafor@example.org",2026-10-31,2026-10-31T09:00:00Z,14400,Saturday Pantry,Sorting,,approved,Morning shift
+"dee.okafor@example.org",2026-10-31,2026-10-31T14:30:00Z,10800,Saturday Pantry,Sorting,,approved,Afternoon shift
+"marisol.vega@example.org",2026-10-30,,7200,,,Outreach at the market,not_required,No project code on the sheet
+```
+
+*A file that cannot be imported.*
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_FAILED",
+    "message": "The file could not be imported: 2 problems found.",
+    "details": {
+      "errors": [
+        { "path": "rows[118].memberEmail", "code": "IMPORT_MEMBER_UNKNOWN",
+          "message": "No current member has this email address." },
+        { "path": "rows[118].workDate", "code": "DATE_NOT_ELIGIBLE",
+          "message": "This person was not assigned to Saturday Pantry on 31 October 2026." }
+      ],
+      "truncated": false
+    },
+    "requestId": "0193a0f4-6b1e-7c2d-8f3a-5d9e7b1c4a63"
+  }
+}
+```
+
+*What an import never does.*
+
+- It creates no accounts, projects, activities or assignments. Everything it
+  names must already be there.
+- It never changes or deletes an existing entry. A wrong import is corrected by
+  deleting its entries in the app, or by importing the right file after those
+  deletions.
+- It does not read `.xlsx`, `.ods`, PDFs or a spreadsheet link. Save as CSV
+  first.
+- It keeps no copy of the file: nothing is stored after the request ends.
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **One CSV of entries, whole file or nothing, one audit row (recommended)** | A migration that either lands complete or not at all, with one clear account of what arrived | A single typo refuses the file, and the trail cannot show one imported entry being created |
+| A partial import that keeps the good rows | One upload gets most of the way | A half-applied migration is indistinguishable from a complete one, and the operator must work out which half landed |
+| Import that creates members and assignments too | A whole migration in one file | Fabricated credentials, fabricated assignment periods, and eligibility that no longer means anything |
+| JSON or a spreadsheet file accepted as well | No "save as CSV" step | Three parsers, three sets of errors, one contract |
+| Per-entry `created` audit rows | Every imported entry has a history like any other | 10,000 extra inserts in the import's transaction to restate one fact, and a trail that looks like a burst of activity nobody performed |
+| Silent skipping of duplicates | A re-run "just works" | A skipped row is indistinguishable from an imported one, which is the failure mode the whole file refused to have |
+| An asynchronous import job | No request lives long, and files could be larger | A stored file, a progress surface, an expiry and a worker — for a one-time migration that fits in a minute |
+
+**Accepted costs.**
+
+- **An imported entry's history starts empty.** `GET /v1/audit-log` filtered
+  to one imported entry returns nothing, because the batch row names the file
+  and not the row. The entry's `submittedAt` marks it as imported, and the batch
+  row is the trail's only account of it.
+- **The whole file is hostage to its worst row.** Ten thousand good rows wait
+  for one bad address, and a large migration is several rounds of fix-and-retry.
+- **`reviewedBy` overstates what happened.** An imported `approved` row names
+  the administrator who uploaded the file, not the person who once checked the
+  hours; only the audit row's wording tells them apart.
+- **The 1 MiB cap is the route's, not the import's.** A file of very long notes
+  reaches the body cap before the row cap, and the answer is a smaller file.
+- **Duplicates depend on the file being honest about times.** Two genuinely
+  separate sessions with the same start and length need a distinguishing note,
+  and a spreadsheet with rounded start times will trip the check.
+- **No undo.** A file imported into the wrong organisation period is corrected
+  one deletion at a time.
+
+**Left open.** Whether a second file kind ever ships — members, projects,
+activities or assignments — which would settle §13 item 4 first; whether an
+import may ever update or delete an existing entry, which is also what would
+make the install epoch bump; whether the 10,000-row and 60-second limits become
+configuration (`1 MiB` is not ours to change while D-053 stands); whether a
+failed import should be downloadable as a file of just its bad rows, which
+would be a second output format; whether the batch row should carry the list of
+entry ids it created, which would make the trail complete at the price of a row
+that grows with the file; and the exact `notes` length limit, which remains the
+entry route's own rule rather than this decision's.
+
+**Resolves and amends.** It resolves B20 (§17) — the last open item on the
+contract's critical path — and answers the import half of §16.7 in place. It
+amends §16.34 rule 1 (the import is the one accepted write that leaves a batch
+row rather than one per row) and rule 8 (`import` joins the vocabulary);
+§16.36 rule 12 (no epoch bump for an insert-only import); §16.37's left-open
+question (imports write *through* the constraints); §16.4's 409 and 413 rows
+(`IMPORT_ALREADY_APPLIED`, `IMPORT_TOO_LARGE`); §16.41 rule 6 and its left-open
+list; §16 head item 1 and its resolved list; the B20 row in §17; and the §12
+register.
 
 ------------------------------------------------------------------------
 
@@ -8369,7 +8635,7 @@ inferred.
 
 **Status:** planning register, 22 November 2026. Not decisions.
 
-These nineteen gaps were found by reviewing the record against what an API contract and an implementation will actually need. They are not listed in §13 or §15.12. None has been decided; B16–B19 were surfaced while taking up B1 and left open with it. They are recorded here so they are not discovered later, during build, when the cost is a schema migration or a breaking change. **B20 was added on 28 November 2026**, not by that review but out of §16.7's import half — and it is the one item in this table that blocks contract drafting today.
+These nineteen gaps were found by reviewing the record against what an API contract and an implementation will actually need. They are not listed in §13 or §15.12. None has been decided; B16–B19 were surfaced while taking up B1 and left open with it. They are recorded here so they are not discovered later, during build, when the cost is a schema migration or a breaking change. **B20 was added on 28 November 2026**, not by that review but out of §16.7's import half; it was the one item here that blocked contract drafting, and it was resolved the same day (§16.42, D-075).
 
 Backlog items carry **B** identifiers, not **D** identifiers, because nothing has been decided. When one is taken up it becomes a numbered decision in §16 and the row records the decision ID and section. Rows are never deleted: a closed item stays, marked resolved, so the backlog also shows what was nearly missed.
 
@@ -8396,7 +8662,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B17** | Daily or weekly maximum hours, separate from the per-entry ceiling | **Feature** | Surfaced while taking up B1 and set aside; affects validation and reporting, not the record shape |
 | **B18** | Break deduction: whether a shift records a break that is subtracted, rather than net time as two entries | **Feature** | Surfaced while taking up B1 and set aside; a break field is a derived quantity that can disagree with the timestamps |
 | **B19** | Payroll rounding: whether exported hours are decimal, and the rule applied at the boundary | **Feature** | Surfaced while taking up B1 and set aside; the API stays exact and any rounding happens once, at export. **Resolved — D-074 (§16.41).** The CSV export carries `hours` beside `durationSeconds`, two decimals, half-up, computed once at the export boundary; no other route, body or list rounds |
-| **B20** | Import contract: who may import, which rows, how they are validated against the routes, attributed, audited and re-run | **Contract** | **Open — required in the MVP (D-074, §16.41); decision outstanding.** The import went back into scope on 28 November 2026, so the contract cannot be written without its route, payload, error codes and attribution rules; §16.41 rule 6 lists the eight questions the decision must answer. This is the only item in this table that blocks drafting |
+| **B20** | Import contract: who may import, which rows, how they are validated against the routes, attributed, audited and re-run | **Contract** | **Resolved — D-075 (§16.42).** One `POST /v1/imports` taking a CSV of time entries against members, projects, activities and assignments that already exist; administrators only; every row checked by the routes' own rules, the whole file applied or none of it, with a dry run; duplicates refused by the file's fingerprint and by content; one `import` audit row for the file and none per row; no install-epoch bump for an insert-only import. §16.42 carries the file's requirements in the language of a user guide |
 
 **Set aside while taking up B1.** B16–B19 above are the sub-questions that surfaced during the time-and-duration discussion and were deliberately not settled with it. They are open decisions, not rejected ones. The alternatives rejected during that discussion — local wall-clock times as storage, whole minutes as the canonical unit, per-project time zones, and splitting every entry at midnight — are not backlog items: they are recorded with the decision itself, with their reasons, so they are not re-litigated once it is confirmed. Break handling appears in both places on purpose: the MVP rule is net time through two entries, while whether a break field is ever added is B18.
 
@@ -8411,6 +8677,6 @@ stale write has an answer that neither retries nor overwrites, and conflict
 values are settled as well (§16.29), so the entry read shape is final and the approval queue filters a boolean rather than a status. Deletion is settled too (§16.30), so the entry's read shape has its last three fields and every total has one predicate to apply. Catching up is settled as well (§16.31), so the download half has a feed rather than a protocol to invent and the outbox stays the ordinary routes replayed (D-055). Edit authority is settled as well (§16.32), so every write route's authorization has its third clause and the project representation has the one new field it needs. Reporting is settled as well (§16.33), so B17's ceilings and B19's
 rounding each have one set of hours to act on. The audit trail is settled too (§16.34), so every write route has one place its record lands and B7's anonymisation has a row that keeps the actor. Notification transport is settled as well (§16.35), so an act that names recipients writes its rows in the same transaction and B15 has the indexes the mailbox needs (§16.36). Schema and indexes are settled too (§16.36, D-069), which closes this list. Nothing here depends on the remaining §13 or §15.12 items, so these can be taken in any order the work allows.
 
-**What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so the contract was unblocked on 27 November 2026. **B20 blocks it again from 28 November 2026:** the MVP's import is in scope and undecided, so its route, payload, error codes and attribution rules are drafting decisions nobody has taken. Every other item here is settled or deferred by scope. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B10 has left that list too (§16.35), so the mailbox's routes, rows and two indexes were part of B15's work, and B11's trail joined it with §16.34. All of it is now decided (§16.36, D-069), which is why this list is closed. B7 has left that list (§16.19).
+**What must land before contract drafting.** B1, B2 and B16 were unavoidable, and all three are settled (§16.13, §16.14, §16.24), so the contract was unblocked on 27 November 2026. B20 blocked it again for part of 28 November 2026, until D-075 (§16.42) decided the MVP's import — its route, payload, error codes and attribution rules. Every item in this table is now settled or deferred by scope. B3 was on that list and has left it with the server timer (D-048); it returns if that feature does. B14 has left it too (§16.23): the session model is the whole of what the authentication routes needed. B8 has left that list (§16.21), the other collection routes now having a shape to be drafted against, and B13 has left it too (§16.20); B12 has left it as well (§16.22), every mutation now having a shape. B10 has left that list too (§16.35), so the mailbox's routes, rows and two indexes were part of B15's work, and B11's trail joined it with §16.34. All of it is now decided (§16.36, D-069), which is why this list is closed. B7 has left that list (§16.19).
 
-**Order proposed:** B20, and nothing after it. The backlog was closed on 27 November 2026 — B15 was the last item and is resolved (§16.36, D-069), with B3 deferred by scope (D-048) and B17–B19 set aside as features — and B20 reopens it with the single item §16.7's import half leaves. It is taken up next as the following numbered decision, because drafting cannot name an MVP route the record does not have; the table-by-table constraints have already landed in §16.37 (D-070).
+**Order proposed:** none — the backlog is closed again. It closed on 27 November 2026 (B15, §16.36, D-069), reopened for the one item the import's return to scope created, and closed on 28 November 2026 when D-075 answered it (§16.42); B3 stays deferred by scope (D-048) and B17–B19 remain features. What remains is §15.12 item 29's contract drafting, the table-by-table constraints having landed in §16.37 (D-070).
