@@ -1265,7 +1265,15 @@ that cannot sign in answers the same `409 SIGN_IN_UNAVAILABLE`, so the route is
 never a membership directory; device transfer through the existing self-serve
 grant comes first, and a personal grant stays the administrator's fallback; the
 vocabulary gains `sign_in_requested` and `signed_in`, uniqueness reaches seven,
-and nothing about session lifetimes changed (§16.47). Gaps not yet raised by any
+and nothing about session lifetimes changed (§16.47). **D-081** — coming back
+after removal: a `removed` membership is no longer grouped with an unknown address,
+so a sign-in ticket accepts it as a `rejoin` request (`sign_in_requests.intent`),
+approved on the roll with the removal date visible, creating a new active
+membership and the session in one transaction; an administrator may also rejoin
+from the member record with `POST /v1/memberships`, which refuses an anonymised
+identity; the role returns as `volunteer`, coordinator grants and assignments are
+not revived, and neither the history nor the audit trail is reattributed (§16.48).
+Gaps not yet raised by any
 section are tracked as backlog items B1–B20 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated. **Amended 28 November 2026 (D-078, §16.45):** D-004 is superseded — there is no self-registration — **and amended again 28 November 2026 (D-079, §16.46):** it exists in one shape, behind a join ticket, creating a pending membership and a session that reaches nothing — and D-005's credential is settled as an administrator-issued enrolment grant, so both rows read as history.
 
 ## 13. Outstanding decisions and recommended order
@@ -7505,7 +7513,7 @@ made by a migration, a console or a future route nobody has written yet.
 | `sessions` | as §16.23 sketched them | `user_id` foreign key `RESTRICT`; `revoked_at` as a tombstone; no membership check | a session outlives nothing and ends its own way; whether the membership is still active is a per-request check, not a column |
 | `enrolment_grants` | `id`, `user_id`, `issued_by_user_id`, `code_hash`, `created_at`, `expires_at`, `consumed_at`, `attempt_count` | unique `code_hash`; both user columns foreign key `RESTRICT`; `expires_at > created_at`; `attempt_count` between 0 and 5 | the row is a credential in transit (§16.45, D-078), so the engine holds its shape: a hash cannot repeat, the window must run forwards, and a grant cannot claim more attempts than the five that void it. What it cannot hold — that redemption consumes the row exactly once, and that an expired grant is refused — belongs to the redeeming statement, which does both in one transaction |
 | `join_tickets` | `id`, `purpose`, `issued_by_user_id`, `code_hash`, `created_at`, `expires_at`, `max_uses`, `used_count`, `revoked_at` | `purpose IN ('join','sign_in')`; unique `code_hash`; `issued_by_user_id` foreign key `RESTRICT`; `expires_at > created_at`; `max_uses` between 1 and 100; `used_count` between 0 and `max_uses`; `revoked_at` only ever set forwards | the row is a door, not a credential (§16.46, D-079): a hash cannot repeat, the window must run forwards, and the counter cannot claim more admissions than the headcount. What it cannot hold — that a use is counted in the statement that mints the person — belongs to the claim transaction |
-| `sign_in_requests` | `id`, `ticket_id`, `user_id`, `request_token_hash`, `match_code`, `created_at`, `expires_at`, `decided_at`, `decided_by_user_id`, `decision` | unique `request_token_hash`; `ticket_id` and `user_id` foreign key `RESTRICT`; `decision IN ('pending','approved','denied')`; `decided_at` and `decided_by_user_id` set together; `match_code` four digits | the row is a request, not a session (§16.47, D-080): the token names one phone, the match code names one row to a human, and a decision cannot be undated or attributed to nobody |
+| `sign_in_requests` | `id`, `intent`, `ticket_id`, `user_id`, `request_token_hash`, `match_code`, `created_at`, `expires_at`, `decided_at`, `decided_by_user_id`, `decision` | `intent IN ('sign_in','rejoin')`; unique `request_token_hash`; `ticket_id` and `user_id` foreign key `RESTRICT`; `decision IN ('pending','approved','denied')`; `decided_at` and `decided_by_user_id` set together; `match_code` four digits | the row is a request, not a session (§16.47, D-080): the token names one phone, the match code names one row to a human, and a decision cannot be undated or attributed to nobody |
 
 **Amended 28 November 2026 (D-080, §16.47):** `join_tickets` gains `purpose` and
 `sign_in_requests` joins the table. The purpose is a column rather than a second
@@ -9588,7 +9596,11 @@ the attestation the paper sign-in sheet has always used.
    account nobody can reach, and the recovery is the administrator in the room —
    the same recovery a lost phone has. Someone who types `dee@example.org` before
    Dee does leaves a pending row the administrator sees on the roll and deletes;
-   the deletion releases the address and Dee registers with it.
+   the deletion releases the address and Dee registers with it. **Amended 28
+   November 2026 (D-081, §16.48):** an address that already has an identity is
+   refused here and belongs at the sign-in door, where a `removed` membership can
+   be brought back and a live one can be given a device; neither is a dead end,
+   and the message a person sees must say which door is theirs.
 
 9. **A ticket's refusals may say what happened.** A closed, expired, revoked,
    exhausted or unknown ticket answers `403 JOIN_CLOSED` with one message, because
@@ -9759,8 +9771,12 @@ for her and read out twelve characters.
    which is neither a token nor an error.
 
 4. **Every address that cannot sign in gets one answer.** Unknown to the instance,
-   never a member here, `removed`, or already `pending` all answer
-   `409 SIGN_IN_UNAVAILABLE` with one body, under §16.23 rule 8. An address that
+   never a member here, or already `pending` all answer `409 SIGN_IN_UNAVAILABLE`
+   with one body, under §16.23 rule 8. **Amended 28 November 2026 (D-081, §16.48):**
+   a `removed` membership is no longer one of them. A person who was removed may
+   ask to come back at this door, and the roll decides — rule 4 of §16.48 says
+   what approving such a request does, and why the address leak it costs is worth
+   paying. An address that
    does not exist must be indistinguishable from one that does, or the route
    becomes a membership directory that any photographed slide unlocks. This does
    not widen what the registration route reveals: `409 EMAIL_IN_USE` and
@@ -9778,7 +9794,8 @@ for her and read out twelve characters.
 6. **Approval is the administrator's act; the session arrives at the phone that
    asked.** `PATCH /v1/sign-in-requests/{id}` takes `{ "decision": "approve" }` or
    `{ "decision": "deny" }`, one call per request, on the same roll as §16.46's
-   applications. The volunteer's app collects with
+   applications. On a `rejoin` request it creates the membership as well (§16.48
+   rule 4), because the administrator's tap is the approval in both cases. The volunteer's app collects with
    `POST /v1/auth/sign-in-requests/{id}/session` and `{requestToken}`: `202` while
    pending, `201` with D-056's session body once approved, `403 SIGN_IN_CLOSED`
    once denied, expired or swept. The token is spent by the successful answer, so
@@ -9808,7 +9825,8 @@ for her and read out twelve characters.
 
 10. **What the app offers depends on what it holds.** A live session offers
     transfer (rule 8); no session but a known identity offers a sign-in ticket
-    (rule 6); no identity at all offers a join ticket (§16.46). The order is not a
+    (rule 6), including an identity whose membership was removed (§16.48); no
+    identity at all offers a join ticket (§16.46). The order is not a
     preference. Offering a join ticket to a member produces the duplicate
     application rule 11 of §16.46 exists to refuse, and offering a grant to a
     newcomer mints a credential for an account that does not exist.
@@ -9894,6 +9912,158 @@ rule, §16.45 rule 7 with the fallback it now names, §16.46 rules 2 and 11 and 
 accepted costs, and §17's B14 and B15. It leaves persistence exactly as D-056 and
 D-078 left it: 180 idle days, 400 absolute, and a device event as the only reason
 to come back.
+
+------------------------------------------------------------------------
+## 16.48 Coming back after removal
+
+**Confirmed decision (D-081) — 28 November 2026.**
+
+A membership's status set has `removed` as its terminal value, and D-052 keeps the
+row because the work behind it is the record. That combination leaves a person in
+a state no door recognises: their `users` row is still live, so
+`users (lower(email)) WHERE anonymised_at IS NULL` refuses a second account; their
+only membership is `removed`, so the join ticket's `409 ALREADY_A_MEMBER` does not
+apply and the sign-in ticket answers `409 SIGN_IN_UNAVAILABLE` like a stranger's
+address. They cannot register, cannot rejoin, and cannot be told apart from
+somebody who was never here. Every door answers as if they did not exist, while
+the database remembers everything about them.
+
+**The case this protects.** Marcus left the pantry in March when his shifts moved
+to a weekday. In November he is back on Saturdays and stands in front of the slide.
+Everything about him is already in the instance — his entries, his approvals, his
+audit trail — and nothing in the design can give him a session.
+
+**Rules.**
+
+1. **Removal ends a membership, not an identity.** The `users` row survives with
+   its address (`anonymised_at` null), the membership row survives as `removed`
+   under D-052, and the history stays attributable. Anything else — anonymising a
+   departed volunteer to free an address, or deleting the identity — trades the
+   record for a convenience, which is the trade this design refuses everywhere
+   else.
+
+2. **The sign-in ticket gains a second intent.** A ticket whose purpose is
+   `sign_in` accepts an address whose only membership here is `removed`. The
+   request it creates carries `intent = 'rejoin'` instead of `'sign_in'`, and is
+   otherwise the same row: the same four digits, the same single-use request
+   token, the same expiry as the ticket. The response is the same `201` with the
+   same shape plus `intent`, so the phone can say "we found your old membership"
+   instead of "waiting to be let in".
+
+3. **The roll says which is which, because the acts differ.** A `sign_in` row
+   gives an existing member a new device. A `rejoin` row gives a removed person a
+   membership *and* a device, and the screen must show the date of the removal
+   beside the name. An administrator approving twenty rows in a queue is the only
+   check either one has; the difference between "her new phone" and "let her back
+   in after we removed her" has to be visible without a tap.
+
+4. **Approving a rejoin does two things in one transaction.** It creates a **new**
+   `memberships` row with `status = 'active'`, and it mints the session for the
+   device that asked. There is no second pending state and no second approval: the
+   administrator's tap is the approval, exactly as it is for a device. The new row
+   is what D-052 already requires of a rejoin, and it is why the partial unique
+   index — `memberships (user_id) WHERE status <> 'removed'` — permits it: the old
+   row is outside the predicate and stays as history.
+
+5. **Denial leaves the person removed, and nothing is created.** The request is
+   deleted under §16.39 rule 13, the identity is untouched, and the phone's next
+   poll gets `403 SIGN_IN_CLOSED`. A denial on a rejoin is not a rejection of a
+   registration — there is nothing to reject — and the audit records the decision
+   against the person, not against an application.
+
+6. **No room, no phone: an administrator rejoins from the member record.**
+   `POST /v1/memberships` with `{userId, role?}` creates an active membership for
+   an identity that has none here: `404 NOT_FOUND` for an identity the caller
+   cannot see, `409 ALREADY_A_MEMBER` when one is already live, and `409
+   INVALID_TRANSITION` for an anonymised user, whose identity the organisation has
+   erased and cannot resurrect. The device's way in after that is the personal
+   grant of §16.45 rule 7, unchanged.
+
+7. **A rejoin restores nothing else.** The role is `volunteer` unless the
+   administrator names another in the same act. Coordinator grants ended when the
+   membership was removed and are not revived (D-051: a grant ends with
+   departure); assignments ended then too; notifications were addressed to a
+   membership that no longer existed and are not re-sent. The person comes back as
+   a member of the organisation, not as a restored copy of their old account.
+
+8. **The history is not reattributed.** Old entries keep the author they had, old
+   approvals keep their reviewer, and the audit trail keeps both memberships as
+   separate rows with their own dates. A rejoin is a new membership for the same
+   person — which is only meaningful if the two rows are distinguishable, so
+   nothing merges them.
+
+9. **No notification, no email, and no new code.** The person is holding the phone
+   when the session lands (D-068's eleven stand); the approval writes `created` for
+   the membership and `signed_in` for the session, both already in §16.34 rule 8's
+   vocabulary, so the list of twenty stays twenty. The refusals are codes the
+   table already carries.
+
+**The shapes.**
+
+```http
+POST /v1/auth/sign-in HTTP/1.1
+Content-Type: application/json
+
+{ "ticket": "K7M2QX4B9RTD", "email": "marcus@example.org",
+  "deviceLabel": "iPhone 13 — Marcus" }
+```
+
+```json
+{
+  "signInRequest": {
+    "id": "...",
+    "intent": "rejoin",
+    "matchCode": "4172",
+    "requestToken": "...",
+    "expiresAt": "2026-11-28T20:30:00Z",
+    "previousMembership": { "role": "volunteer", "removedAt": "2026-03-14T17:00:00Z" }
+  }
+}
+```
+
+```http
+POST /v1/memberships HTTP/1.1
+Authorization: Bearer <administrator access token>
+Content-Type: application/json
+
+{ "userId": "...", "role": "volunteer" }
+```
+
+**Accepted costs.**
+
+- **An address with a history answers differently from a stranger's.** A `removed`
+  membership produces a `201` where an unknown address produces
+  `409 SIGN_IN_UNAVAILABLE`, so anyone with a photographed slide can learn that a
+  given address once belonged to a member here. That is a real leak and it is the
+  price of ever telling a returning volunteer that they may come back; the
+  alternative — a uniform refusal — is what produced this dead end. It is bounded
+  by the per-address bucket, by the ticket's life, and by the fact that it
+  reveals only the past, never the present.
+- **The roll gains a row an administrator can misread.** "Removed in March" and
+  "new phone" sit in the same list, and approving the wrong one lets a person back
+  into an organisation that removed them. The date is shown for that reason and it
+  cannot think for the reader.
+- **An administrator can rejoin someone a colleague removed for cause.** There is
+  no second signature and no cooling-off period; the record's answer to a bad
+  approval is the audit trail and a later removal, not a slower flow.
+- **A rejoin is not a repair.** Nothing that ended is restored, so a returning
+  coordinator finds their projects unstaffed and their grants gone, which is
+  correct and will still be a support conversation.
+
+**Left open.** Whether a rejoin should require a reason recorded on the audit row,
+which this decision does not; whether an organisation should be able to mark a
+removal as "not eligible to return", which would need a column and a policy this
+record has no basis for; whether a rejoin through a room should restore the old
+role automatically, which rule 7 refuses; and how long an identity with no live
+membership is kept at all, which D-052 answers as indefinitely and this decision
+does not revisit.
+
+**Resolves and amends.** It closes the dead end §16.47 rule 4 created when it
+grouped `removed` with `unknown`, and amends §16.47 rules 4, 6 and 10, §16.46 rule
+8 with the door a known address belongs at, and §16.37's `sign_in_requests` row
+with `intent`. It adds one authenticated route and no unauthenticated one, no
+code, no audit action and no notification type, so every count in §16.36 rule 10
+and §16.34 rule 8 stays where D-080 left it.
 
 ------------------------------------------------------------------------
 # 17. Decision backlog: gaps not yet raised

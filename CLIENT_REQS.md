@@ -263,7 +263,11 @@ retried blindly.
 
 7.13 **The sign-in section of the roll.** Below the applications, rows for people
 who scanned a sign-in ticket: display name, address, device label, time, and the
-**four digits** their phone is showing (§16.47 rule 5). The administrator approves
+**four digits** their phone is showing (§16.47 rule 5). A row whose `intent` is
+`rejoin` is marked as such and carries the date the person was removed (§16.48
+rules 2 and 3): approving it creates a membership as well as a session, and that
+is a heavier act than letting a member's new phone in. The two must be
+distinguishable without a tap. The administrator approves
 the row whose digits match the phone in front of them, and that is the only
 verification the flow has — the digits exist so the match is made against a screen
 in the room rather than against a name whoever holds the phone typed. Approve
@@ -374,7 +378,11 @@ not reveal whether the address exists, must not offer address suggestions, and
 must not auto-retry: a wrong guess and a non-member look identical on purpose.
 
 9.15 The waiting state shows the four digits large, "show this to the person
-helping you", and the expiry. The request token is held in the Keychain beside
+helping you", and the expiry. When the response carries `intent: "rejoin"` it also
+says what was found — "we found your old membership; Nadia can let you back in" —
+and shows the removal date the server returned. A rejoin must never look like a
+first registration, because the person is not new and being told they are is the
+worst version of this screen. The request token is held in the Keychain beside
 nothing else, so a relaunch resumes the wait; it is deleted the moment a session
 arrives, and it is never used for any other request.
 
@@ -477,3 +485,10 @@ suite:
     the request.
 30. Scan a join payload on the sign-in screen and a sign-in payload on the join
     screen: each is routed by prefix and no request is sent.
+31. Scan a sign-in ticket as a person who was removed in March: the response is
+    `201` with `intent: "rejoin"` and the removal date, the waiting screen says
+    the old membership was found, and the roll marks the row accordingly.
+32. Approve that rejoin: a new active membership appears for the person beside the
+    old `removed` one, the session lands on the phone, and the identity, the old
+    entries and their authors are untouched. Deny a second one and confirm nothing
+    is created and the phone gets `403 SIGN_IN_CLOSED`.
