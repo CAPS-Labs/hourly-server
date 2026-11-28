@@ -201,6 +201,16 @@ retry either succeeds or reports the door closed.
 device list, and refreshes on foreground. It must reach no other screen — no
 tabs, no empty lists, no "0 hours" — and must not poll faster than foreground.
 
+While the membership is pending, every business route answers `403
+MEMBERSHIP_PENDING` with the organisation's name in `details` (§16.46 rule 5).
+**That answer is the Waiting screen's normal state, not an error.** The app must
+not show a failure message, must not retry the refused request in a loop, must not
+clear the token store, and must not return to the Join screen. The distinction is
+carried by `code` alone, because `403` is shared with `FORBIDDEN`: a `403` with
+any other code is an error under C1's rules, and a `401` follows 9.10. A client
+that branches on the status instead of the code will show a volunteer a network
+failure on a screen that is working exactly as designed.
+
 9.9 Approval is discovered, not pushed: on the next foreground refresh the app
 sees an active membership and shows the organisation. There is no notification to
 receive and none to wait for.
@@ -247,7 +257,9 @@ suite:
 10. Issue a grant as an administrator, cancel it, and confirm redemption now
     fails with the same `401`.
 11. From a fresh install, scan a join QR, register, and land on the Waiting
-    screen rather than the app.
+    screen rather than the app. Before approval, every business route must answer
+    `403 MEMBERSHIP_PENDING`, and the app must render that as 9.8's waiting state —
+    no error, no Join screen, no cleared tokens — surviving a relaunch.
 12. Approve the membership from the administrator's device, and confirm the
     volunteer's next foreground refresh shows the organisation with no re-login
     and no second scan.
