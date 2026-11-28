@@ -206,9 +206,12 @@ designed.
 to protected organization records or time-entry operations merely
 because the person can authenticate.
 
-**Open implementation issue:** A trusted initial setup/bootstrap process
-is needed so that an organization has its first administrator. The
-process has not yet been designed.
+**Resolved 28 November 2026 (§16.44, D-077):** the trusted initial setup is
+an installation command run at the instance's own shell before the server
+first serves. It writes the organisation row, one user and one active
+`administrator` membership in one transaction, refuses once an administrator
+exists, and leaves no audit row because an installation has no authenticated
+caller. It creates no credential; that remains §3.1's.
 
 ### 3.3 User and Membership are separate resources
 
@@ -1187,7 +1190,7 @@ transaction, carrying the actor, the entity, the action, the `requestId`
 and the fields that moved with their before and after; actors survive
 anonymisation and the erasure is itself a row; read scope mirrors the
 entity's; one filtered `GET /v1/audit-log` ordered `at` then `id`; reads,
-refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread (§16.39, D-072). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). **D-072** — retention: a period is the age at which the instance deletes a row itself, distinct from expiry, soft deletion and erasure; the organisational record and the audit trail are never deleted; a session is deleted 30 days after it ends, with its refresh-token hashes; a notification is deleted a month after it is read and, unread, at the organisation's mailbox window, whichever comes first; an organisation may set that window (1–24 months, default 12) and the window for resolved assignment requests (6 months to never, default never), shortening taking effect at the next sweep after a confirmation; nothing else is configurable; and the mechanism that enforces all of it is left open by name (§16.39), which §16.40 then decides. **D-073** — the retention sweep: an in-process housekeeping run in the API server, once at boot after the schema guard and daily at 03:00 in the organisation's time zone, guarded by a non-blocking advisory lock of its own so one runner deletes at a time; 500 rows per transaction and at most 10,000 per class per run; the organisation's windows and the deployment's session limits read at the start of each run; a failed batch logged and left for the next run rather than blocking startup; one log line per run and no endpoint, audit row or change-feed entry; and two `notifications` indexes admitted by §16.37 rule 10, which now counts seven (§16.40). **D-074** — the report export: `format=json|csv` on the one report route, the grouped JSON unchanged and CSV carrying the detail rows those totals were summed from, both taken from one read-only `REPEATABLE READ` transaction so the file and the report cannot disagree; synchronous and streamed, capped at 100,000 rows and 60 seconds and refused as `413 EXPORT_TOO_LARGE` before the first byte, with no job queue, no stored artifact and nothing to expire; columns `workDate, memberName, memberId, project, activity, startedAt, durationSeconds, hours, approvalStatus` with `hours` rounded once to two decimals half-up, no address and no notes, and an erased member reading "Former member"; administrators only, coordinators keeping the JSON report; one audit row per started export with `action="export"` and the filters in `changes`, written before the stream, which amends §16.34's "a report leaves no audit row" and adds `export` to its vocabulary; and the import, recommended out of the MVP, put back into scope on the same day as a decision still to be taken (§16.41). **D-075** — the import: one `POST /v1/imports` taking a CSV of time entries against members, projects, activities and assignments that already exist, none of which the import creates; administrators only; every row checked by the routes' own rules (60–86,400 seconds, the five-minute future tolerance, assignment eligibility, the activity belonging to the stated project), the whole file applied or none of it, with `?dryRun=true` reporting the same problems and writing nothing; duplicates refused by the file's SHA-256 (`409 IMPORT_ALREADY_APPLIED`) and by member, work date, start and length, never silently skipped; 10,000 rows and 1 MiB within 60 seconds, refused as `413 IMPORT_TOO_LARGE`; the member is the author and the administrator the actor, with only `approved` and `not_required` rows accepted and the importer recorded as having asserted the approval; one `import` audit row per file and none per imported entry, which amends §16.34 rule 1; and no install-epoch bump, because an import only inserts (§16.42). **D-076** — counting for UI elements: one caller-scoped `GET /v1/me/counts` returning three integers — unread notifications, pending approvals in the caller's scope, and pending assignment requests awaiting the caller — each defined by the same predicate as the list it summarises, computed in one statement at read time and never stored or cached; `computedAt` for freshness; a key absent rather than zero when the caller has no such queue; the coordinator's badge as one number across all their projects; no count in any list body, resource or mutation, and a fourth counter a decision of its own; and no new index, the two queue counters running on the scan §16.36 rule 11 already accepts, so the performance inventory stays at seven (§16.43). Gaps not yet raised by any
+refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread (§16.39, D-072). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). **D-072** — retention: a period is the age at which the instance deletes a row itself, distinct from expiry, soft deletion and erasure; the organisational record and the audit trail are never deleted; a session is deleted 30 days after it ends, with its refresh-token hashes; a notification is deleted a month after it is read and, unread, at the organisation's mailbox window, whichever comes first; an organisation may set that window (1–24 months, default 12) and the window for resolved assignment requests (6 months to never, default never), shortening taking effect at the next sweep after a confirmation; nothing else is configurable; and the mechanism that enforces all of it is left open by name (§16.39), which §16.40 then decides. **D-073** — the retention sweep: an in-process housekeeping run in the API server, once at boot after the schema guard and daily at 03:00 in the organisation's time zone, guarded by a non-blocking advisory lock of its own so one runner deletes at a time; 500 rows per transaction and at most 10,000 per class per run; the organisation's windows and the deployment's session limits read at the start of each run; a failed batch logged and left for the next run rather than blocking startup; one log line per run and no endpoint, audit row or change-feed entry; and two `notifications` indexes admitted by §16.37 rule 10, which now counts seven (§16.40). **D-074** — the report export: `format=json|csv` on the one report route, the grouped JSON unchanged and CSV carrying the detail rows those totals were summed from, both taken from one read-only `REPEATABLE READ` transaction so the file and the report cannot disagree; synchronous and streamed, capped at 100,000 rows and 60 seconds and refused as `413 EXPORT_TOO_LARGE` before the first byte, with no job queue, no stored artifact and nothing to expire; columns `workDate, memberName, memberId, project, activity, startedAt, durationSeconds, hours, approvalStatus` with `hours` rounded once to two decimals half-up, no address and no notes, and an erased member reading "Former member"; administrators only, coordinators keeping the JSON report; one audit row per started export with `action="export"` and the filters in `changes`, written before the stream, which amends §16.34's "a report leaves no audit row" and adds `export` to its vocabulary; and the import, recommended out of the MVP, put back into scope on the same day as a decision still to be taken (§16.41). **D-075** — the import: one `POST /v1/imports` taking a CSV of time entries against members, projects, activities and assignments that already exist, none of which the import creates; administrators only; every row checked by the routes' own rules (60–86,400 seconds, the five-minute future tolerance, assignment eligibility, the activity belonging to the stated project), the whole file applied or none of it, with `?dryRun=true` reporting the same problems and writing nothing; duplicates refused by the file's SHA-256 (`409 IMPORT_ALREADY_APPLIED`) and by member, work date, start and length, never silently skipped; 10,000 rows and 1 MiB within 60 seconds, refused as `413 IMPORT_TOO_LARGE`; the member is the author and the administrator the actor, with only `approved` and `not_required` rows accepted and the importer recorded as having asserted the approval; one `import` audit row per file and none per imported entry, which amends §16.34 rule 1; and no install-epoch bump, because an import only inserts (§16.42). **D-076** — counting for UI elements: one caller-scoped `GET /v1/me/counts` returning three integers — unread notifications, pending approvals in the caller's scope, and pending assignment requests awaiting the caller — each defined by the same predicate as the list it summarises, computed in one statement at read time and never stored or cached; `computedAt` for freshness; a key absent rather than zero when the caller has no such queue; the coordinator's badge as one number across all their projects; no count in any list body, resource or mutation, and a fourth counter a decision of its own; and no new index, the two queue counters running on the scan §16.36 rule 11 already accepts, so the performance inventory stays at seven (§16.43). **D-077** — the first-administrator bootstrap: one installation command run at the instance's own shell before the server first serves, writing the organisation row, one user and one active `administrator` membership in one transaction; it refuses while any active administrator exists and offers no `--force`; it adopts an existing address but refuses an anonymised one; it runs boot's migrator under boot's lock and leaves the credential to §3.1; and it writes no audit row, amending §16.34 rule 1, because an installation has no authenticated caller (§16.44). Gaps not yet raised by any
 section are tracked as backlog items B1–B20 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -1257,7 +1260,7 @@ time rather than filled in by assumption.
 
 15. Choose authentication method/provider and whether authentication is
     managed or self-hosted.
-16. Design the first-admin bootstrap process.
+16. ~~Design the first-admin bootstrap process.~~ **Resolved 28 November 2026 — an installation command, not a route (§16.44, D-077).**
 17. Finalize database schema and constraints.
 18. Define endpoint names, HTTP methods, request/response DTOs,
     validation rules, and error codes.
@@ -2283,7 +2286,7 @@ The following items remain unresolved. They should be addressed before or during
 ### Priority 5 — API contract and implementation
 
 26. **Contract** (for the credential; hosting and sessions are settled). Choose the authentication method/provider and determine whether authentication is managed or self-hosted. **Hosting resolved 23 November 2026 — each organisation runs its own instance, so authentication is self-hosted per instance (§16.17, D-050). The session layer is settled 24 November 2026 (§16.23, D-056) — bearer tokens, a single-use rotating refresh token, and a mobile-only client, so no cookie and no CORS. The credential itself remains open (§3.1).**
-27. **Launch** — and **Contract** if it turns out to be a route rather than an installation step. Design the first-administrator bootstrap process. **Now a per-instance installation step (§16.17, D-050); the process is still undesigned.**
+27. ~~**Launch** — and **Contract** if it turns out to be a route rather than an installation step. Design the first-administrator bootstrap process.~~ **Resolved 28 November 2026 (§16.44, D-077).** It is an installation step and not a route, so the conditional flag resolves to **Launch**: one command run at the instance's own shell, writing the organisation row, one user and one active `administrator` membership in one transaction, refusing once an administrator exists, auditing nothing, and creating no credential. The number of Contract items in this list is unchanged by it.
 28. ~~Finalize database schema, constraints, and transaction requirements.~~ **Resolved 27 November 2026 — the engine, the stored anchor, the migrations, the indexes and the transaction boundaries are fixed (§16.36, D-069), and the per-table constraints, the uniqueness rules and the columns each of them fixes are recorded table by table (§16.37, D-070). What no decision has introduced — the assignment interval's types, the profile fields, the anchor's zone column — stays with its own item rather than this one.**
 29. **Contract** — this is the drafting work itself, not a gap to close before it. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
 30. ~~Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses.~~ **Resolved 25 November 2026 — retry and idempotency are the entry id as the deduplication record with `version` guarding writes (§16.16, D-049), conflict responses are `409 VERSION_MISMATCH` carrying `current` and `changedFields` (§16.28, D-061), and change tracking is a per-organisation `changeSeq` with a pull feed of the caller's own entries, deletions included (§16.31, D-064).**
@@ -2326,7 +2329,7 @@ Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), 
 4. ~~**Retention policy**~~ — **Resolved 28 November 2026 (§16.39, D-072).** The record and the audit trail are never deleted; a session goes 30 days after it ends; a notification goes a month after it is read or at the organisation's mailbox window, never beyond 24 months; and the organisation sets that window and the window for resolved assignment requests, nothing else. §16.38's legal gap is answered for the record by deciding that it has no period, and remains open for the jurisdiction and the basis.
 5. ~~**The retention sweep**~~ — **Resolved 28 November 2026 (§16.40, D-073).** An in-process run at boot and daily at 03:00 in the organisation's time zone, one runner at a time under its own advisory lock, 500 rows a transaction and 10,000 a class a run, failures logged rather than fatal, one log line per run and no API surface. Two indexes on `notifications` are the only schema it adds.
 
-All other items in §15.12 remain unchanged and unresolved, except the ones a §16 decision has since closed: item 25's notification retention and its cleanup (§16.39, §16.40) and item 28's table-by-table schema (§16.37). Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B20), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24) — and B20, the import, added and resolved on 28 November 2026 by D-075 (§16.42), so nothing in that backlog blocks drafting. The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table, and §16.38 (D-071) closes the anonymisation review; §16.39 (D-072) then sets the retention periods and §16.40 (D-073) the sweep that enforces them. §16.41 (D-074) then decides the report export — one read serialised as grouped JSON or detail CSV, administrator-only, synchronous and capped, and one audit row per file — and puts the import back into the MVP's scope, required and undecided; §16.42 (D-075) then decides it, and the backlog's last item closes; §16.43 (D-076) then settles the counting the head of §16 had deferred, closing that list as well.
+All other items in §15.12 remain unchanged and unresolved, except the ones a §16 decision has since closed: item 25's notification retention and its cleanup (§16.39, §16.40), item 27's first-administrator bootstrap (§16.44) and item 28's table-by-table schema (§16.37). Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B20), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24) — and B20, the import, added and resolved on 28 November 2026 by D-075 (§16.42), so nothing in that backlog blocks drafting. The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table, and §16.38 (D-071) closes the anonymisation review; §16.39 (D-072) then sets the retention periods and §16.40 (D-073) the sweep that enforces them. §16.41 (D-074) then decides the report export — one read serialised as grouped JSON or detail CSV, administrator-only, synchronous and capped, and one audit row per file — and puts the import back into the MVP's scope, required and undecided; §16.42 (D-075) then decides it, and the backlog's last item closes; §16.43 (D-076) then settles the counting the head of §16 had deferred, closing that list as well.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -3287,8 +3290,9 @@ its own database (§2.2). Identity is scoped to that instance: Ann's account
 **Consequences for the instance.**
 
 - Each instance has its own first administrator, created by its own
-  installation step. The bootstrap issue in §3.2 and §15.12 item 27 is a
-  per-instance problem, not a single global one.
+  installation step — one command at the instance's shell, decided as §16.44
+  (D-077). The bootstrap issue in §3.2 and §15.12 item 27 is a per-instance
+  problem, not a single global one.
 - Each instance upgrades on its own schedule, while the app updates through
   an app store on another. **Version skew between client and instance is
   therefore normal**, not exceptional: the app must fail cleanly against an
@@ -3348,7 +3352,9 @@ its own database (§2.2). Identity is scoped to that instance: Ann's account
 **Resolves:** backlog item B5 (§17) — single versus multi-tenant, whether
 one volunteer belongs to several organisations, and what organisation-level
 settings attach to. It confirms §2.2 from the client's side, clarifies
-§2.3, and narrows §15.12 items 26, 27 and 31 without closing them.
+§2.3, and narrows §15.12 items 26, 27 and 31 without closing them; item 27
+has since closed (§16.44, D-077), which answers this section's bootstrap half
+in place without settling the handshake or the credential.
 
 ## 16.18 Roles are membership-level; coordination is a project grant
 
@@ -6444,6 +6450,11 @@ collection shows a caller the rows their own read scope already allows.**
    accepted write that leaves a single row for the batch instead of one per
    row — it records that a file of entries was imported, by whom, which file and
    how many rows, and does not restate that fact ten thousand times.
+   **Amended 28 November 2026 (D-077, §16.44):** the installation is the
+   second exception and the narrower one — the rows a bootstrap writes leave
+   no entry, because the act has no authenticated caller and a row could only
+   name the new administrator as their own creator. The trail on a new
+   instance therefore begins with the first act a signed-in person performs.
 
 2. **What a row holds.** `id` (a UUIDv7, minted the way D-053 mints request
    ids), `at`, `actorId`, `entityType`, `entityId`, `action`, `requestId`, an
@@ -6968,7 +6979,12 @@ a restore is visible to every client.**
    its number recorded, and the lock is released. Two server processes starting
    at once is the normal case after a restart; the lock makes it one migration
    run. A migration that fails rolls back only itself, and the server exits
-   rather than serving a half-migrated schema.
+   rather than serving a half-migrated schema. **Amended 28 November 2026
+   (D-077, §16.44):** the installation command runs this same migrator under
+   this same lock, because on a fresh database it runs before the server ever
+   starts; and the server refuses to start when the `organisation` row is
+   absent, with one log line naming that command — a fresh instance before
+   its bootstrap is an install in progress, not a service.
 
 9. **Back up before a migration, and rehearse the restore.** A migration that
    can destroy data — a drop, a narrowing type, a backfill that deletes —
@@ -7365,7 +7381,7 @@ made by a migration, a console or a future route nobody has written yet.
 
 | Table | Columns fixed here | What the engine holds | Why |
 |---|---|---|---|
-| `organisation` | `only_row`, `name`, `timezone`, the settings of D-045 and §4.2, `coordinators_may_edit_or_delete_entries`, `project_creation_requires_approval` | single row (`only_row` primary key with `CHECK (only_row)`); both settings `NOT NULL DEFAULT false` | one instance is one organisation (D-050); a setting that is null has no meaning, and answer 6 fixes one of the two defaults |
+| `organisation` | `only_row`, `name`, `timezone`, the settings of D-045 and §4.2, `coordinators_may_edit_or_delete_entries`, `project_creation_requires_approval` | single row (`only_row` primary key with `CHECK (only_row)`); both settings `NOT NULL DEFAULT false` | one instance is one organisation (D-050); a setting that is null has no meaning, and answer 6 fixes one of the two defaults. The row is written by the installation (§16.44, D-077) and never seeded by a migration, so `name` and `timezone` are the operator's answers rather than a guess |
 | `users` | `id`, `email`, `display_name`, `anonymised_at` | partial unique on `lower(email) WHERE anonymised_at IS NULL` | D-052's accepted cost, now enforced: an anonymised placeholder can never block a real address — it is the constant `erased@invalid` (§16.38, D-071) — and two live accounts cannot share one |
 | `memberships` | `id`, `user_id`, `role`, `status`, `joined_at`, `removed_at` | `role IN ('volunteer','administrator')`; `status IN ('active','inactive','removed')`; `removed_at` set exactly when `removed`; partial unique `(user_id) WHERE status <> 'removed'` | answer 1: one live membership per person, and a rejoin after removal |
 | `projects` | `id`, `name`, `created_by`, `archived_at` | `name` non-empty; no uniqueness | answer 3 |
@@ -8840,6 +8856,211 @@ leaves §16.36 rule 11's index reasoning intact and records that these counters
 run on the scan it accepts; it does not touch D-040, D-054, D-055 or §16.22,
 and it adds no index — the inventory stays at seven. It also amends the §12
 register.
+
+------------------------------------------------------------------------
+
+## 16.44 The first administrator: one installation command, no route, no audit row
+
+**Confirmed decision (D-077) — 28 November 2026.**
+
+§3.2 has carried one open implementation issue since it was written — "a
+trusted initial setup/bootstrap process is needed so that an organization has
+its first administrator" — and §15.12 item 27 has carried it with a
+conditional flag: Launch, and Contract "if it turns out to be a route rather
+than an installation step". §16.17 then made it a per-instance problem by
+making the deployment the tenant. Every instance needs its own first
+administrator, and none can be inherited, imported, discovered from a
+directory, or shared with another organisation's server.
+
+**The case this protects.** A food bank's new server comes up with an empty
+database. Three answers are available, and each of them fails in a way that
+is invisible until it matters.
+
+- *The first person to sign up becomes the administrator.* Self-registration
+  is open (§3.2), so the first person to find the host owns the
+  organisation's records — before anyone at the food bank has typed a
+  setting.
+- *A setup page, reachable until it is used.* The route has to exist on every
+  installation and refuse for ever after the first use. It guards exactly one
+  act, it is unauthenticated by necessity, and a weakness in it is a
+  takeover of the instance.
+- *A migration that seeds a default organisation and a default account.*
+  One install step, and the values are guessed: a name nobody chose, a zone
+  that misfiles every hour recorded before anyone notices, and a well-known
+  address and credential on every instance in the world.
+
+None of the three needs the one thing that actually authorises the act: the
+person who holds the server. The bootstrap is that person, at that shell.
+
+**Decision in one line: `hourly bootstrap` is a command run at the instance's
+own shell before the server first serves — it writes the organisation row, one
+user and one active `administrator` membership in one transaction, refuses
+when the instance already has an administrator, lets migrations and the
+credential stay where their own decisions put them, and leaves no audit row,
+because an installation has no authenticated caller.**
+
+**The shape.** The command name is illustrative and not contract surface;
+the arguments are.
+
+```console
+$ hourly bootstrap --organisation "Saturday Pantry" --timezone Europe/London \
+    --email nadia@example.org --name "Nadia Osei" --submission-policy explicit
+  schema 1 (up to date, 4 migrations)
+  ✓ organisation "Saturday Pantry" — Europe/London
+  ✓ administrator nadia@example.org
+  This instance holds no credential yet: sign-in arrives with §3.1's
+  decision, and until then nothing can authenticate.
+```
+
+A second run, and the refusal is the guard rather than a failure:
+
+```console
+$ hourly bootstrap --organisation "Saturday Pantry" --timezone Europe/London \
+    --email other@example.org --name "Other Person" --submission-policy explicit
+error: this instance is already initialised — 1 active administrator exists.
+       Nothing was written. The bootstrap creates the first administrator
+       only; later ones are promoted through the membership route (§16.18).
+```
+
+**The rules.**
+
+1. **An installation command, never a route, and never run at boot.** It is
+   executed from the instance's own shell against its own database. No
+   endpoint performs it, no request can trigger it, and the server never calls
+   it on its own. This is item 27's own condition answered: the bootstrap is
+   an installation step rather than a route, so its flag is **Launch** and the
+   contract's list of blockers is unchanged by this decision.
+
+2. **Three rows in one transaction, and no seed data in migrations.** The
+   command inserts the single `organisation` row (`name`, `timezone` and the
+   settings below), one `users` row and one `memberships` row with
+   `role = 'administrator'` and `status = 'active'`. Committed together or not
+   at all, so a failed run leaves a database indistinguishable from an
+   unbootstrapped one. It creates no projects, activities, assignments, entries,
+   notifications, grants or sessions. **A migration never writes the
+   organisation row:** a fresh database holds none until an operator names one,
+   because a seeded row would put a guess into the two columns every anchor
+   (§16.36 rule 2), every report and the retention sweep's 03:00 run (§16.40)
+   read.
+
+3. **Five facts from the operator, and no prompt for anything else.** The
+   email address, the person's display name, the organisation's display name,
+   its IANA time zone, and the submission policy (§16.17, D-045). The address
+   is compared and stored case-folded, which is how `users`' partial unique
+   index already treats it (§16.37). The zone is required with no default:
+   §16.36 rule 4 applies a zone at write time and never reinterprets history,
+   so a wrong default silently misfiles hours that are already filed. The
+   submission policy is asked for because no decision fixes its default and a
+   null would be a state the schema refuses elsewhere. Everything else takes
+   the value its own decision fixes — both switches `false` (§16.37 answer 6),
+   the mailbox window `12` months and the resolved-request window `never`
+   (§16.39, D-072) — and changing any of them afterwards is an ordinary
+   settings act, not a re-installation.
+
+4. **An existing address is adopted; an anonymised one is refused.** If a
+   `users` row already holds the address — a self-registration awaiting
+   approval, or someone who signed up before the operator ran the command —
+   its membership is activated with `role = 'administrator'` rather than a
+   second user being inserted. If that row has `anonymised_at` set, the command
+   refuses: §16.38 says an erased person has no credential and their identity
+   is not resurrected, and the `erased@invalid` sentinel must never become an
+   administrator. The address is therefore the whole authorisation, which is
+   why the operator types it and nothing infers it from "the first row in the
+   table".
+
+5. **The guard: refuse while any active administrator exists, and no
+   `--force`.** The precondition is *no active `administrator` membership and
+   no `organisation` row*; failing either, the command writes nothing, exits
+   non-zero, and says which condition it found and that later administrators
+   are promoted through §16.18's route. A `--force` flag would put the one
+   guard against replacing a live instance's administrator a typo away from
+   doing it. The legitimate second run is a restore of a backup taken before
+   the bootstrap, which produces exactly the state the guard permits.
+
+6. **It migrates first, under boot's own migrator and boot's own lock, and the
+   server will not serve before the row exists.** The command applies pending
+   migrations through the same code path and the same `pg_advisory_lock` as
+   §16.36 rule 8, and refuses against a database newer than itself exactly as
+   boot does (§16.36 rule 7). It therefore works whether or not the server is
+   running, and cannot race a deployment. Correspondingly the server refuses
+   to start when the `organisation` row is absent, with one log line naming
+   the command, so there is no window in which the instance answers requests,
+   opens self-registration and holds no organisation. The install order is
+   therefore fixed: configure the database, run the command, start the server.
+
+7. **Credential-agnostic: it creates the identity, not the way in.** No
+   password, one-time code, sign-in link, provider account or first-sign-in
+   token is created here, and there is no special first sign-in. Once §3.1's
+   credential decision lands, the bootstrapped administrator signs in by the
+   ordinary flow, whichever that is. If that decision needs a secret assigned
+   at install time, the command prompts for it on the terminal only — never as
+   an argument, which shell history and the process list both keep, and never
+   from an environment variable that lands in a container specification. That
+   detail belongs to item 26; this rule commits only to the secret never
+   travelling on `argv`.
+
+8. **No audit row and no `changeSeq` entry.** The bootstrap is the one
+   accepted write with no authenticated caller. An `audit_log` row must name
+   an `actor_id`, and the only candidate is the new administrator — which
+   would record them as having appointed themselves, a statement the trail
+   would then assert as fact for ever. `action` therefore gains no word for
+   it, and the evidence is the operator's own install log, the existence of
+   the organisation row and the membership's `joined_at`. Every later act,
+   including the first administrator's first approval, is audited normally, so
+   the trail begins where a signed-in person begins.
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **One installation command at the instance's shell, refusing once an administrator exists (recommended)** | The act needs the server's own access; no route, no window, no known account | The operator needs shell access and the database URL |
+| An unauthenticated first-run route, "claim this instance" | Installable from a browser | The route must exist on every instance and refuse for ever after one use, and anyone who reaches the host can attempt a takeover |
+| "The first account to register becomes administrator" | No operator work at all | Whoever finds a fresh instance first owns the organisation's records, and self-registration is open by design (§3.2) |
+| Seeding the organisation row and a default administrator in a migration | One step, and every instance ends up in the same shape | A guessed name, a guessed zone in the column every anchor depends on, and a well-known account on every instance |
+| A `--force` that rewrites the administrator | Recovery without a backup | The one guard against replacing a live instance's administrator becomes a typo away from removing its authority |
+| A first-sign-in token minted at install | The administrator can sign in before the credential is chosen | A second credential type and a second sign-in path to retire, for an ordering problem the credential decision already owns |
+
+**Accepted costs.**
+
+- **Installation needs the shell.** An organisation that cannot reach its own
+  server cannot bootstrap it. D-050 already assumes an operator who installs,
+  backs up and monitors the instance, so this adds no new role — but it does
+  mean there is no hosted path to a first administrator.
+- **A bootstrapped instance is not yet usable by its administrator** until
+  §3.1's credential is decided. This decision provisions the person, not the
+  way in, and does not pretend otherwise in its output.
+- **The trail has no first entry explaining the first administrator.**
+  "Who made this person an administrator?" is answerable only by whoever held
+  the shell, which the application cannot attest and must not guess at.
+- **A partial install is an error, not a state.** A server started before the
+  command exits with one line rather than serving a degraded instance, so an
+  operator who skips a step sees a failure instead of a working-looking
+  service.
+- **No supported recovery from a wrong first administrator.** Correcting the
+  row means a console edit outside the contract or a restore; a lost credential
+  is item 26's problem, and the only supported repair for a wrong identity is
+  the backup.
+
+**Resolves and amends.** It resolves §3.2's open implementation issue in
+place, §13 item 16 and §15.12 item 27 — the last with its conditional flag
+answered as **Launch**, leaving the count of Contract items unchanged. It
+extends §16.17's per-instance bootstrap sentence and its note about items 26,
+27 and 31. It amends §16.34 rule 1 with a second, narrower exception than the
+import's, §16.36 rule 8 with the installation's use of the same migrator and
+lock and the server's refusal to start without an organisation row, and
+§16.37's `organisation` row with the fact that the installation writes it. It
+moves §15.12 item 27 out of the open list in §16's head and records itself in
+the §12 register. It does not touch §16.18's promotion route, §16.42's import,
+§16.23's sessions, or the credential.
+
+**Left open, and not this decision's.** The credential itself (§3.1, §15.12
+item 26), which is what makes a bootstrapped administrator able to sign in;
+the onboarding handshake and version negotiation (§16.17's own left-open
+list); email verification and the profile fields (item 23), for which no
+column exists to set; whether an operator may recover a locked-out instance
+without a backup, which would be a decision of its own and is deliberately not
+smuggled in as a flag here; and adding further administrators, which is
+§16.18's promotion route and never this command.
 
 ------------------------------------------------------------------------
 
