@@ -1179,7 +1179,7 @@ transaction, carrying the actor, the entity, the action, the `requestId`
 and the fields that moved with their before and after; actors survive
 anonymisation and the erasure is itself a row; read scope mirrors the
 entity's; one filtered `GET /v1/audit-log` ordered `at` then `id`; reads,
-refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention stays open (§16.35). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). Gaps not yet raised by any
+refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention stays open (§16.35). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). Gaps not yet raised by any
 section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -2298,15 +2298,16 @@ The contract should explicitly identify which behaviors are finalized, which are
 
 Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (live results), item 8 (mixed ordering), item 9 (cursor structure, validation, and response fields), item 10 (error envelope), item 11 (archive authority), item 12 (effects of archival), item 13 (restore), item 1 (the entry state machine, §16.25), item 2 (approval on edit,
 §16.26), item 5 (preserved invalid submissions, §16.27), item 6
-(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23), B16 (the backdating window, §16.24) B9 (reporting and totals, §16.33), B11 (the audit trail, §16.34) B10 (notification transport, §16.35) and B15 (schema, migrations and indexes, §16.36); §16.37 (D-070) then closes §15.12 item 28 with the table-by-table constraints. Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
+(concurrent-edit reconciliation, §16.28) item 21 (overlap and conflict values, §16.29), item 20 (deletion, §16.30), item 30 (change tracking, §16.31) and item 14 (who may edit another volunteer's entry, §16.32). Also resolved outside that sequence: §13 item 5 (explicit submission, §16.11), §15.12 item 4 (approval authority, §16.18), and backlog items B1 (time and duration model, §16.13), B2 (definition of an overlap, §16.14), B4 (mutation identity and concurrency, §16.16), B5 (organisation model, §16.17), B6 (role and permission matrix, §16.18), B7 (retention and erasure, §16.19), B8 (list contract for the other collections, §16.21), B12 (mutation response shapes, §16.22), B13 (request identity and load control, §16.20) B14 (the session model, §16.23), B16 (the backdating window, §16.24) B9 (reporting and totals, §16.33), B11 (the audit trail, §16.34) B10 (notification transport, §16.35) and B15 (schema, migrations and indexes, §16.36); §16.37 (D-070) then closes §15.12 item 28 with the table-by-table constraints, and §16.38 (D-071) takes up the anonymisation review that decision handed over. Backlog item B3 (timer semantics) is deferred rather than resolved: it left the MVP with the server timer (D-048, §16.15), which is why B16, not B3, was the next contract item.
 
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. Import/export mechanism (§16.7, D-036) — deferred, to be taken up next.
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
-3. **Anonymisation, revisited** — D-052's trade (keep the hours, destroy the identity) taken up on its own terms: what it protects, what it fails to protect, the replacement display name the record currently spells two ways, and the erasure's mailbox deletion (§16.37, D-070's handover). No decision ID assigned yet.
+3. ~~**Anonymisation, revisited**~~ — **Resolved 28 November 2026 (§16.38, D-071).** D-052's trade was taken up on its own terms: erasure stays as one administrator act that pseudonymises the user row, the replacement name is "Former member", the address is one sentinel, the mailbox is emptied under the erasure's single row, and what erasure cannot protect is written down instead of promised away.
+4. **Retention policy** — a period for the audit trail, notifications, erased user rows and archived records. The record currently sets none anywhere, and §16.38's legal gap names that absence as the first thing an operator has to fix. No decision ID assigned yet.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table, and §16.38 (D-071) closes the anonymisation review.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -3550,6 +3551,12 @@ doing neither would ignore her request. Anonymising her row settles all
 three: the hours still count, the approval trail still points at a stable
 principal, and nothing left in the instance says who Marisol was.
 
+**Amended 28 November 2026 (D-071, §16.38):** the last clause overstates what
+erasure does. Her name is gone; the `notes` on her entries, any display name a
+pre-erasure `changes` pair captured, and the shape of her hours and grants are
+not. Erasure is pseudonymisation, and §16.38 corrects the claim rather than
+leaving this paragraph to promise anonymity.
+
 **Rules.**
 
 1. **A membership ends; the account persists.** The role closes, every
@@ -3557,12 +3564,20 @@ principal, and nothing left in the instance says who Marisol was.
    assignment requests cancel under the existing departure rules. The person
    can no longer authenticate into anything operational. Re-joining creates a
    new membership and needs a new grant.
-2. **Erasure anonymises the user row in place.** `email` is replaced with a
-   placeholder that no longer satisfies the uniqueness rule for real
-   addresses, `displayName` becomes "Former volunteer", credentials, tokens
-   and profile fields are destroyed, and `anonymisedAt` is set. The `id`
-   survives, so entries, reviews and grants keep a coherent but
-   unidentifiable author.
+2. **Erasure pseudonymises the user row in place.** One administrator performs
+   it, against one person at a time: `email` is replaced with the constant
+   sentinel `erased@invalid`, `displayName` becomes "Former member",
+   credentials, tokens, sessions and profile fields are destroyed, and
+   `anonymisedAt` is set. The `id` survives, so entries, reviews and grants
+   keep a coherent but unidentifiable author. The act's authority, its limits
+   and what the record may claim for it are §16.38's business (D-071).
+
+**Amended 28 November 2026 (D-071, §16.38):** the placeholder was written for
+an address column that had to stay unique, and the partial index of §16.37
+removed that requirement, so one constant now serves every erased row; the name
+is "Former member" because the role lives on the membership and an erased
+administrator was never a volunteer. The behaviour — identity destroyed,
+record kept — is unchanged, but it is pseudonymisation and is now called that.
 3. **Entries are never deleted as part of erasure.** The work they record
    belongs to the organisation, not to the person who performed it. This has
    to be said plainly in whatever the organisation tells its volunteers,
@@ -3573,7 +3588,10 @@ principal, and nothing left in the instance says who Marisol was.
 5. **Personal export is synchronous and self-service.** `GET /v1/me/export`
    returns the caller's own profile, membership, entries, grants and
    notifications as one document, built from the same scoped queries the
-   lists already use. No job queue and no email delivery.
+   lists already use. No job queue and no email delivery. Its
+   `membership.status` draws on the three values §16.37 fixes (`active`,
+   `inactive`, `removed`), so the export no longer carries a field with no
+   defined vocabulary (D-070, §16.38).
 6. **There is no organisation-purge endpoint.** With one instance per
    organisation (D-050), decommissioning is an operational act: whoever can
    drop the database already holds the credentials to do it. A button that
@@ -3610,9 +3628,9 @@ principal, and nothing left in the instance says who Marisol was.
 
 **Accepted costs.**
 
-- Email uniqueness must be enforced only among non-anonymised accounts, or
-  the placeholder must live outside the unique column; otherwise the
-  anonymised row blocks the address forever.
+- Email uniqueness is enforced only among live accounts
+  (`WHERE anonymised_at IS NULL`), so a sentinel cannot block a real address
+  and no per-row placeholder is needed (§16.36, §16.38).
 - The export endpoint must be kept in step with every field the other
   endpoints later gain, or it silently becomes a partial answer to a
   legal-flavoured request.
@@ -3631,13 +3649,16 @@ whole-instance purge button (a destructive operation with no undo, offered
 to the least supervised administrator).
 
 **Left open.** Whether an organisation may configure retention at all
-(deferred); whether the audit trail shows that a record was anonymised and
-when (it should — the fact of erasure is itself auditable); whether
-notifications age out, which is §15.12 item 25's business; and the legal
-wording the organisation gives its volunteers, which is outside the API.
+(deferred); the retention period every table currently lacks, and the
+jurisdiction and lawful basis this record names nowhere (§16.38, D-071);
+whether notifications age out, which is §15.12 item 25's business; and the
+legal wording the organisation gives its volunteers, which is outside the API.
+Whether the audit trail shows that a record was anonymised is no longer open:
+it does, and D-067 rule 4 says in what shape (§16.38).
 
-**Resolves:** backlog item B7 (§17). It also constrains B11: the audit trail
-must survive anonymisation and must record the erasure itself.
+**Resolves:** backlog item B7 (§17); §16.38 (D-071) reviews the trade without
+reversing it. It also constrains B11: the audit trail must survive
+anonymisation and must record the erasure itself.
 
 
 
@@ -3875,7 +3896,7 @@ mistake is a refused cursor instead of a silent misreading.
 7. **The users list is administrator-only and hides what it need not show.**
    `q` matches a display name by prefix and an email address exactly — no
    free-text search in the MVP. An anonymised person appears under their
-   stable `id` with `anonymisedAt` set and the email withheld (D-052), so history stays coherent without inventing a status value D-052 did not define; the `status` filter is now the three-value list of §16.37 (D-070). Coordinators reach people through their project's
+   stable `id` with `anonymisedAt` set, the constant name "Former member" and the email withheld (D-052, §16.38), so history stays coherent without inventing a status value D-052 did not define; the `status` filter is now the three-value list of §16.37 (D-070). Coordinators reach people through their project's
    assignments; a coordinator-facing directory would be a filter on this same
    route, not a fifth shape.
 8. **The audit list's shape is fixed here; its contents and its readers are
@@ -6382,7 +6403,10 @@ collection shows a caller the rows their own read scope already allows.**
    `{ "before": …, "after": … }`, with `before: null` on a create and
    `after: null` on a delete: the difference, never a copy of the resource.
    No credential material, no token, no session id and no message body is ever
-   recorded.
+   recorded. One act writes no values at all: on `erased`, `changes` names the
+   fields the erasure destroyed with `before` and `after` both `null`, because
+   recording the value the erasure exists to remove would preserve it in the
+   one table nothing purges (§16.38, D-071).
 
 3. **Insert-only, and never purged.** Nothing updates a row and nothing
    deletes one — not the API, not a retention job, not an administrator. A
@@ -6392,10 +6416,12 @@ collection shows a caller the rows their own read scope already allows.**
 
 4. **Anonymisation keeps the actor.** D-052 anonymises the user row in place;
    it does not reach the trail. `actorId` continues to resolve, to a tombstone
-   that reads "Former member", so past actions stay attributable. The erasure
-   itself is a row — `action: "erased"`, the administrator as actor, the
-   anonymised user as entity — because a record whose person disappeared with
-   no trace of the act would be the one change the trail could not explain.
+   that reads "Former member" — the one constant §16.38 fixes for it (D-071) —
+   so past actions stay attributable. The erasure itself is a row —
+   `action: "erased"`, the administrator as actor, the anonymised user as
+   entity, and `changes` naming the fields it destroyed with no values —
+   because a record whose person disappeared with no trace of the act would be
+   the one change the trail could not explain.
 
 5. **Read scope mirrors the entity's read scope.** A caller sees a row when
    they may already read the thing it names: a volunteer sees rows about their
@@ -6505,7 +6531,9 @@ refusal and not a separate audit rule:
   title or an earlier hours figure stays readable to whoever may read the
   entity. That is the point, and it also means an erasure does not remove a
   former display name that once appeared in a `changes` pair: D-052's
-  anonymisation covers the user row, not what the record said at the time.
+  anonymisation covers the user row, not what the record said at the time. The
+  one exception is the erasure's own row, which names the fields it destroyed
+  and records none of their values (§16.38, D-071).
 - **A deleted entry's history stays readable.** The entry leaves the lists and
   the totals (D-063), but its rows remain, so "deleted" is not "gone" for
   anyone who may read it — which is what makes the deletion reviewable.
@@ -6628,7 +6656,9 @@ is a record and not a message that was either delivered or lost.
 9. **Erasure empties the mailbox; retention is still open.** A notification is
    personal rather than organisational, so an erasure under D-052 deletes the
    person's notifications with the rest of their personal data, and no recipient
-   id survives. Automatic retention — how long an unread row lives before it is
+   id survives. The deletion is not audited row by row: the erasure's single
+   row is the record that the act happened, and a per-notification entry would
+   copy what she was told into the permanent trail (§16.38, D-071). Automatic retention — how long an unread row lives before it is
    removed — remains undecided (§6.4, §15.12 item 25), and this decision sets no
    period: until one is chosen, rows live until their owner deletes them, which
    is what §6.1 already promised.
@@ -6745,8 +6775,8 @@ coordinator notifications for approval-free self-service changes are mandatory
 or configurable (§6.2's optional case, §15.12 item 25's other half); email or
 push as a later transport, which would be additive to this row rather than a
 replacement for it; whether the counting endpoint in §16.7 carries the unread
-figure; and whether an erasure's mailbox deletion is itself audited, which
-D-067 currently says it is not.
+figure. Whether an erasure's mailbox deletion is audited is no longer open: it
+is not, and the erasure's row is the record that it happened (§16.38, D-071).
 
 **Resolves:** backlog item B10 (§17), and the access half of §15.12 item 25 —
 administrators cannot manage another person's notifications. It gives D-054's
@@ -7177,15 +7207,20 @@ else.**
    changed here.** This decision records the handover rather than the answer:
    D-052's trade — keep the hours, destroy the identity — has not been argued
    against its alternatives since it was taken, and the record already shows
-   two signs of that. The anonymised person is called "Former volunteer" in
+   two signs of that. The anonymised person was called "Former volunteer" in
    §16.19 rule 2 and "Former member" in §16.34 rule 4, and no decision chose
-   between them; and the export D-052 publishes carries a membership `status`
+   between them; and the export D-052 publishes carried a membership `status`
    that, until answer 1, had no value list to draw from. The review that
    follows this section takes up what anonymisation protects, what it fails to
    protect, what the replacement name should be, and whether the erasure's
    mailbox deletion (which D-068 says is not audited) should stay unaudited.
-   The two names and the export's status are left exactly as they are until
-   then, deliberately, rather than half-fixed here.
+   The two names and the export's status were left exactly as they were until
+   then, deliberately, rather than half-fixed there.
+
+   **Taken up 28 November 2026 (D-071, §16.38):** the review ran. The name is
+   "Former member" in both sections, the address is one sentinel, the mailbox
+   question is answered, and the export's `status` draws on answer 1. This
+   answer was a handover, and §16.38 is its receipt.
 
 3. **A project's name need not be unique.** Two projects in one organisation
    may share a name, and the database has no constraint against it. Names are
@@ -7256,7 +7291,7 @@ made by a migration, a console or a future route nobody has written yet.
 | Table | Columns fixed here | What the engine holds | Why |
 |---|---|---|---|
 | `organisation` | `only_row`, `name`, `timezone`, the settings of D-045 and §4.2, `coordinators_may_edit_or_delete_entries`, `project_creation_requires_approval` | single row (`only_row` primary key with `CHECK (only_row)`); both settings `NOT NULL DEFAULT false` | one instance is one organisation (D-050); a setting that is null has no meaning, and answer 6 fixes one of the two defaults |
-| `users` | `id`, `email`, `display_name`, `anonymised_at` | partial unique on `lower(email) WHERE anonymised_at IS NULL` | D-052's accepted cost, now enforced: an anonymised placeholder can never block a real address, and two live accounts cannot share one |
+| `users` | `id`, `email`, `display_name`, `anonymised_at` | partial unique on `lower(email) WHERE anonymised_at IS NULL` | D-052's accepted cost, now enforced: an anonymised placeholder can never block a real address — it is the constant `erased@invalid` (§16.38, D-071) — and two live accounts cannot share one |
 | `memberships` | `id`, `user_id`, `role`, `status`, `joined_at`, `removed_at` | `role IN ('volunteer','administrator')`; `status IN ('active','inactive','removed')`; `removed_at` set exactly when `removed`; partial unique `(user_id) WHERE status <> 'removed'` | answer 1: one live membership per person, and a rejoin after removal |
 | `projects` | `id`, `name`, `created_by`, `archived_at` | `name` non-empty; no uniqueness | answer 3 |
 | `activities` | `id`, `project_id`, `name`, `archived_at` | `project_id NOT NULL`; `name` non-empty | this `NOT NULL` is what lets `time_entries` drop `project_id` (answer 5) |
@@ -7438,23 +7473,20 @@ semantics (§13 item 4); whether a removed membership may be restored and how
 and optional profile fields (§15.12 item 23), of which only `email`,
 `display_name` and `anonymised_at` are fixed here; whether an entry's anchor
 also keeps the zone name it was written under (D-069); whether a suspension
-route ever ships (§15.2.1); the anonymisation review this decision hands over
-(answer 2); and whether an import (D-036) writes rows through these constraints
-or beside them.
+route ever ships (§15.2.1); the retention period and legal basis the record
+names nowhere, which §16.38 hands back to the operator (D-071); and whether an
+import (D-036) writes rows through these constraints or beside them.
 
-**Handed over: the anonymisation review.** The next item is D-052 on its own
-terms — what anonymising a person protects, what it fails to protect, and what
-it costs the organisation that relies on it. The questions it starts from are
-the ones this section could not answer without re-opening a decision: the
-replacement display name ("Former volunteer" in §16.19, "Former member" in
-§16.34, and no decision choosing between them); whether a placeholder address
-in a column that keeps its uniqueness is the right shape at all, now that the
-index is partial; what remains identifying after erasure — the hours, the
-grants, the audit rows that still resolve `actorId` — and whether that is the
-protection the record claims; whether the erased person's notifications should
-be deleted, which D-068 decides but does not justify; and whether the erasure
-itself belongs in the trail as an auditable act or, as D-068 has it, leaves the
-mailbox deletion unaudited.
+**Handed over, and handed back: the anonymisation review (§16.38).** D-052 was
+taken up on its own terms on 28 November 2026, as D-071. It answers the
+questions this section could not answer without re-opening a decision: the
+replacement display name is "Former member" in both sections; a placeholder
+address in a column that kept its uniqueness was the wrong shape, and one
+sentinel in a column the partial index no longer enforces is the right one;
+what remains identifying after erasure — the notes, older `changes` pairs, the
+pattern of hours and grants — is named rather than denied; the mailbox is
+emptied under the erasure's single row; and the act stays in the trail as an
+auditable row that records no destroyed value.
 
 **Resolves:** §15.12 item 28, in full — schema, constraints and transaction
 requirements. D-069 fixed the engine, the anchor, the migrations, the indexes
@@ -7472,6 +7504,276 @@ uniqueness an index, D-068's mailbox its recipient key, D-067's trail its
 privilege instead of a trigger, and D-051's grant its two-pair
 `ended_at`/`ended_by` check. §17's B15 row records that the table-by-table half
 landed here.
+
+## 16.38 Anonymisation revisited: pseudonymisation, the tombstone, and the law the record cannot supply
+
+**Confirmed decision (D-071) — 28 November 2026.**
+
+D-052 was taken in a day, as a trade rather than an argument: keep the hours,
+destroy the identity. It has been load-bearing ever since — the membership
+status, the audit trail, the mailbox, the lists and the export all depend on
+it — and it was never argued against its alternatives. D-070 handed it over
+rather than half-fixing it, because the record showed two signs of a decision
+taken quickly: the anonymised person was called "Former volunteer" in §16.19
+and "Former member" in §16.34, and the address replacement was written for a
+uniqueness rule that a later partial index made unnecessary.
+
+There is a third sign, and it is not a contradiction to be tidied. The record
+talks about erasure as though the obligation were settled — "an erasure
+request", "the organisation's terms" — while naming no jurisdiction, no
+lawful basis and no retention period anywhere in it. D-052's own
+rejected-alternatives table admits as much: a retention period is "defensible
+only with a stated period and a legal basis, and the MVP has neither." That is
+not an omission from a table. It is the ground the whole section stands on,
+and this decision writes it down rather than papering over it.
+
+**The case this protects.** Sam volunteered for two years, coordinated the
+Tuesday kitchen for five months, and asks in March to be forgotten — three
+weeks before a funder samples the Tuesday kitchen's hours. A year later three
+people read the record. An administrator opens the users list and sees a row
+reading "Former member": no address, a join date, a removal date, a stable
+`id`. A coordinator opens the audit log on an entry Sam approved and finds
+`actorId` resolving to the same tombstone. A funder opens a report and sees
+340 hours and 61 approvals, attributed to nobody in the document. That is
+what erasure bought: none of the three can *name* Sam. It is not what people
+hear. None of the three is prevented from *recognising* Sam — the `notes` on
+her entries are still her own words, the grant rows still say which project
+she coordinated, and a breach of the instance still hands over the pattern of
+her hours. The record must say "pseudonymised" where it now says
+"anonymous", and say what survives.
+
+**Decision in one line: erasure stays, as one administrator's act against one
+person at a time, recorded as one row — the user row pseudonymised in place
+as "Former member" at the address `erased@invalid`, the work and its
+attributions intact, the claim corrected from anonymity to pseudonymisation,
+and the jurisdiction, lawful basis and retention period the software cannot
+supply named as the operator's to decide.**
+
+**The five answers.**
+
+1. **The replacement name is "Former member", one constant, everywhere.** The
+   role lives on the membership (§16.18, D-070 answer 1), so the user row
+   does not know whether the person was a volunteer or an administrator, and
+   "Former volunteer" is false for an erased administrator or coordinator.
+   "Member" is the umbrella §3 already uses for a person in an organisation.
+   D-067 rule 4 already says "Former member" and its rows outlive the user
+   row, so the other spelling would have meant amending §16.34 as well as
+   §16.19 and shipping two strings where the app shows one. The string is
+   fixed in three places at once: the user row, the resolved `actorId` in the
+   audit log, and the users list (§16.21 rule 7).
+
+2. **The address is one constant sentinel, `erased@invalid`, and `email`
+   stays `NOT NULL`.** The partial index on `lower(email) WHERE
+   anonymised_at IS NULL` already removes the erased row from the unique set,
+   so uniqueness was never the value's job and no per-row placeholder is
+   needed. A single constant serves every erased row. `.invalid` is reserved
+   by RFC 2606, so a mailer that ever reaches for the column fails rather
+   than delivering to a stranger, and the value still passes a naive format
+   check, so no response contract breaks. Keeping the column `NOT NULL`
+   avoids teaching authentication and every lookup a null branch. The rule
+   that travels with it: **any query that resolves a person by address
+   carries `anonymised_at IS NULL`**, the same predicate as the index. With a
+   constant, `WHERE email = …` without it can match many rows and return the
+   wrong person. No API response echoes the sentinel: the users list withholds
+   the address and no route returns it for an erased row.
+
+3. **The claim is pseudonymisation, and three limits are named.**
+   §16.19's case paragraph promises that "nothing left in the instance says
+   who Marisol was". That is not true and cannot be made true without
+   destroying the record, so the claim is corrected. Erasure destroys the
+   person's identity fields and nothing else, and three things survive it
+   deliberately:
+
+   - **The entry's `notes`.** It is the volunteer's own free text stored as
+     part of the organisation's record of work, and it is the likeliest route
+     back to a name. Scrubbing it would rewrite the record of what was done
+     and could destroy a third party's details with it. It stays, exactly as
+     written.
+   - **`changes` pairs written before the erasure.** D-067's accepted cost
+     already says a former display name can sit in the trail, because the
+     trail records what the record said at the time. Erasure does not rewrite
+     history; the erasure's own row is the one exception, and it records no
+     values (answer 4).
+   - **The pattern.** Dates, durations, projects and grant intervals identify
+     a person in a small organisation without any name at all. An `actorId`
+     with a distinct history is a pseudonym, and a pseudonym is not an
+     anonymity.
+
+   What the organisation tells its volunteers therefore has three sentences,
+   not one: hours are the organisation's record and are kept; your name is
+   removed on request and cannot be recovered; and what you wrote on your
+   entries, what the audit trail recorded before you left, and the shape of
+   your hours remain. The API cannot enforce any of this against the
+   organisation's own terms, but it must not contradict them either — which
+   is why §16.19 rule 7's promise that the API never promises deletion of
+   hours still stands.
+
+4. **The erasure's own row names the fields it destroyed, and none of their
+   values.** Taken literally, D-067 rule 2 would have the erasure record
+   `{"email": {"before": "m.vega@…", "after": …}}` — the address the
+   erasure exists to remove, preserved in the one table nothing purges. The
+   exception is one sentence: **on `erased`, `changes` carries each destroyed
+   field with `before` and `after` both `null`.** The shape is unchanged, and
+   it reads as "these moved, values withheld". The row keeps the
+   administrator as `actorId` and the erased user as `entityId`, so the act
+   is attributable and the person is a tombstone. Its optional `reason` is
+   administrator free text and cannot be scrubbed: it must not repeat the
+   person's name, address or anything else the erasure removes, and the
+   section says so rather than pretending the column is safe.
+
+5. **The mailbox is emptied under that one row, and not audited row by row.**
+   D-068 rule 9 deletes the person's notifications with the rest of their
+   personal data, and D-068 rule 8 already says a notification delete leaves
+   no trail. One special case for erasure would make erasure a different kind
+   of delete, and one row per deleted notification would copy a personal
+   record — what she was told, about which entry — into the permanent trail,
+   which is the opposite of erasing her. There is no `notification` entity
+   type and no schema change: the erasure's single row is the record that the
+   act happened, and the number of rows it removed is not recorded anywhere.
+
+**Who performs it.** Erasure is an administrator's act: one person, one
+request, no bulk form, no schedule and no self-service route. The person asks
+the organisation, the organisation's administrator performs the act, and the
+trail records who did. A caller cannot erase themselves, because the act is
+irreversible and holding a session is not evidence that a request was
+considered. A second erasure of the same person is refused rather than
+repeated, and the refusal leaves no row (D-067 rule 7). The route's path and
+body belong to §15.12 item 29; the authority, the act and its record are
+fixed here.
+
+**What erasure removes, and what survives it.**
+
+| Removed by the erasure | Survives it, deliberately |
+|---|---|
+| The address, replaced by `erased@invalid` | The user `id`, and every row that points at it |
+| The display name, replaced by "Former member" | `time_entries.volunteer_id` and `reviewed_by` |
+| Credentials, refresh tokens, sessions | `project_coordinators` grants and their `granted_by` |
+| The mailbox, row by row | Audit rows, including `changes` written before the erasure |
+| Profile fields, present and future | Entry `notes`, the person's own words as record |
+| | The pattern: dates, durations, projects, intervals |
+
+**The legal gap.** Three absences, named so that no reader mistakes silence
+for a decision, and so that no future section inherits an obligation it
+cannot see.
+
+- **No jurisdiction.** The record is written for an instance one organisation
+  runs (D-050). Nothing in it says where that instance runs, and the answer
+  changes the obligation: a GDPR or UK GDPR organisation owes a right to
+  erasure with narrow exceptions (Art. 17(3) — compliance with a legal
+  obligation, and the establishment, exercise or defence of legal claims);
+  several US state laws give residents comparable deletion and access rights;
+  Brazil's LGPD has an elimination right; Canada's PIPEDA gives withdrawal of
+  consent without an absolute erasure right; and Australia's APP 11 requires
+  destroying or de-identifying personal information once it is no longer
+  needed, which is nearer to D-052 than to any alternative considered here.
+  The design can therefore satisfy one regime and fail another, and its own
+  record cannot say which applies. This section's answer is that the software
+  must keep every answer available — destroy the identity, keep the record,
+  answer the export, record the act — and that naming the regime is the
+  operator's act, not a schema decision.
+
+- **No lawful basis.** Nothing in the record names the basis on which a
+  volunteer's personal data is processed, and Art. 6 asks for one. If an
+  organisation relies on consent, withdrawal must be as easy as giving it,
+  and there is no consent record in the schema. The rights the contract does
+  serve are access (the export, §16.19 rule 5), rectification (ordinary
+  editing) and erasure (this section). Objection (Art. 21) and restriction
+  (Art. 18) are not implemented — restriction is named in the rejected table
+  below, not smuggled in as a feature. The basis is the operator's to choose
+  and to record in its own terms; the contract's job is not to make the
+  choice for it.
+
+- **No retention period.** Archived projects never expire (§16.19 rule 4),
+  audit rows are never purged (D-067 rule 3), notifications age out only when
+  their owner deletes them (D-068 rule 9), and after this decision an erased
+  user row lives as long as the instance does. That is a retention-first
+  posture, which the design has chosen consistently — funding audits want
+  records kept, not purged — and it is also the posture a supervisory
+  authority examines first, because "no period" and "for ever" are the same
+  finding. §15.12 item 25 queued a notification period and never set one;
+  the §16 head now carries a retention item of its own. Until a period is
+  chosen, the position is stated rather than implied: the record is kept
+  indefinitely, and the organisation's terms must say so.
+
+**On the exception people reach for.** A funder's audit justifies keeping the
+hours; it does not justify keeping the name attached to them, because the
+audit samples work rather than workers. Where an agreement genuinely names
+volunteers — a grant schedule, an insurance roster — that is an argument for a
+documented exception with a period, not for indefinite identity retention.
+Volunteer status cuts the same way: the record-keeping duties that force an
+employer to keep a named person's records (tax, social security, employment)
+mostly do not attach to volunteers, though some jurisdictions bring them under
+labour, insurance or in-kind-contribution rules, and safeguarding records are
+their own category. And `notes` is free text that can carry health or
+safeguarding detail: special-category data with a name attached, and
+unattributable without one.
+
+**Not legal advice.** This section is a design record, not a legal opinion,
+and nothing in it is addressed to a particular organisation. The operator's
+counsel decides the jurisdiction, the basis and the period; the software's job
+is to make any of the lawful answers available and to stop promising more than
+it delivers.
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **Keep erasure, as one administrator act, with these five answers (recommended)** | The only lawful answer to a request stays available; the record gets simpler at every point it touches | Pseudonymisation, not anonymity: the pattern and the notes survive, and the record must say so |
+| Eliminate erasure and keep the identity for ever | The simplest schema there is: no `anonymised_at`, no partial index, no tombstone, no mailbox hole, no erasure route | The only lawful answer becomes manual SQL — unaudited, unreviewed and likely to break the foreign keys — and the name stays in every export, list and breach |
+| Replace erasure with restriction (`status = removed` plus a hidden name) | Reversible, auditable, and a recognised measure where retention is justified | Cannot answer someone who wants the record gone; fails an erasure request in the jurisdictions that have one |
+| Record the destroyed values in the erasure row | A recoverable copy, and a trail that reads like every other row | Ekes out the erasure: the address lives for ever in the one table nothing purges |
+| Scrub `notes` on the erased person's entries | Removes the likeliest route back to a name | Rewrites the organisation's record of work, and can destroy a third party's details with it |
+| Scrub `changes` pairs written before the erasure | Closes the leak D-067 concedes | Makes "insert-only" false the first time anyone is erased, which is the trail's whole premise |
+| A per-row placeholder, `erased+<id>@invalid` | Unique by construction | Claims a uniqueness nothing needs, and puts the stable id in the field D-052 wanted emptied |
+| `NULL` instead of a sentinel | The cleanest semantics | Makes `email` nullable and gives authentication and every lookup a branch to forget |
+| A role-shaped tombstone ("Former volunteer", "Former coordinator") | More informative to a reader | Needs a role the user row does not have, and changes if a removed membership is ever restored |
+| A keyed hash of the destroyed address | Support can spot a re-registration | De-anonymisation under subpoena, and it contradicts D-052's "no link to the old record" |
+| Audit each notification the erasure deletes | A count in the trail | Copies what she was told into the permanent record, and makes one delete two rules |
+| Keep the mailbox and anonymise `recipientId` | Nothing is destroyed | Personal messages outlive the erasure and the recipient id survives, so D-068 rule 9's reasoning collapses |
+
+**Accepted costs.**
+
+- **Two erased people are indistinguishable by name.** They share a display
+  name, an address and a status, and the `id` is the only handle — which is
+  the intent, and reads badly in a directory of two hundred former members.
+- **The sentinel looks like an address.** One forgotten predicate in a future
+  lookup can resolve an erased row by accident; the index and the query have
+  to carry the same `anonymised_at IS NULL`, and this section says so in one
+  place because it cannot enforce it in every handler.
+- **The notes and old `changes` pairs still identify.** The organisation's
+  terms cannot promise more than this section protects, and a volunteer who
+  reads them may reasonably want more than the system offers.
+- **The mailbox deletion leaves no per-row trace.** Whether it actually
+  emptied is a claim about a procedure, not a fact in the trail; D-068's
+  "who was told what" stays unanswerable, now with a reason attached.
+- **The legal gap is written down, not closed.** An operator must still decide
+  a jurisdiction, a basis and a period before a real volunteer's data is in
+  the instance, and this record cannot make that decision for it.
+- **Erasure is one person at a time.** No bulk path, no script, no scheduled
+  cleanup; a hundred departures in a week are a hundred administrator acts,
+  which is the cost of an irreversible operation having no fast lane.
+
+**Left open.** The retention period for the audit trail, notifications,
+erased user rows and archived records (the top of the legal gap; §15.12 item
+25's other half); the jurisdiction and lawful basis, which belong to the
+operator; whether an organisation may configure retention at all (deferred by
+D-052); whether restriction ships as its own feature rather than as a
+rejected alternative; whether an erased membership's `joined_at`/`removed_at`
+interval should be coarsened, since an employment-shaped interval is a
+pseudonym in its own right; and whether the personal export should carry the
+fact of a future erasure, which it currently cannot because an erased person
+cannot call it.
+
+**Resolves and amends.** It closes §16.37 answer 2's handover and the
+"Anonymisation, revisited" item at the head of §16, and it answers the
+questions D-070 could not answer without reopening a decision. It amends
+§16.19 rules 2, 5 and the case paragraph, its first accepted cost and its
+"left open" list; §16.34 rule 2 (the `erased` exception), rule 4 (the constant
+name, the row's shape) and its accepted cost about `changes`; §16.35 rule 9 and
+its "left open" list; §16.21 rule 7; and §16.36's `users` row. It reviews
+D-052 without reversing it — the trade stands, and now it has an argument
+behind it. §17's B7 row records the review, and the §16 head carries a new
+retention item that this section deliberately does not decide.
 
 ------------------------------------------------------------------------
 
@@ -7493,7 +7795,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B4** | Concurrency and idempotency for mutations: client-generated ids on create, timer start/stop (only if server timers return, D-048) and archival; optimistic concurrency by version or `updatedAt` | **Contract** | **Resolved — D-049 (§16.16).** A client-generated UUID per record plus an integer `version`; no `Idempotency-Key`; state-setting operations idempotent by outcome. Offline replay (§15.12 item 30) depends on it |
 | **B5** | Organisation model: single organisation per deployment or multi-tenant; can one volunteer belong to several; what organisation-level settings attach to | **Contract** | **Resolved — D-050 (§16.17).** The deployment is the tenant: each organisation runs its own instance, identity is scoped to it, and no organisation identifier appears in the API. One organisation row carries the time zone, approval policy and membership setting; no `organisation_id` columns |
 | **B6** | Role and permission matrix: roles as membership attributes, whether admin/coordinator/volunteer overlap, who may read whose hours, who reads the audit trail | **Contract** | **Resolved — D-051 (§16.18).** Two membership roles, `volunteer` and `administrator`, with coordination held as `project_coordinators` rows (`granted_by`, `granted_at`, `ended_at`). Effective permission is the role union an active grant on the project; nobody approves their own entries; project-less entries are administrator-only; a non-administrator who creates a project becomes its first coordinator. **Amended 26 November 2026 (D-065, §16.32):** editing or deleting another member's entry is coordinator authority only while the organisation's `coordinatorsMayEditOrDeleteEntries` setting is on, an administrator always has it, its scope is the entry's project rather than the author's current assignment, and it is published per project as `canChangeOthersEntries`, which answers about other members' entries and never about the caller's own. The setting defaults off (D-070, §16.37) |
-| **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint |
+| **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint. Reviewed 28 November 2026 (§16.38, D-071): erasure stays as one administrator act, with the tombstone, the address sentinel and the limits on what it protects now fixed |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | **Resolved — D-066 (§16.33).** `approved` and `not_required` count; `pending`, `rejected` and deleted entries do not; totals are summed at read time from `workDate` in the organisation's time zone, weeks start on Sunday, and one grouped report route returns `seconds` and `entryCount` per row |
 | **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery. §16.29 (D-062) records that an advisory conflict raises no notification, so this list has one fewer entry, and §16.31 (D-064) keeps notifications out of the change feed. **Resolved — D-068 (§16.35).** In-app only, with rows written in the act's own transaction, one per recipient and none for the actor's own act. Eleven fixed types and an explicit raises-nothing list; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; there is no administrator access; read state is neither audited nor in the change feed. Retention stays open (§15.12 item 25) |
