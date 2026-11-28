@@ -3591,9 +3591,11 @@ record kept — is unchanged, but it is pseudonymisation and is now called that.
    returns the caller's own profile, membership, entries, grants and
    notifications as one document, built from the same scoped queries the
    lists already use. No job queue and no email delivery. Its
-   `membership.status` draws on the three values §16.37 fixes (`active`,
+   `membership.status` draws on the three    values §16.37 fixes (`active`,
    `inactive`, `removed`), so the export no longer carries a field with no
-   defined vocabulary (D-070, §16.38).
+   defined vocabulary (D-070, §16.38). Its `profile.email` is the caller's own
+   address, and an erased person has no credential to sign in with, so an
+   export is never assembled from an anonymised row (§16.38, D-071).
 6. **There is no organisation-purge endpoint.** With one instance per
    organisation (D-050), decommissioning is an operational act: whoever can
    drop the database already holds the credentials to do it. A button that
@@ -3906,7 +3908,9 @@ mistake is a refused cursor instead of a silent misreading.
    counting endpoints, deferred in §16.7 and not settled here.
 7. **The users list is administrator-only and hides what it need not show.**
    `q` matches a display name by prefix and an email address exactly — no
-   free-text search in the MVP. An anonymised person appears under their
+   free-text search in the MVP. The email match runs with
+   `anonymised_at IS NULL`, so the sentinel is not a search handle: a query
+   for `erased@invalid` returns nothing rather than every erased person. An anonymised person appears under their
    stable `id` with `anonymisedAt` set, the constant name "Former member" and the email withheld — rendered `null`, never the stored sentinel (D-052; §16.38) — so history stays coherent without inventing a status value D-052 did not define; the `status` filter is now the three-value list of §16.37 (D-070). Coordinators reach people through their project's
    assignments; a coordinator-facing directory would be a filter on this same
    route, not a fifth shape.
@@ -7603,6 +7607,14 @@ supply named as the operator's to decide.**
    therefore cannot display the filler as an address or write it back as one.
    This is a rendering rule, not a nullable column: `email` stays `NOT NULL`,
    and no write path accepts a null address.
+
+   Two places sit outside the rule and must stay outside it. The audit trail's
+   `changes` pair is a record of what was written, not a rendering of a field,
+   and D-071 requires the erasure's own row to name the destroyed field — so
+   the trail is not a route that "renders `email`" and must not be nulled to
+   match this paragraph. And `GET /v1/me/export` builds its profile from the
+   caller's credentials, which an erased person no longer has, so that route
+   never renders an erased address either.
 
 3. **The claim is pseudonymisation, and three limits are named.**
    §16.19's case paragraph promises that "nothing left in the instance says
