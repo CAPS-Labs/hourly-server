@@ -1252,7 +1252,7 @@ is how §3.2's requirement becomes a status rather than a route check; the addre
 is typed by the person and still never a delivery channel; the audit vocabulary
 gains `join_ticket_opened`, `join_ticket_revoked` and `self_registered`; a closed
 ticket lives a day and an unapproved application thirty days; and the API now has
-four unauthenticated routes (§16.46). Gaps not yet raised by any
+four unauthenticated routes and four new refusal codes, all registered in the status table (§16.46). Gaps not yet raised by any
 section are tracked as backlog items B1–B20 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated. **Amended 28 November 2026 (D-078, §16.45):** D-004 is superseded — there is no self-registration — **and amended again 28 November 2026 (D-079, §16.46):** it exists in one shape, behind a join ticket, creating a pending membership and a session that reaches nothing — and D-005's credential is settled as an administrator-issued enrolment grant, so both rows read as history.
 
 ## 13. Outstanding decisions and recommended order
@@ -2535,11 +2535,11 @@ Errors use the envelope already illustrated in §10.5, now confirmed as the cont
 
 | Status | Codes | Trigger |
 |---|---|---|
-| `400` | `VALIDATION_FAILED` (with field codes), `INVALID_CURSOR`, `CURSOR_QUERY_MISMATCH`, `MALFORMED_REQUEST` | Invalid filters or combinations (§15.8.8), cursor failures (D-037), unparseable body |
+| `400` | `VALIDATION_FAILED` (with field codes), `INVALID_CURSOR`, `CURSOR_QUERY_MISMATCH`, `MALFORMED_REQUEST` | Invalid filters or combinations (§15.8.8), cursor failures (D-037), unparseable body. The field codes inside `details.errors[].code` are open-ended, but the ones this record names — `DATE_IN_FUTURE` (§16.24, D-057) among them — are listed with the status that carries them |
 | `401` | `UNAUTHENTICATED` | Missing, malformed or expired credentials, a revoked or ended session, and a reused refresh token — all indistinguishable (§16.23, D-056) |
-| `403` | `FORBIDDEN` (with field codes) | Authenticated, but a supplied **filter value** lies outside the caller's scope (§15.8.9) |
+| `403` | `FORBIDDEN` (with field codes), `MEMBERSHIP_PENDING`, `JOIN_CLOSED` | Authenticated, but a supplied **filter value** lies outside the caller's scope (§15.8.9); a valid session whose membership is still `pending`, which reaches nothing until an administrator approves it (§16.46, D-079); a join ticket that is closed, expired, revoked, exhausted or unknown (§16.46, D-079) |
 | `404` | `NOT_FOUND` | Addressed resource absent **or** outside scope — identical status and body either way |
-| `409` | `CONFLICT`, `VERSION_MISMATCH`, `DATE_NOT_ELIGIBLE`, `INVALID_TRANSITION`, `IMPORT_ALREADY_APPLIED` | State conflicts, including the in-place edit path of §15.5, an entry date outside the volunteer's eligibility (§16.24, D-057), and an approval decision the entry's state does not allow (§16.25, D-058). `VERSION_MISMATCH` alone carries `details.changedFields`, the names of the fields that moved (§16.28, D-061). A re-uploaded import file carries `IMPORT_ALREADY_APPLIED` (§16.42, D-075) |
+| `409` | `CONFLICT`, `VERSION_MISMATCH`, `DATE_NOT_ELIGIBLE`, `INVALID_TRANSITION`, `IMPORT_ALREADY_APPLIED` | State conflicts, including the in-place edit path of §15.5, an entry date outside the volunteer's eligibility (§16.24, D-057), and an approval decision the entry's state does not allow (§16.25, D-058). `VERSION_MISMATCH` alone carries `details.changedFields`, the names of the fields that moved (§16.28, D-061). A re-uploaded import file carries `IMPORT_ALREADY_APPLIED` (§16.42, D-075). A registration whose address already belongs to a live account carries `EMAIL_IN_USE`, and one whose person is already a member here carries `ALREADY_A_MEMBER` (§16.46, D-079) |
 | `413` | `PAYLOAD_TOO_LARGE`, `EXPORT_TOO_LARGE`, `IMPORT_TOO_LARGE` | Body over the 1 MiB cap, refused before it is parsed (D-053, §16.20); a report export over 100,000 rows (§16.41, D-074); an import over 10,000 rows (§16.42, D-075) |
 | `429` | `RATE_LIMITED` | Token bucket exhausted; carries `Retry-After` (D-053, §16.20) |
 | `500`, `503` | `INTERNAL_ERROR`, `SERVICE_UNAVAILABLE` | No internals, no identifiers |
@@ -5209,7 +5209,7 @@ delivery behind it, or in the entries themselves.
 5. **The third filter is a boolean, not an enum.** §15.8.6's conflict filter
    becomes `hasConflict=true|false`. Omitted, both are returned, so the
    filter is a narrowing and never a default that hides rows. Any other value
-   is `400 VALIDATION_ERROR` (§16.4). It combines with every other filter
+   is `400 VALIDATION_FAILED` (§16.4). It combines with every other filter
    under §15.8.7's AND rule, and because it is part of a request's filter set
    it is part of the cursor's identity: changing it invalidates an existing
    cursor with `CURSOR_QUERY_MISMATCH` (§16.21, D-054), automatically and
@@ -5487,7 +5487,7 @@ are unchanged.
 7. **Lists exclude deleted entries; asking for them is explicit.** Every list
    route omits them unless `deleted=true` is sent. `deleted=false` is the
    documented default, spelled out so a client can see what it is relying on,
-   and any other value is `400 VALIDATION_ERROR`. This is the one filter whose
+   and any other value is `400 VALIDATION_FAILED`. This is the one filter whose
    omission is not "both", deliberately: a conflict flag narrows a live set,
    while a deleted row is a retracted claim, and listing it by default would
    put withdrawn work back into every screen. `GET /v1/time-entries/{id}`
@@ -6344,10 +6344,10 @@ returns `seconds` per group.**
 7. **One route, one read.** `GET /v1/reports/hours`, with `from` and `to`
    required, `to` exclusive, both dates in the organisation's zone, and the
    range capped at 366 days. A missing, malformed or over-long range is
-   `400 VALIDATION_ERROR` with `details.errors`.
+   `400 VALIDATION_FAILED` with `details.errors`.
 
 8. **One grouping per request.** `groupBy=project`, `activity`, `volunteer`
-   or `week`. Anything else is `400 VALIDATION_ERROR`. Nested groupings —
+   or `week`. Anything else is `400 VALIDATION_FAILED`. Nested groupings —
    project within volunteer, week within project — are not in the MVP: each is
    a second dimension on the same rows, and a client that needs one asks twice
    with different groupings.
@@ -9476,8 +9476,10 @@ the attestation the paper sign-in sheet has always used.
    100, because a hundred people in one room is an organisational event and a
    thousand is an open door with nobody watching. A ticket is opened for one
    sitting and never reopened: a second induction gets a second ticket, so a roll
-   always belongs to one evening. An administrator may revoke it at any moment,
-   and revocation stops every further registration on the next request.
+   always belongs to one evening. An administrator may revoke it at any
+   moment with `DELETE /v1/join-tickets/{id}` — `204 No Content` under D-055, the
+   same shape §16.45 rule 7 gives a grant — and revocation stops every further
+   registration on the next request.
 
 3. **The QR carries the host and the ticket.**
    `hourly-join:1?host=pantry.example&ticket=K7M2-QX4B-9RTD`. The scheme prefix
@@ -9487,15 +9489,20 @@ the attestation the paper sign-in sheet has always used.
    alphabet, the normalisation and the validation path are §16.45 rule 2's,
    unchanged, because a second code format would be a second set of mistakes.
 
-4. **Registration is one transaction and three rows.** Unauthenticated
-   `POST /v1/auth/join` takes `{ticket, displayName, email, deviceLabel}`. In one
-   statement it checks the ticket is open — `now() < expires_at`,
-   `revoked_at IS NULL`, `used_count < max_uses` — increments `used_count`,
-   inserts the user, inserts a `pending` membership, and mints the session.
-   Twenty simultaneous scans therefore cannot overshoot the headcount, and a
-   dropped connection cannot leave a counted admission with no account. The
-   response is D-056's session body, `201` with `Location`, through the same token
-   pipeline as any refresh.
+4. **Registration is one transaction, and it writes three rows.** Unauthenticated
+   `POST /v1/auth/join` takes `{ticket, displayName, email, deviceLabel}`. It is a
+   transaction, not one statement, and the lock is the difference: the ticket row
+   is read `FOR UPDATE`, its window and headroom are re-checked under that lock —
+   `now() < expires_at`, `revoked_at IS NULL`, `used_count < max_uses` — and
+   `used_count` is incremented; the user and the `pending` membership are
+   inserted; the session and its refresh-token hash are written; then the commit.
+   Twenty simultaneous scans therefore serialize on one row rather than race on
+   it, and a dropped connection cannot leave a counted admission with no account,
+   because nothing is counted until the commit that writes the account. One
+   data-modifying statement would be shorter and worse: it buries the lock and the
+   order of the writes inside a `WITH` clause, where the next reader cannot check
+   them. The response is D-056's session body, `201` with `Location`, through the
+   same token pipeline as any refresh.
 
 5. **The session exists before the approval and reaches nothing.** `GET /v1/me`
    and the session routes answer; every other authenticated route answers
@@ -9644,7 +9651,10 @@ good. It amends §16.23 rule 1's unauthenticated route count from two to four,
 rules from five to six, §16.37's status set and table inventory, §16.39 with a
 twelfth rule and its "left open" item about a dormant application, §16.40 rule
 4's predicate count from three to five, §16.45 rules 7 and 11 and its "left open"
-note about a batch for an intake, and §17's B14 and B15. It answers the question
+note about a batch for an intake, and §17's B14 and B15. It registers the four refusal codes it introduces —
+`403 JOIN_CLOSED`, `403 MEMBERSHIP_PENDING`, `409 EMAIL_IN_USE` and
+`409 ALREADY_A_MEMBER` — in the status and code mapping, and gives revocation a
+route of its own. It answers the question
 no earlier section could — a person with no identity anywhere — and leaves
 §16.45's grant doing what it was designed for: a known person, one device, one
 use.
@@ -9677,7 +9687,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing wa
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
 | **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | **Resolved — D-056 (§16.23).** Bearer tokens on every business route and no cookie, because the MVP has no browser client; a 30-minute access token, a single-use rotating refresh token with a 120-second replay grace, a 90-day idle and a 180-day absolute limit, and `sid` checked on every request so a revocation lands on the next call. Sessions are listed and ended from the phone, every authentication failure is the same `401 UNAUTHENTICATED`, and MFA is deferred. **Amended 28 November 2026 (D-078, §16.45):** the credential is an administrator-issued enrolment grant redeemed once per device, which replaces the sign-in route; the idle limit becomes 180 days and the absolute limit 400. **Amended 28 November 2026 (D-079, §16.46):** self-registration returns behind a join ticket; the registration mints a session scoped to a `pending` membership, so §3.2's requirement holds as a status rather than as a route check, and the API gains two unauthenticated routes |
 | **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires and the `change_seq` index §16.31's feed needs | **Implementation** | §15.12 item 28 named the schema; the operational half was unlisted. **Resolved — D-069 (§16.36).** PostgreSQL; one stored `local_anchor` instead of a derived date and time, so the order, the date filter and the cursor read one value; add-fill-remove migrations with a version guard, a boot-time advisory lock and a rehearsed restore; seven performance indexes plus six uniqueness rules, two of the indexes added by §16.40, the fifth rule by §16.45 and the sixth by §16.46; and an install epoch in every cursor so a restore forces a re-sync; the per-table constraints are recorded in §16.37 (D-070) |
-| **B16** | Backdating window: how far in the past an entry may be dated or submitted | **Contract** | **Resolved — D-057 (§16.24).** No maximum age and no submission deadline: the work date must be covered by the volunteer's assignment and must not fall in an archived interval (`409 DATE_NOT_ELIGIBLE`), and the only clock rule is a five-minute tolerance on future instants (`400 DATE_IN_FUTURE`) plus one day for a duration-only work date. Lateness is read from `submittedAt` rather than stored as a flag |
+| **B16** | Backdating window: how far in the past an entry may be dated or submitted | **Contract** | **Resolved — D-057 (§16.24).** No maximum age and no submission deadline: the work date must be covered by the volunteer's assignment and must not fall in an archived interval (`409 DATE_NOT_ELIGIBLE`), and the only clock rule is a five-minute tolerance on future instants (`400 VALIDATION_FAILED` carrying the field code `DATE_IN_FUTURE`) plus one day for a duration-only work date. Lateness is read from `submittedAt` rather than stored as a flag |
 | **B17** | Daily or weekly maximum hours, separate from the per-entry ceiling | **Feature** | Surfaced while taking up B1 and set aside; affects validation and reporting, not the record shape |
 | **B18** | Break deduction: whether a shift records a break that is subtracted, rather than net time as two entries | **Feature** | Surfaced while taking up B1 and set aside; a break field is a derived quantity that can disagree with the timestamps |
 | **B19** | Payroll rounding: whether exported hours are decimal, and the rule applied at the boundary | **Feature** | Surfaced while taking up B1 and set aside; the API stays exact and any rounding happens once, at export. **Resolved — D-074 (§16.41).** The CSV export carries `hours` beside `durationSeconds`, two decimals, half-up, computed once at the export boundary; no other route, body or list rounds |

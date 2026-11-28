@@ -248,6 +248,23 @@ if (rule1) {
   facts.push(`unauthenticated routes: ${routes.size} (${[...routes].join(', ')})`);
 }
 
+// Status-qualified codes (`` `409 CONFLICT` ``) must appear in the status and code
+// mapping, so a section cannot invent a refusal the contract never registered.
+const codeTable = region(/^\| Status \| Codes \| Trigger \|/, /^\*\*Disclosure rules/);
+if (codeTable) {
+  const registered = new Set(
+    [...codeTable.text.matchAll(/`([A-Z][A-Z0-9_]+)`/g)].map((m) => m[1]),
+  );
+  lines.forEach((line, i) => {
+    for (const m of line.matchAll(/`([4-5]\d\d) ([A-Z][A-Z0-9_]+)`/g)) {
+      if (!registered.has(m[2])) {
+        fail(i, `${m[1]} ${m[2]} is used but never registered in the status and code table`);
+      }
+    }
+  });
+  facts.push(`registered codes: ${registered.size}`);
+}
+
 // ---------------------------------------------------------------------------
 // 5. Mechanical checks
 // ---------------------------------------------------------------------------
