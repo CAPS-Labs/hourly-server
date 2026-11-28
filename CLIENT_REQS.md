@@ -147,6 +147,54 @@ self-registration (C9), which needs no per-person grant at all. Grant batching
 would serve only an organisation that insists on issuing twenty single-use
 codes, and §16.46 records that answer as no.
 
+### The join ticket, from the administrator's chair
+
+The volunteer's half of this flow is C9; this is the half that has to work at the
+front of a room, on a projector, with twenty people looking at it.
+
+7.5 **Opening one is one screen and two numbers.** Headcount, defaulting to 20
+and capped at 100, and a life defaulting to 1 hour and selectable from 10 minutes
+to 4 hours (§16.46 rule 2). The app refuses to send a request outside those
+ranges rather than letting the server refuse it, and shows both numbers back
+before the ticket exists. `POST /v1/join-tickets` answers with the ticket: `id`,
+`code`, `host`, `expiresAt`, `maxUses`.
+
+7.6 **Showing it is the point.** The QR is full-screen, high contrast, and large
+enough to scan from the back of a room; the twelve characters sit beneath it in
+three groups of four, for the person whose camera will not focus. The screen
+states the headcount and the closing time in words — "20 places · closes 20:30" —
+and a countdown, because "1 hour" means nothing once it is on a wall. The wake
+lock is held while it is displayed. The payload is the `hourly-join:1` form of
+§16.46 rule 3, rendered by the app from the server's fields: host, then ticket. No
+server-side image, no PDF, no print pipeline (C3.2).
+
+7.7 **The roll fills in, and the administrator watches it.** Below the QR, a live
+list of registrations: display name, address, device label, and the time. It
+refreshes by polling while the screen is in the foreground and no faster than
+every 5 seconds; there is no push channel and no notification type for a
+registration (§16.46 rule 12). Approving is one call per person (§16.46 rule 7);
+"approve all shown" issues them sequentially and reports a failure against the row
+it belongs to, never as one toast for twenty. Deleting an application is available
+on the same row and is how a name the administrator does not recognise is handled.
+
+7.8 **Revoking closes the door and nothing else.** `DELETE /v1/join-tickets/{id}`
+answers `204`, after a confirmation that names the consequence: no one else can
+register with this code, and the people already on the roll stay on it. A revoked
+ticket cannot be reopened — a second evening gets a second ticket (7.10) — and the
+screen switches to a closed state that keeps the roll readable and approvable.
+
+7.9 **What this screen must not do.** It must not edit a registrant's address: the
+person typed it, and an administrator who believes it is wrong deletes the
+application and asks them to register again, which is the only path that does not
+put words in someone's mouth. It must not approve a row showing no address. It
+must not offer "regenerate the code": that is revoke and open, and hiding it
+behind one button hides that the old slide stopped working.
+
+7.10 **Offline.** Opening or revoking a ticket needs the network. Showing one that
+is already open does not: the QR and its expiry are held locally, and the screen
+says plainly that it cannot see new registrations until it reconnects, rather than
+showing a stale roll as if it were current.
+
 ## C8 — Camera and permissions
 
 8.1 Camera permission is requested at the moment of scanning, with a sentence
@@ -184,10 +232,10 @@ an administrator afterwards; the app must not prefill it from the device account
 which on a shared phone belongs to somebody else.
 
 9.5 The email is validated only as non-empty with one `@`. Normalisation and
-uniqueness are the server's, and the app must not apply its own test. A `409
-EMAIL_IN_USE` shows "That address is already registered here. Ask an
-administrator to add you." — and does not immediately invite a second address, so
-a squatter's conflict is read rather than typed past.
+uniqueness are the server's, and the app must not apply its own test. A
+`409 EMAIL_IN_USE` shows "That address is already registered here. Ask an
+administrator to add you." — and does not immediately invite a second address,
+so a squatter's conflict is read rather than typed past.
 
 9.6 A `403 JOIN_CLOSED` shows "This code has closed. Ask your coordinator for a
 new one." It is a closed door, not an authentication failure, and must not be
@@ -201,8 +249,9 @@ retry either succeeds or reports the door closed.
 device list, and refreshes on foreground. It must reach no other screen — no
 tabs, no empty lists, no "0 hours" — and must not poll faster than foreground.
 
-While the membership is pending, every business route answers `403
-MEMBERSHIP_PENDING` with the organisation's name in `details` (§16.46 rule 5).
+While the membership is pending, every business route answers
+`403 MEMBERSHIP_PENDING` with the organisation's name in `details` (§16.46
+rule 5).
 **That answer is the Waiting screen's normal state, not an error.** The app must
 not show a failure message, must not retry the refused request in a loop, must not
 clear the token store, and must not return to the Join screen. The distinction is
@@ -263,9 +312,25 @@ suite:
 12. Approve the membership from the administrator's device, and confirm the
     volunteer's next foreground refresh shows the organisation with no re-login
     and no second scan.
-13. Register a second account with the same address and confirm `409
-    EMAIL_IN_USE` with the message of 9.5.
+13. Register a second account with the same address and confirm
+    `409 EMAIL_IN_USE` with the message of 9.5.
 14. Let a ticket expire, then register and confirm `403 JOIN_CLOSED`, styled as a
     closed door rather than a failed sign-in.
 15. Leave an application unapproved past its window and confirm the app is refused
     on refresh and returns to the Join screen.
+16. Open a ticket with 20 places and one hour: the QR displays and stays scannable
+    with the network off, the payload scheme is `hourly-join:1`, and headcount and
+    closing time appear in words beside a running countdown.
+17. With the ticket on screen, register two people: both appear on the roll within
+    one poll interval with name, address, device label and time, and neither needs
+    a manual refresh.
+18. Approve one row and confirm that person's app shows the organisation on next
+    foreground while the other stays pending. Then use "approve all shown" and
+    confirm one request per person, with a forced failure on a single row reported
+    against that row only.
+19. Revoke the ticket: a further registration gets `403 JOIN_CLOSED`, the two
+    people already on the roll can still be approved, and the screen shows closed
+    while keeping the roll readable.
+20. Ask for 101 places and for a five-hour life: the form refuses both before any
+    request is sent, and the server refuses a forced request with
+    `400 VALIDATION_FAILED`.
