@@ -1468,7 +1468,7 @@ Confirmed MVP decisions:
 - Users can mark notifications as read.
 - Users can delete their own notifications.
 - Deleting a notification must not delete the underlying assignment, request, or other business record.
-- Notifications remain available until deleted by their owner or by the retention sweep: a month after they are read, and for an unread one the organisation's mailbox window from creation, which is never longer than 24 months (§16.39, D-072).
+- Notifications remain available until deleted by their owner or by the retention sweep: a month after they are read, capped by the organisation's mailbox window, and for an unread one at that window itself, which is never longer than 24 months (§16.39, D-072).
 
 The exact notification API, delivery mechanics, and UI presentation are not yet specified. **Partly settled 26 November 2026:** the API and the delivery mechanics are §16.35 (D-068); UI presentation remains the client's.
 
@@ -1518,7 +1518,7 @@ Whether volunteer self-assignment requires approval| Existing organization-wide 
 Whether volunteers may leave projects without coordinator approval| Existing organization-wide setting; confirmed in the previous design record
 Whether coordinators may resolve time-entry conflicts| Partly settled: there is no separate resolve act, only the existing edit or reject (§16.29, D-062); whether a coordinator may edit or reject another volunteer's entry is §15.12 item 14
 Whether coordinator notifications are sent for direct volunteer self-assignment and self-removal| Optional behavior; exact configuration not decided
-Notification retention period| Settled 28 November 2026 — set by the organisation as a mailbox window of 1–24 months (default 12) for unread notifications, with read ones deleted a month after reading (§16.39, D-072)
+Notification retention period| Settled 28 November 2026 — set by the organisation as a mailbox window of 1–24 months (default 12) that caps every notification, with a read one deleted a month after reading or at the window, whichever comes first (§16.39, D-072)
 Retention of resolved assignment requests| Settled 28 November 2026 — set by the organisation from 6 months to never, default never (§16.39, D-072)
 
 The server must enforce authorization and applicable organization settings. UI controls alone are not sufficient to enforce permissions.
@@ -2261,7 +2261,7 @@ The following items remain unresolved. They should be addressed before or during
 22. Decide whether project-less activity descriptions are stored separately from optional notes.
 23. Finalize required and optional profile fields and email-change verification behavior.
 24. **Entry submissions settled:** an approval-policy change applies only to submissions received after its effective time (§16.12, D-045). Still open: the effects of policy changes on pending assignment requests and other pending operations.
-25. Define notification retention and whether administrators can manage other users' notifications. **Administrator access settled 26 November 2026 — they cannot: a mailbox is the caller's own and no route takes another person's id (§16.35, D-068). Retention settled 28 November 2026 (§16.39, D-072): a month after reading, the organisation's mailbox window when unread, never beyond 24 months, enforced by a sweep whose mechanism is still open.**
+25. Define notification retention and whether administrators can manage other users' notifications. **Administrator access settled 26 November 2026 — they cannot: a mailbox is the caller's own and no route takes another person's id (§16.35, D-068). Retention settled 28 November 2026 (§16.39, D-072): a month after reading capped by the organisation's mailbox window, that window when unread, never beyond 24 months, enforced by a sweep whose mechanism is still open.**
 
 ### Priority 5 — API contract and implementation
 
@@ -6787,8 +6787,9 @@ HTTP/1.1 404 Not Found
 
 **Left open.** ~~The retention period and any automatic cleanup (§6.4, §15.12
 item 25)~~ — settled 28 November 2026 (§16.39, D-072): a read notification is
-deleted a month after it is read, an unread one at the organisation's mailbox
-window, and the mechanism that enforces both is left open there; whether
+deleted a month after it is read or at the organisation's mailbox window,
+whichever comes first, an unread one at that window, and the mechanism that
+enforces both is left open there; whether
 `since` and `until` bound `createdAt` or `readAt`, which
 §16.21 leaves to the contract; marking a notification unread, deliberately
 absent from the MVP; a "seen in the list" state distinct from read; whether
@@ -7737,8 +7738,8 @@ cannot see.
   **Amended 28 November 2026 (D-072, §16.39).** The absence this bullet names
   is now a decision, and two of its instances change. Notifications no longer
   age out only when their owner deletes them: they are deleted a month after
-  being read and, unread, at the organisation's mailbox window — never beyond
-  24 months. Sessions, not part of the record and so not named here, are
+  being read and, unread, at the organisation's mailbox window, which caps
+  both clocks and is never longer than 24 months. Sessions, not part of the record and so not named here, are
   deleted 30 days after they end. The record itself, the audit trail included,
   still has no period, which is the retention-first posture the rest of this
   bullet defends; the retention item at the head of §16 is therefore decided
@@ -7867,15 +7868,15 @@ everything else is fixed by the software.
    that you?" has an answer; after 30 days there is no purpose left, only
    device-level personal data.
 
-5. **A notification lives one month after it is read, and the mailbox window
-   after it is created, whichever comes first.** The read clock does not
-   depend on the setting and no organisation extends it. Nothing outlives the
-   mailbox window whatever its read state: a notification opened on day 364 of
-   a twelve-month window dies at most four weeks after that, and one never
-   opened dies at the window. Deleting a notification by hand (D-068 rule 9)
-   is unchanged and unaffected — the row is gone before any clock matters —
-   and the sweep never deletes a row its owner can see as unread unless the
-   clock says so.
+5. **A notification lives one month after it is read, capped by the mailbox
+   window; an unread one lives the window itself.** The read clock does not
+   depend on the setting and no organisation extends it, but **the window
+   caps both clocks, not the unread one alone**: a notification read on day
+   364 of a twelve-month window dies at the window, not four weeks later, and
+   reading late never buys time past the window. Deleting a notification by
+   hand (D-068 rule 9) is unchanged and unaffected — the row is gone before
+   any clock matters — and the sweep never deletes a row its owner can see as
+   unread unless the clock says so.
 
 6. **Two classes are the organisation's to set, within floors.** The mailbox
    window, from 1 to 24 months after `created_at`, default 12. The window for
@@ -7951,7 +7952,7 @@ everything else is fixed by the software.
 - **A year is a guess.** The default mailbox window is the shortest defensible
   number, not a derived one; the first organisation to disagree will ask for a
   release rather than a setting, because nothing else is configurable.
-- **An notification can vanish unseen.** An unread row that reaches the window
+- **A notification can vanish unseen.** An unread row that reaches the window
   leaves no trace and no notice, which is D-068's accepted shape extended: the
   mailbox is a courtesy, the act is in the audit trail.
 - **Shortening destroys.** One confirmed setting change can delete years of
