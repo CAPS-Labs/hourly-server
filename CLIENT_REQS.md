@@ -1,7 +1,7 @@
 # Client requirements — enrolment and sessions
 
-**Status:** 28 November 2026. Derived from D-078 (§16.45), D-079 (§16.46) and the session model
-D-056 (§16.23). These are requirements on the native mobile app, which is the
+**Status:** 28 November 2026. Derived from D-078 (§16.45), D-079 (§16.46), D-080 (§16.47) and the session
+model D-056 (§16.23). These are requirements on the native mobile app, which is the
 MVP's only client (§2.1). Where a requirement restates a rule in the design
 record, the rule is the authority and this file is the checklist for whoever
 builds the app.
@@ -9,10 +9,13 @@ builds the app.
 ## Scope
 
 The volunteer's app is enrolled once per device and then holds a session. There
-is a second way in, added by D-079: a person with no account at all scans a join
-ticket in a room, registers themselves, and waits for approval on a session that
-reaches nothing until then (C9). The address they type is the only one the
-product ever collects, and the instance still sends nothing to it. There
+are three ways in. A person with no account at all scans a join ticket in a room,
+registers themselves, and waits for approval on a session that reaches nothing
+until then (C9). A member with no session scans a sign-in ticket and waits for an
+administrator to let that device in (C9). A member with a working phone adds the
+new one from the old one, with nobody else involved (C3). The address typed at a
+door is the only one the product ever collects, and the instance still sends
+nothing to it. There
 is no password field anywhere in the product, no sign-in screen, no "forgot
 password", no email is sent by the instance, and no third-party identity service
 is contacted.
@@ -75,6 +78,25 @@ PDF, no print pipeline.
 printing. A coordinator will photograph the screen and send it over a messaging
 app whether or not that is designed for; the screen should say plainly that the
 code is single use and expires in 48 hours.
+
+### Adding a device from an old one
+
+3.4 A signed-in device offers "Add another device", which calls
+`POST /v1/me/enrolment-grants` and shows the QR plus the twelve characters. The
+screen states the 48-hour life and that the code is single use, as C3.3 requires
+of an administrator's grant.
+
+3.5 The new device redeems it at the ordinary enrolment screen (C2) and needs no
+new flow of its own.
+
+3.6 Issuing a transfer grant does **not** end the old device's session. The screen
+says so plainly and offers the device list (C6) for the person who means to retire
+the old phone — otherwise "add a device" reads as "move to a device", and the
+person signs out of a phone they still use.
+
+3.7 This is the first thing the app offers a returning volunteer (§16.47 rule 10).
+A device with no session and no old phone in reach needs C9's sign-in ticket, or an
+administrator's personal grant (7.14).
 
 ## C4 — Token storage
 
@@ -232,10 +254,29 @@ retried blindly.
 | `403 FORBIDDEN` | Not an administrator, or the row is outside the caller's scope | Remove the controls after it. Retrying cannot help and the screen should not have offered them |
 | `404 NOT_FOUND` | The row is stale: deleted, swept, or decided on another device | Refresh silently and drop the row. No error, no toast |
 | `409 ALREADY_A_MEMBER` | Returned to the **volunteer**, never to this screen | Never surfaces here. If the org state changed, the roll shows the "already a member" row of 7.11 |
-| `409 INVALID_TRANSITION` | Someone else already decided — approved on another device, or the application was swept — or a grant was cancelled after it was redeemed | Refresh the row; it becomes approved or disappears. Do not retry the same write |
+| `409 INVALID_TRANSITION` | Someone else already decided — approved on another device, a sign-in request decided elsewhere, or the application was swept — or a grant was cancelled after it was redeemed | Refresh the row; it becomes approved or disappears. Do not retry the same write |
+| `409 SIGN_IN_UNAVAILABLE` | Returned to the **volunteer's** sign-in attempt, never to this screen | Never surfaces here: a row exists only when the address resolved to a member who may sign in |
+| `403 SIGN_IN_CLOSED` | Returned to the volunteer's collection after a deny or an expiry | Not this screen. The row leaves the roll the moment it is denied |
 | `429 RATE_LIMITED` | Expected during "approve all shown" | Respect `Retry-After`, continue with the remaining rows, and leave the throttled ones undecided. A `429` must never abort the run |
 | `413 PAYLOAD_TOO_LARGE` | An import or an export, not this screen | Should be unreachable; treat as a bug and report it |
 | `500`, `503` | The decision did not happen | Keep the row, offer retry, and never mark it approved optimistically |
+
+7.13 **The sign-in section of the roll.** Below the applications, rows for people
+who scanned a sign-in ticket: display name, address, device label, time, and the
+**four digits** their phone is showing (§16.47 rule 5). The administrator approves
+the row whose digits match the phone in front of them, and that is the only
+verification the flow has — the digits exist so the match is made against a screen
+in the room rather than against a name whoever holds the phone typed. Approve
+(`PATCH /v1/sign-in-requests/{id}`, `{"decision": "approve"}`) mints the session on
+that phone; the app must say "collecting on their phone" rather than implying the
+administrator received anything. Deny closes the request and the row leaves.
+
+7.14 **The code, from any row.** Either section offers "read them a code", which
+mints a single-use grant for that person and shows it full-screen with the twelve
+characters. It is the fallback for a phone that cannot scan, cannot sign in, or is
+not in the room — and it is the one action that always works, so it must never be
+buried.
+
 
 ## C8 — Camera and permissions
 
@@ -317,6 +358,38 @@ report; only tokens go to the Keychain (C4).
 9.12 The QR an administrator draws for a join ticket uses `hourly-join:1` and
 states the headcount and the expiry on the screen, as C3.3 requires of a grant.
 
+### The sign-in ticket
+
+The same camera, a different door (§16.47). The app chooses by payload prefix
+before it sends anything: `hourly-join:1` opens registration, `hourly-signin:1`
+opens sign-in. It must never probe an address to decide which screen to show.
+
+9.13 The sign-in screen asks for the address and a device label, and **not** a
+display name: the identity already has one, and inviting a stranger to type one
+would suggest they were setting it.
+
+9.14 `409 SIGN_IN_UNAVAILABLE` reads as one message — "No membership here matches
+that address. Ask your coordinator, or scan the join code if you are new." It must
+not reveal whether the address exists, must not offer address suggestions, and
+must not auto-retry: a wrong guess and a non-member look identical on purpose.
+
+9.15 The waiting state shows the four digits large, "show this to the person
+helping you", and the expiry. The request token is held in the Keychain beside
+nothing else, so a relaunch resumes the wait; it is deleted the moment a session
+arrives, and it is never used for any other request.
+
+9.16 Collecting: poll `POST /v1/auth/sign-in-requests/{id}/session` on foreground
+and no faster than every 5 seconds. `202` means keep waiting and is not an error.
+`201` hands the body to the same token pipeline as any refresh (C5.1).
+`403 SIGN_IN_CLOSED` means denied, expired or swept: return to the sign-in screen
+with
+"they could not let this phone in — ask for a code", which is 7.14's path.
+
+9.17 The order of offers is fixed (§16.47 rule 10): a live session offers transfer
+(C3.4); no session offers a sign-in ticket if the person has an account here; no
+identity at all offers the join ticket. The app explains the difference in one
+sentence rather than asking the person to choose between names they do not know.
+
 ## C10 — Non-requirements
 
 - No password entry, change or reset screen; no credential storage of any kind.
@@ -388,3 +461,19 @@ suite:
 24. Run "approve all shown" across three rows with one forced `429` and one forced
     `404`: the run continues, the throttled row stays undecided, the missing row
     disappears, and the third is approved.
+25. From a signed-in phone, add a second device by scanning the transfer QR: the
+    new device lands signed in, and both sessions appear in the device list.
+26. Scan a sign-in ticket as a member with no session: the four digits appear on
+    the phone and in the roll, approval lands a session without a second scan, and
+    the request token is gone afterwards.
+27. Scan a sign-in ticket with an address that is not a member, and with one that
+    does not exist: both answer `409 SIGN_IN_UNAVAILABLE` with the same message,
+    and no row appears on the roll.
+28. Deny a sign-in request: the phone's next poll gets `403 SIGN_IN_CLOSED`, it
+    returns to the sign-in screen with the "ask for a code" message, and the row
+    leaves the roll.
+29. Let a sign-in ticket expire with a request pending: the poll gets
+    `403 SIGN_IN_CLOSED`, no session row was ever created, and the sweep removes
+    the request.
+30. Scan a join payload on the sign-in screen and a sign-in payload on the join
+    screen: each is routed by prefix and no request is sent.

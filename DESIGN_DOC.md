@@ -1252,7 +1252,20 @@ is how §3.2's requirement becomes a status rather than a route check; the addre
 is typed by the person and still never a delivery channel; the audit vocabulary
 gains `join_ticket_opened`, `join_ticket_revoked` and `self_registered`; a closed
 ticket lives a day and an unapproved application thirty days; and the API now has
-four unauthenticated routes and four new refusal codes, all registered in the status table (§16.46). Gaps not yet raised by any
+four unauthenticated routes and four new refusal codes, all registered in the
+status table (§16.46). **D-080** — two doors: a ticket carries a `purpose` of
+`join` or `sign_in` on the same table, window and headcount, with distinct QR
+prefixes so the app routes before it sends; a sign-in ticket authorises a
+*request* rather than a session, answered `201` with a request token and a
+four-digit match code, approved by an administrator on the roll (`PATCH
+/v1/sign-in-requests/{id}`) and collected by the phone that asked (`POST
+/v1/auth/sign-in-requests/{id}/session`, `202` while pending, `201` with the
+session once approved, `403 SIGN_IN_CLOSED` once denied or closed); every address
+that cannot sign in answers the same `409 SIGN_IN_UNAVAILABLE`, so the route is
+never a membership directory; device transfer through the existing self-serve
+grant comes first, and a personal grant stays the administrator's fallback; the
+vocabulary gains `sign_in_requested` and `signed_in`, uniqueness reaches seven,
+and nothing about session lifetimes changed (§16.47). Gaps not yet raised by any
 section are tracked as backlog items B1–B20 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated. **Amended 28 November 2026 (D-078, §16.45):** D-004 is superseded — there is no self-registration — **and amended again 28 November 2026 (D-079, §16.46):** it exists in one shape, behind a join ticket, creating a pending membership and a session that reaches nothing — and D-005's credential is settled as an administrator-issued enrolment grant, so both rows read as history.
 
 ## 13. Outstanding decisions and recommended order
@@ -2537,9 +2550,9 @@ Errors use the envelope already illustrated in §10.5, now confirmed as the cont
 |---|---|---|
 | `400` | `VALIDATION_FAILED` (with field codes), `INVALID_CURSOR`, `CURSOR_QUERY_MISMATCH`, `MALFORMED_REQUEST` | Invalid filters or combinations (§15.8.8), cursor failures (D-037), unparseable body. The field codes inside `details.errors[].code` are open-ended, but the ones this record names — `DATE_IN_FUTURE` (§16.24, D-057) among them — are listed with the status that carries them |
 | `401` | `UNAUTHENTICATED` | Missing, malformed or expired credentials, a revoked or ended session, and a reused refresh token — all indistinguishable (§16.23, D-056) |
-| `403` | `FORBIDDEN` (with field codes), `MEMBERSHIP_PENDING`, `JOIN_CLOSED` | Authenticated, but a supplied **filter value** lies outside the caller's scope (§15.8.9); a valid session whose membership is still `pending`, which reaches nothing until an administrator approves it (§16.46, D-079); a join ticket that is closed, expired, revoked, exhausted or unknown (§16.46, D-079) |
+| `403` | `FORBIDDEN` (with field codes), `MEMBERSHIP_PENDING`, `JOIN_CLOSED`, `SIGN_IN_CLOSED` | Authenticated, but a supplied **filter value** lies outside the caller's scope (§15.8.9); a valid session whose membership is still `pending`, which reaches nothing until an administrator approves it (§16.46, D-079); a join ticket that is closed, expired, revoked, exhausted or unknown (§16.46, D-079); a sign-in request denied, expired or swept with its ticket (§16.47, D-080) |
 | `404` | `NOT_FOUND` | Addressed resource absent **or** outside scope — identical status and body either way |
-| `409` | `CONFLICT`, `VERSION_MISMATCH`, `DATE_NOT_ELIGIBLE`, `INVALID_TRANSITION`, `IMPORT_ALREADY_APPLIED` | State conflicts, including the in-place edit path of §15.5, an entry date outside the volunteer's eligibility (§16.24, D-057), and an approval decision the entry's state does not allow (§16.25, D-058). `VERSION_MISMATCH` alone carries `details.changedFields`, the names of the fields that moved (§16.28, D-061). A re-uploaded import file carries `IMPORT_ALREADY_APPLIED` (§16.42, D-075). A registration whose address already belongs to a live account carries `EMAIL_IN_USE`, and one whose person is already a member here carries `ALREADY_A_MEMBER` (§16.46, D-079) |
+| `409` | `CONFLICT`, `VERSION_MISMATCH`, `DATE_NOT_ELIGIBLE`, `INVALID_TRANSITION`, `IMPORT_ALREADY_APPLIED`, `SIGN_IN_UNAVAILABLE` | State conflicts, including the in-place edit path of §15.5, an entry date outside the volunteer's eligibility (§16.24, D-057), and an approval decision the entry's state does not allow (§16.25, D-058). `VERSION_MISMATCH` alone carries `details.changedFields`, the names of the fields that moved (§16.28, D-061). A re-uploaded import file carries `IMPORT_ALREADY_APPLIED` (§16.42, D-075). A registration whose address already belongs to a live account carries `EMAIL_IN_USE`, one whose person is already a member here carries `ALREADY_A_MEMBER` (§16.46, D-079), and a sign-in attempt whose address resolves to no member who may sign in carries `SIGN_IN_UNAVAILABLE` (§16.47, D-080), identical for an address that does not exist and one that does |
 | `413` | `PAYLOAD_TOO_LARGE`, `EXPORT_TOO_LARGE`, `IMPORT_TOO_LARGE` | Body over the 1 MiB cap, refused before it is parsed (D-053, §16.20); a report export over 100,000 rows (§16.41, D-074); an import over 10,000 rows (§16.42, D-075) |
 | `429` | `RATE_LIMITED` | Token bucket exhausted; carries `Retry-After` (D-053, §16.20) |
 | `500`, `503` | `INTERNAL_ERROR`, `SERVICE_UNAVAILABLE` | No internals, no identifiers |
@@ -4320,7 +4333,7 @@ Each of those is a different failure of the same design, and each is cheap to pr
 
 **Rules.**
 
-1. **One credential type, one header.** Every route except `POST /v1/auth/enrol`, `POST /v1/auth/refresh`, `POST /v1/auth/join` and `GET /v1/join-tickets/{id}` requires `Authorization: Bearer <access token>`. No route accepts a token in a query parameter, a body field or a cookie. The four unauthenticated routes are the ones that mint a token, or that serve the form which mints one: someone with no account cannot present a token in order to be admitted, and the join-ticket read answers with an organisation's name, its host and an expiry, so a registration screen can say where it is registering before an address is typed. That is the whole of the exception, so there is no third case to remember — including the session routes themselves, which are refreshed and then called like any other. **Amended 28 November 2026 (D-078, §16.45):** `POST /v1/auth/sign-in` is replaced by `POST /v1/auth/enrol`; the count stays two. **Amended 28 November 2026 (D-079, §16.46):**
+1. **One credential type, one header.** Every route except `POST /v1/auth/enrol`, `POST /v1/auth/refresh`, `POST /v1/auth/join`, `GET /v1/join-tickets/{id}`, `POST /v1/auth/sign-in` and `POST /v1/auth/sign-in-requests/{id}/session` requires `Authorization: Bearer <access token>`. No route accepts a token in a query parameter, a body field or a cookie. The six unauthenticated routes are the ones that mint a token, or that carry a request to the point where one may be minted, or that serve the form which mints one: someone with no account cannot present a token in order to be admitted, and the join-ticket read answers with an organisation's name, its host and an expiry, so a registration screen can say where it is registering before an address is typed. That is the whole of the exception, so there is no third case to remember — including the session routes themselves, which are refreshed and then called like any other. **Amended 28 November 2026 (D-078, §16.45):** `POST /v1/auth/sign-in` is replaced by `POST /v1/auth/enrol`; the count stays two. **Amended 28 November 2026 (D-079, §16.46):**
 the join-ticket pair joins them and the count is four; the read is the only
 unauthenticated route that returns a body which is neither a token nor an error,
 and it returns no personal data.
@@ -6601,8 +6614,8 @@ collection shows a caller the rows their own read scope already allows.**
 8. **A fixed action vocabulary.** `created`, `updated`, `deleted`,
    `submitted`, `approved`, `rejected`, `restored`, `archived`, `granted`,
    `revoked`, `erased`, `export`, `import`, `enrolment_issued`, `enrolled`,
-   `join_ticket_opened`, `join_ticket_revoked`, `self_registered`. A
-   client filters on these strings,
+   `join_ticket_opened`, `join_ticket_revoked`, `self_registered`,
+   `sign_in_requested`, `signed_in`. A client filters on these strings,
    so a new action is a decision and a contract change, never a word a feature
    invents on the way past. `export` and `import` joined on 28 November 2026
    with the report export (§16.41, D-074) and the import (§16.42, D-075);
@@ -6990,7 +7003,7 @@ been told "nothing new" for ever, and nobody would have seen an error.
 
 **Decision in one line: PostgreSQL; one `local_anchor` per entry written at
 save time; migrations that add, fill and later remove, behind a version guard
-and a rehearsed restore; seven performance indexes and six uniqueness rules — five and four when this was decided, raised by §16.40, §16.45 and §16.46; and an install epoch in every cursor so a restore is visible to every client.**
+and a rehearsed restore; seven performance indexes and seven uniqueness rules — five and four when this was decided, raised by §16.40, §16.45, §16.46 and §16.47; and an install epoch in every cursor so a restore is visible to every client.**
 
 **Rules.**
 
@@ -7081,7 +7094,7 @@ and a rehearsed restore; seven performance indexes and six uniqueness rules — 
    can drop a column as easily as a backward one. The real undo is the restore,
    which is why it is rehearsed.
 
-10. **Seven performance indexes and six uniqueness rules, and no others.** **Amended 28 November 2026 (§16.45, D-078):** `enrolment_grants (code_hash)` is the fifth uniqueness rule, and being the lookup it forces, it adds no performance index.
+10. **Seven performance indexes and seven uniqueness rules, and no others.** **Amended 28 November 2026 (§16.45, D-078):** `enrolment_grants (code_hash)` is the fifth uniqueness rule, and being the lookup it forces, it adds no performance index.
     Each index is named to the query that forces it; the four unique rows are
     rules the engine enforces, not tuning knobs. **Amended 27 November 2026
     (§16.37, D-070):** the inventory gained three uniqueness constraints when
@@ -7104,12 +7117,15 @@ and a rehearsed restore; seven performance indexes and six uniqueness rules — 
 | `users (lower(email))` **unique, partial** `WHERE anonymised_at IS NULL` | a real address is never blocked by an anonymised placeholder (D-052's accepted cost) | case-folded because the same address in two cases is one address; partial because the placeholder must be allowed to repeat |
 | `assignment_requests (volunteer_id, project_id)` **unique, partial** `WHERE status = 'pending'` | at most one pending request per person per project (§16.37 answer 7) | a double tap or a replayed queue must resolve to one request a coordinator can decide once; resolved rows stay outside the predicate so history accumulates |
 | `enrolment_grants (code_hash)` **unique** | redeeming an enrolment grant (§16.45, D-078) | the column holds an HMAC of a twelve-character code; without the rule two grants could collide and the second would be unredeemable, and because the unique index is also the lookup it needs no separate performance index |
+| `sign_in_requests (request_token_hash)` **unique** | the poll that collects a session, and nothing else (§16.47, D-080) | the token is a capability held by one phone for one request; two rows sharing a hash would mean one phone could collect another's session. Unique also makes the poll a lookup, so it adds no performance index |
 | `join_tickets (code_hash)` **unique** | opening a join ticket, and every scan of it (§16.46, D-079) | one ticket is one door, and two doors with the same hash would mean the second admits nobody. Being both the rule and the lookup, it is the sixth uniqueness rule and adds no performance index |
 
 **Amended 28 November 2026 (D-079, §16.46):** `join_tickets (code_hash)` is the
 sixth uniqueness rule. The table above is thirteen rows; the performance count
 stays seven, because the new rule is the lookup and no other read of a ticket
-exists.
+exists. **Amended 28 November 2026 (D-080, §16.47):** `sign_in_requests
+(request_token_hash)` is the seventh and the table is fourteen rows, still with
+seven performance indexes, for the same reason.
 
 11. **What is deliberately not indexed.** `hasConflict` and `conflicts`
     (§16.29) are computed by comparing pairs of rows; no column exists to
@@ -7485,10 +7501,17 @@ made by a migration, a console or a future route nobody has written yet.
 | `assignment_requests` | `id`, `volunteer_id`, `project_id`, `status`, `requested_at`, `decided_at`, `decided_by` | `status IN ('pending','approved','rejected','withdrawn')`; `(status = 'pending') = (decided_at IS NULL)`; `decided_at` and `decided_by` set together; partial unique `(volunteer_id, project_id) WHERE status = 'pending'` | answer 7, plus a decision that cannot be undated. A withdrawal stamps both fields with the volunteer, because a null there would read as "never decided" |
 | `time_entries` | `id`, `volunteer_id`, `activity_id`, `activity_description`, `started_at`, `ended_at`, `duration_seconds`, `local_anchor`, `notes`, `approval_status`, `submitted_at`, `approved_at`, `rejected_at`, `reviewed_by`, `rejection_reason`, `deleted_at`, `deleted_by`, `delete_reason`, `change_seq`, `version` | the five groups of checks below | the entry is where the record's rules meet, and none of them may depend on a route remembering |
 | `notifications` | `id`, `recipient_id`, `type`, `subject_id`, `subject_version`, `created_at`, `read_at` | `type` in D-068's eleven; unique `(recipient_id, type, subject_id, subject_version)`; `recipient_id` foreign key `RESTRICT` | exactly once per act (D-068 rule 5), and a mailbox that cannot outlive the person it was addressed to |
-| `audit_log` | `id`, `at`, `actor_id`, `entity_type`, `entity_id`, `action`, `request_id`, `reason`, `changes` | `entity_type` in D-067's seven; `action` in D-067's eleven plus `export`, `import`, `enrolment_issued`, `enrolled`, `join_ticket_opened`, `join_ticket_revoked` and `self_registered` — eighteen in all (§16.34 rule 8); `actor_id` foreign key `RESTRICT`; **no** foreign key on `entity_id`; `UPDATE` and `DELETE` revoked from the application role | insert-only is a privilege, not a promise (D-067 rule 3); the entity id is polymorphic, so no key can hold it |
+| `audit_log` | `id`, `at`, `actor_id`, `entity_type`, `entity_id`, `action`, `request_id`, `reason`, `changes` | `entity_type` in D-067's seven; `action` in D-067's eleven plus `export`, `import`, `enrolment_issued`, `enrolled`, `join_ticket_opened`, `join_ticket_revoked` `self_registered`, `sign_in_requested` and `signed_in` — twenty in all (§16.34 rule 8); `actor_id` foreign key `RESTRICT`; **no** foreign key on `entity_id`; `UPDATE` and `DELETE` revoked from the application role | insert-only is a privilege, not a promise (D-067 rule 3); the entity id is polymorphic, so no key can hold it |
 | `sessions` | as §16.23 sketched them | `user_id` foreign key `RESTRICT`; `revoked_at` as a tombstone; no membership check | a session outlives nothing and ends its own way; whether the membership is still active is a per-request check, not a column |
 | `enrolment_grants` | `id`, `user_id`, `issued_by_user_id`, `code_hash`, `created_at`, `expires_at`, `consumed_at`, `attempt_count` | unique `code_hash`; both user columns foreign key `RESTRICT`; `expires_at > created_at`; `attempt_count` between 0 and 5 | the row is a credential in transit (§16.45, D-078), so the engine holds its shape: a hash cannot repeat, the window must run forwards, and a grant cannot claim more attempts than the five that void it. What it cannot hold — that redemption consumes the row exactly once, and that an expired grant is refused — belongs to the redeeming statement, which does both in one transaction |
-| `join_tickets` | `id`, `issued_by_user_id`, `code_hash`, `created_at`, `expires_at`, `max_uses`, `used_count`, `revoked_at` | unique `code_hash`; `issued_by_user_id` foreign key `RESTRICT`; `expires_at > created_at`; `max_uses` between 1 and 100; `used_count` between 0 and `max_uses`; `revoked_at` only ever set forwards | the row is a door, not a credential (§16.46, D-079): a hash cannot repeat, the window must run forwards, and the counter cannot claim more admissions than the headcount. What it cannot hold — that a use is counted in the statement that mints the person — belongs to the claim transaction |
+| `join_tickets` | `id`, `purpose`, `issued_by_user_id`, `code_hash`, `created_at`, `expires_at`, `max_uses`, `used_count`, `revoked_at` | `purpose IN ('join','sign_in')`; unique `code_hash`; `issued_by_user_id` foreign key `RESTRICT`; `expires_at > created_at`; `max_uses` between 1 and 100; `used_count` between 0 and `max_uses`; `revoked_at` only ever set forwards | the row is a door, not a credential (§16.46, D-079): a hash cannot repeat, the window must run forwards, and the counter cannot claim more admissions than the headcount. What it cannot hold — that a use is counted in the statement that mints the person — belongs to the claim transaction |
+| `sign_in_requests` | `id`, `ticket_id`, `user_id`, `request_token_hash`, `match_code`, `created_at`, `expires_at`, `decided_at`, `decided_by_user_id`, `decision` | unique `request_token_hash`; `ticket_id` and `user_id` foreign key `RESTRICT`; `decision IN ('pending','approved','denied')`; `decided_at` and `decided_by_user_id` set together; `match_code` four digits | the row is a request, not a session (§16.47, D-080): the token names one phone, the match code names one row to a human, and a decision cannot be undated or attributed to nobody |
+
+**Amended 28 November 2026 (D-080, §16.47):** `join_tickets` gains `purpose` and
+`sign_in_requests` joins the table. The purpose is a column rather than a second
+table because every other property of a ticket — window, headcount, hash,
+revocation — is identical for both, and two tables would drift apart the first
+time one of them gained a column.
 
 **Amended 28 November 2026 (D-079, §16.46):** `join_tickets` joins the table,
 and `memberships.status` gains `pending` — set by a registration, left by an
@@ -8136,6 +8159,15 @@ everything else is fixed by the software.
     hashes, the session rows, the membership and the user row go, which releases
     the address for the person to register again. Neither class is configurable,
     neither carries the record, and both are deleted by the sweep §16.40 runs.
+
+13. **A sign-in request lives no longer than its ticket.** It is deleted when
+    it is denied, when the ticket that admitted it closes, and when the ticket is
+    swept (§16.40 rule 4's ticket predicate), in that order of likelihood. A
+    request that is approved and collected is deleted as soon as its token is
+    spent, because the session it produced is now a row of its own. The token is
+    stored only as a hash and dies with the request; the audit keeps
+    `sign_in_requested` and `signed_in`, which is the whole of what should
+    outlive either.
 
 **Accepted costs.**
 
@@ -9280,11 +9312,13 @@ device, one use.**
    redeemed it is a spent credential rather than a missing one, and cancelling it
    answers `409 INVALID_TRANSITION`.
    `POST /v1/me/enrolment-grants` lets a signed-in volunteer issue one for
-   their own additional device, so a second phone never needs a coordinator. **Amended 28 November 2026
+   their own additional device, so a second phone never needs a coordinator. **Amended 28 November 2026 (D-080,
+§16.47):** this route is the first thing a returning volunteer should be offered,
+and the administrator's issue route above is the fallback at a room door. **Amended 28 November 2026
 (D-079, §16.46):** these are the four *grant* routes, and the claim that only one
 of them is unauthenticated is a claim about them. §16.46 adds two
 unauthenticated routes of its own for people who have no account yet, so §16.23
-rule 1 now counts four in the whole API.
+rule 1 now counts six in the whole API.
 8. **Only an approved membership may receive a grant.** A request naming a user
    whose membership is not active is refused with `409 INVALID_TRANSITION` rather
    than quietly turned into a grant nobody can use. Approval and issue are
@@ -9480,7 +9514,9 @@ the attestation the paper sign-in sheet has always used.
    100, because a hundred people in one room is an organisational event and a
    thousand is an open door with nobody watching. A ticket is opened for one
    sitting and never reopened: a second induction gets a second ticket, so a roll
-   always belongs to one evening. An administrator may revoke it at any
+   always belongs to one evening. Its purpose (§16.47, D-080) does not change its
+   window or its ceiling: a sign-in door is open for the same hour and admits the
+   same number of people. An administrator may revoke it at any
    moment with `DELETE /v1/join-tickets/{id}` — `204 No Content` under D-055, the
    same shape §16.45 rule 7 gives a grant — and revocation stops every further
    registration on the next request.
@@ -9568,7 +9604,10 @@ the attestation the paper sign-in sheet has always used.
     artifact-level strike counter is added, because the only thing one could do is
     let a clumsy room lock itself out.
 
-11. **The ticket admits people, not devices.** Someone who already holds an
+11. **The ticket admits people, not devices.** **Amended 28 November 2026
+    (D-080, §16.47):** a member who is refused here is not out of options — a
+    sign-in ticket is the door for them, and §16.47 rule 10 says the app must
+    offer it rather than a join ticket. Someone who already holds an
     active membership here is refused with `409 ALREADY_A_MEMBER` and told to ask
     an administrator; their second device is `POST /v1/me/enrolment-grants`
     (§16.45 rule 7), which is single-use and self-serve. One live membership per
@@ -9643,7 +9682,7 @@ Content-Type: application/json
   12's thirty days elapse the address cannot be used by anyone else, and the
   person who mistyped it cannot correct it without an administrator.
 - **Two more unauthenticated routes exist.** They are the price of admitting
-  people who cannot yet authenticate; §16.23 rule 1 now counts four, and each sits
+  people who cannot yet authenticate; §16.23 rule 1 now counts six, and each sits
   behind the per-address bucket.
 - **Revocation does not reach a photograph.** Revocation stops the server, and a
   screenshot taken while the door was open still shows a QR that fails, because
@@ -9660,7 +9699,8 @@ client's (§16.46 is contract, CLIENT_REQS.md is its checklist).
 
 **Resolves and amends.** It supersedes §3.2's "no self-registration" a second
 time, restoring the flow's steps 1, 3 and 4 with step 2's verification deleted for
-good. It amends §16.23 rule 1's unauthenticated route count from two to four,
+good. It amends §16.23 rule 1's unauthenticated route count from two to four, and
+§16.47 takes it to six,
 §16.34 rule 8's vocabulary from fifteen to eighteen, §16.36 rule 10's uniqueness
 rules from five to six, §16.37's status set and table inventory, §16.39 with a
 twelfth rule and its "left open" item about a dormant application, §16.40 rule
@@ -9672,6 +9712,188 @@ route of its own. It answers the question
 no earlier section could — a person with no identity anywhere — and leaves
 §16.45's grant doing what it was designed for: a known person, one device, one
 use.
+
+------------------------------------------------------------------------
+## 16.47 Two doors: joining, and coming back
+
+**Confirmed decision (D-080) — 28 November 2026.**
+
+§16.46 gave a room one door, and it answers one question: who is new. A volunteer
+at day 401 of a session, or one whose phone was replaced last week, is refused at
+that door with `409 ALREADY_A_MEMBER` — correct for a registration route, and
+useless to the person standing in front of the projector. Nothing about
+persistence was lost along the way: the session still runs 180 idle days and 400
+absolute, and a device change is still the only thing that brings anyone back
+(§16.45 rule 12). What the room lost is the way in.
+
+**The case this protects.** Dee has volunteered since March and is on her second
+phone. Nadia runs an orientation in November; Dee comes along to help and wants
+the app on the new handset. The join ticket refuses her, correctly, and before
+this decision that was the end of the road until Nadia found the time to search
+for her and read out twelve characters.
+
+**Rules.**
+
+1. **A ticket has a purpose, and the purpose is a column.** `join_tickets` gains
+   `purpose`, one of `join` or `sign_in`. Nothing else about a ticket changes: the
+   same twelve Crockford characters, the same HMAC at rest, the same window (1
+   hour, 10 minutes to 4 hours), the same headcount (20, ceiling 100), the same
+   `DELETE /v1/join-tickets/{id}`. An evening may need one purpose or both, and
+   the administrator opens what the room needs. A second table was rejected for
+   the reason second tables always are: every property but one is shared, and the
+   first column added to one of them drifts.
+
+2. **The payload names the door, so a wrong scan is a client state.** `hourly-join:1`
+   and `hourly-signin:1` keep the host-and-code shape and differ in prefix. The app
+   routes on the prefix before any request exists; a `sign_in` payload sent to
+   `POST /v1/auth/join` — or a join payload to the sign-in route — is answered as
+   that route answers any code it cannot honour, because a refusal that named the
+   purpose would tell a stranger which kind of slide they photographed.
+
+3. **A sign-in ticket authorises a request, never a session.**
+   `POST /v1/auth/sign-in` takes `{ticket, email, deviceLabel}` and answers `201`
+   with `Location: /v1/auth/sign-in-requests/{id}` and
+   `{requestToken, matchCode, expiresAt}`. No token pair is minted here. The route
+   is unauthenticated because the person has no session — that is the problem it
+   exists to solve — and it is the second route in the API that returns a body
+   which is neither a token nor an error.
+
+4. **Every address that cannot sign in gets one answer.** Unknown to the instance,
+   never a member here, `removed`, or already `pending` all answer
+   `409 SIGN_IN_UNAVAILABLE` with one body, under §16.23 rule 8. An address that
+   does not exist must be indistinguishable from one that does, or the route
+   becomes a membership directory that any photographed slide unlocks. This does
+   not widen what the registration route reveals: `409 EMAIL_IN_USE` and
+   `409 ALREADY_A_MEMBER` remain answers to a *registration*, where the person has
+   already told the server they are new.
+
+5. **The match code names the row; it authorises nothing.** Four digits, minted
+   with the request, shown on the volunteer's screen and in the administrator's
+   roll, expiring with the ticket. The roll identifies people by a name and an
+   address that whoever holds the phone typed; a number read from the phone in
+   front of the administrator is a link between a row and a face that a name claim
+   is not. It is compared, never entered, so its only job is to stop an
+   administrator approving the wrong row in a queue of twenty.
+
+6. **Approval is the administrator's act; the session arrives at the phone that
+   asked.** `PATCH /v1/sign-in-requests/{id}` takes `{ "decision": "approve" }` or
+   `{ "decision": "deny" }`, one call per request, on the same roll as §16.46's
+   applications. The volunteer's app collects with
+   `POST /v1/auth/sign-in-requests/{id}/session` and `{requestToken}`: `202` while
+   pending, `201` with D-056's session body once approved, `403 SIGN_IN_CLOSED`
+   once denied, expired or swept. The token is spent by the successful answer, so
+   a poll may be retried as often as the network requires and still produce
+   exactly one session.
+
+7. **A request lives no longer than its ticket.** Denied, expired, or swept with
+   the ticket (§16.39 rule 13). The request token is stored only as a hash and
+   deleted with the row. Two audit actions record the whole thing —
+   `sign_in_requested` and `signed_in` — and no notification type is added, for
+   the reason §16.46 rule 12 gives: the person is holding the phone.
+
+8. **A member with a working phone adds a device without a room and without an
+   administrator.** The old device calls `POST /v1/me/enrolment-grants`, shows the
+   QR or the twelve characters, and the new device redeems it at
+   `POST /v1/auth/enrol`. It is an addition, not a move: the design cannot know
+   which phone is being replaced, so the old session stays until its owner ends it
+   in the device list. This is the first path the app offers, because it is the
+   only one that costs nobody anything.
+
+9. **The personal grant is the administrator's fallback, unchanged.** Where the
+   person has no working device and no time to wait for an approval, an
+   administrator mints a single-use grant for that person and reads it aloud
+   (§16.45 rules 7 and 8). The roll offers it on any row, and that is the one
+   place the two models meet cleanly: the room code finds the person, the grant
+   admits the device.
+
+10. **What the app offers depends on what it holds.** A live session offers
+    transfer (rule 8); no session but a known identity offers a sign-in ticket
+    (rule 6); no identity at all offers a join ticket (§16.46). The order is not a
+    preference. Offering a join ticket to a member produces the duplicate
+    application rule 11 of §16.46 exists to refuse, and offering a grant to a
+    newcomer mints a credential for an account that does not exist.
+
+11. **Nothing here changes a session.** Lifetimes, rotation, the 120-second replay
+    window, the `sid` check and the storage obligations are D-056 and §16.45 rule
+    12, untouched. A sign-in produces exactly what an enrolment produces, because
+    it is the same row minted by the same pipeline — which is the point of
+    writing it down: persistence was never the thing that changed.
+
+**The shapes.**
+
+```http
+POST /v1/join-tickets HTTP/1.1
+Authorization: Bearer <administrator access token>
+Content-Type: application/json
+
+{ "purpose": "sign_in", "maxUses": 20, "expiresIn": "PT1H" }
+```
+
+```http
+POST /v1/auth/sign-in HTTP/1.1
+Content-Type: application/json
+
+{ "ticket": "K7M2QX4B9RTD", "email": "dee@example.org",
+  "deviceLabel": "iPhone 15 — Dee" }
+```
+
+```json
+{
+  "signInRequest": {
+    "id": "...",
+    "matchCode": "4172",
+    "requestToken": "...",
+    "expiresAt": "2026-11-28T20:30:00Z"
+  }
+}
+```
+
+```http
+POST /v1/auth/sign-in-requests/{id}/session HTTP/1.1
+Content-Type: application/json
+
+{ "requestToken": "..." }
+```
+
+**Accepted costs.**
+
+- **The room now needs two slides, and the administrator must know which one is
+  up.** A wrong-purpose scan is a client state rather than a helpful server error,
+  and an administrator who puts the join slide up for returning volunteers will
+  watch twenty people create duplicate applications before noticing.
+- **`409 SIGN_IN_UNAVAILABLE` is uniform**, so a volunteer who mistyped her
+  address learns no more than one who was never a member. The administrator
+  resolves both, which is slower than a helpful message and safer than a
+  directory.
+- **A match code is only as good as the comparison.** It lowers the chance of
+  approving the wrong row under time pressure; it does not remove it, and nothing
+  here pretends the approval is a cryptographic check.
+- **Four-digit collisions across a room are expected and harmless**, because the
+  code names a row the administrator has already chosen, not a row the server
+  looks up by number.
+- **The poll is many `202`s over an hour.** It is bounded by the ticket's life and
+  cheaper than the push channel the design does not have.
+- **Device transfer needs the old phone**, which is exactly what a lost phone is
+  not. That case is rule 9's, and it needs a person.
+
+**Left open.** Whether an organisation may run a sign-in ticket that admits
+without approval, which this decision refuses because an approval is the only
+identity check the flow has; whether the match code should be six digits in a hall
+of a hundred, which the 100 ceiling would justify; whether approving a sign-in
+should end the member's other sessions, which rule 8 deliberately does not and
+which a lost phone makes tempting; and whether the roll should show a member's
+last device label beside a sign-in request, which would help an administrator
+recognise one and leaks a little.
+
+**Resolves and amends.** It answers the question §16.46 left at its own door —
+what a member does when the room's only code is a join ticket — and amends
+§16.23 rule 1's unauthenticated route count from four to six, §16.34 rule 8's
+vocabulary from eighteen to twenty, §16.36 rule 10's uniqueness rules from six to
+seven, §16.37's `join_tickets` row and its inventory, §16.39 with a thirteenth
+rule, §16.45 rule 7 with the fallback it now names, §16.46 rules 2 and 11 and its
+accepted costs, and §17's B14 and B15. It leaves persistence exactly as D-056 and
+D-078 left it: 180 idle days, 400 absolute, and a device event as the only reason
+to come back.
 
 ------------------------------------------------------------------------
 # 17. Decision backlog: gaps not yet raised
@@ -9699,8 +9921,8 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing wa
 | **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | **Resolved — D-067 (§16.34).** One insert-only row per accepted write, written in the write's own transaction and never purged: actor, entity, action, `requestId`, an optional `reason` and the fields that moved with their before and after. Actors survive anonymisation and the erasure is itself a row; read scope mirrors the entity's; one filtered `GET /v1/audit-log` orders `at` then `id`; reads, refusals and replays leave no row |
 | **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | **Resolved — D-055 (§16.22).** Every mutation returns the changed resource in its read shape; creates are `201` + `Location`, replays `200` + `Idempotency-Replay` (by client id or by the uniqueness constraint), `409` keeps D-049's `current` copy, no mutation returns counts, and archival's impact comes from a confirmation read. Deletion is the only `204` |
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
-| **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | **Resolved — D-056 (§16.23).** Bearer tokens on every business route and no cookie, because the MVP has no browser client; a 30-minute access token, a single-use rotating refresh token with a 120-second replay grace, a 90-day idle and a 180-day absolute limit, and `sid` checked on every request so a revocation lands on the next call. Sessions are listed and ended from the phone, every authentication failure is the same `401 UNAUTHENTICATED`, and MFA is deferred. **Amended 28 November 2026 (D-078, §16.45):** the credential is an administrator-issued enrolment grant redeemed once per device, which replaces the sign-in route; the idle limit becomes 180 days and the absolute limit 400. **Amended 28 November 2026 (D-079, §16.46):** self-registration returns behind a join ticket; the registration mints a session scoped to a `pending` membership, so §3.2's requirement holds as a status rather than as a route check, and the API gains two unauthenticated routes |
-| **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires and the `change_seq` index §16.31's feed needs | **Implementation** | §15.12 item 28 named the schema; the operational half was unlisted. **Resolved — D-069 (§16.36).** PostgreSQL; one stored `local_anchor` instead of a derived date and time, so the order, the date filter and the cursor read one value; add-fill-remove migrations with a version guard, a boot-time advisory lock and a rehearsed restore; seven performance indexes plus six uniqueness rules, two of the indexes added by §16.40, the fifth rule by §16.45 and the sixth by §16.46; and an install epoch in every cursor so a restore forces a re-sync; the per-table constraints are recorded in §16.37 (D-070) |
+| **B14** | Session model: token lifetime, refresh, revocation, MFA, lockout, CSRF for cookie sessions, CORS for a browser client | **Contract** | **Resolved — D-056 (§16.23).** Bearer tokens on every business route and no cookie, because the MVP has no browser client; a 30-minute access token, a single-use rotating refresh token with a 120-second replay grace, a 90-day idle and a 180-day absolute limit, and `sid` checked on every request so a revocation lands on the next call. Sessions are listed and ended from the phone, every authentication failure is the same `401 UNAUTHENTICATED`, and MFA is deferred. **Amended 28 November 2026 (D-078, §16.45):** the credential is an administrator-issued enrolment grant redeemed once per device, which replaces the sign-in route; the idle limit becomes 180 days and the absolute limit 400. **Amended 28 November 2026 (D-079, §16.46):** self-registration returns behind a join ticket; the registration mints a session scoped to a `pending` membership, so §3.2's requirement holds as a status rather than as a route check, and the API gains two unauthenticated routes. **Amended 28 November 2026 (D-080, §16.47):** a sign-in ticket adds two more, and a member's route back in is a request an administrator approves, not a registration |
+| **B15** | Database engine, migrations and index strategy, including the composite index D-038's keyset ordering requires and the `change_seq` index §16.31's feed needs | **Implementation** | §15.12 item 28 named the schema; the operational half was unlisted. **Resolved — D-069 (§16.36).** PostgreSQL; one stored `local_anchor` instead of a derived date and time, so the order, the date filter and the cursor read one value; add-fill-remove migrations with a version guard, a boot-time advisory lock and a rehearsed restore; seven performance indexes plus seven uniqueness rules, two of the indexes added by §16.40, the fifth rule by §16.45, the sixth by §16.46 and the seventh by §16.47; and an install epoch in every cursor so a restore forces a re-sync; the per-table constraints are recorded in §16.37 (D-070) |
 | **B16** | Backdating window: how far in the past an entry may be dated or submitted | **Contract** | **Resolved — D-057 (§16.24).** No maximum age and no submission deadline: the work date must be covered by the volunteer's assignment and must not fall in an archived interval (`409 DATE_NOT_ELIGIBLE`), and the only clock rule is a five-minute tolerance on future instants (`400 VALIDATION_FAILED` carrying the field code `DATE_IN_FUTURE`) plus one day for a duration-only work date. Lateness is read from `submittedAt` rather than stored as a flag |
 | **B17** | Daily or weekly maximum hours, separate from the per-entry ceiling | **Feature** | Surfaced while taking up B1 and set aside; affects validation and reporting, not the record shape |
 | **B18** | Break deduction: whether a shift records a break that is subtracted, rather than net time as two entries | **Feature** | Surfaced while taking up B1 and set aside; a break field is a derived quantity that can disagree with the timestamps |
