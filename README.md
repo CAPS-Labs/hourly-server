@@ -25,7 +25,7 @@ it; where the two disagree, the doc wins.
 | Language / runtime | TypeScript, Node.js 22 (`.nvmrc` pins v22.20.0) |
 | HTTP framework | Express 5 |
 | Modules | ESM (`"type": "module"`), path alias `#*` → `./src/*` |
-| Database | PostgreSQL, one database per instance (D-069): add-fill-remove migrations behind a schema-version guard, a boot-time advisory lock, five performance indexes and four uniqueness constraints; per-table constraints are in §16.37 |
+| Database | PostgreSQL, one database per instance (D-069): add-fill-remove migrations behind a schema-version guard, a boot-time advisory lock, seven performance indexes and four uniqueness constraints; per-table constraints are in §16.37 |
 | Tests | Vitest (with `@vitest/coverage-v8`) |
 | Lint / format | ESLint 10 + typescript-eslint, Prettier |
 
