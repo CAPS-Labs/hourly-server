@@ -20,6 +20,16 @@ that lets volunteers record time for volunteer organizations. It is
 intended both as a durable record of design reasoning and as a practical
 reference for future API, database, and client implementation.
 
+**Clarified 28 November 2026 — this record specifies one part of a larger
+product.** Hourly is a software solution for volunteer time tracking,
+comprising an official mobile app and the server that app talks to. This
+document, and the repository that holds it, specify the backend only: the
+API, its rules and its database. The backend is not the entirety of the
+Hourly system, and it is not a general-purpose service. The only mobile
+client compatible with this server is the official app, which is also
+named Hourly; wherever this record says "the mobile app" or "the client",
+it means that app and nothing else.
+
 It is **not** a complete API specification. Exact routes,
 request/response schemas, database migrations, authentication flows,
 error formats, and the full synchronization protocol have not yet been
@@ -58,7 +68,7 @@ not replace server-side enforcement.
 organizations. A mobile app records time and synchronizes records with a
 central server for the relevant organization.
 
-**Confirmed 24 November 2026 (D-056, §16.23) — the MVP has one client, the native mobile app.** No browser client is planned for the MVP and the API is not designed for one. Every client constraint in this record is therefore a phone's constraint: a device that is carried, that loses signal, that locks and unlocks, and whose storage is the operating system's secure store. The consequences are recorded where they bite — no cookie, no CSRF protection and no CORS headers (§16.23), tokens in the Keychain or Keystore (§16.23), and a sync queue that survives a rejected sign-in (§7.1). A browser client later is an additive decision, not a change to this one.
+**Confirmed 24 November 2026 (D-056, §16.23) — the MVP has one client, the native mobile app.** That app is the official Hourly client, and the server described here is its whole backend; neither the app nor this backend is the entirety of the Hourly product (§1). No browser client is planned for the MVP and the API is not designed for one. Every client constraint in this record is therefore a phone's constraint: a device that is carried, that loses signal, that locks and unlocks, and whose storage is the operating system's secure store. The consequences are recorded where they bite — no cookie, no CSRF protection and no CORS headers (§16.23), tokens in the Keychain or Keystore (§16.23), and a sync queue that survives a rejected sign-in (§7.1). A browser client later is an additive decision, not a change to this one.
 
 The MVP supports: - Manual time entries, in both established forms:
 exact start and end timestamps, or a work date plus total duration. - A
@@ -123,8 +133,8 @@ in the MVP.
 directly to PostgreSQL. It communicates with the organization's API, and
 the API performs authorization, validation, business logic, and database
 operations. The client on the other side of that boundary is the native
-mobile app, and only it (§2.1, D-056): nothing in this record specifies a
-browser-facing contract.
+mobile app — the official Hourly client, and only it (§1, §2.1, D-056):
+nothing in this record specifies a browser-facing contract.
 
 The exact backend stack for this specific project has not been
 reconfirmed as part of this decision record. TypeScript, Express, and
@@ -988,9 +998,10 @@ future implementation. They do not finalize the endpoint catalogue.
 -   The API is the contract between the mobile app and the server;
     Express or another framework is an implementation choice, not the
     API itself.
--   The only client is the native mobile app (D-056, §16.23): every route
-    but sign-in and refresh authenticates with a bearer token, and no
-    response sets a cookie or a CORS header.
+-   The only client is the native mobile app — the official Hourly app,
+    whose backend is the server in this repository (§1, D-056, §16.23):
+    every route but sign-in and refresh authenticates with a bearer token,
+    and no response sets a cookie or a CORS header.
 -   The mobile app should not access the database directly.
 -   Use predictable resource-oriented endpoints and standard HTTP
     semantics where appropriate.
@@ -4213,7 +4224,7 @@ not what the confirmation predicted).
 
 **Confirmed decision (D-056) — 24 November 2026.**
 
-D-050 fixed that each organisation runs its own instance, so authentication is self-hosted and there is no shared identity provider to inherit a token policy from. §3.1 left the credential itself open, and B14 (§17) carried everything about a sign-in that shapes the client: how long it lasts, how it is renewed, how it ends, and what a cookie would have required. The MVP has **one client, and it is the native mobile app** (§2.1); that single fact removes half of the question and changes one of its numbers.
+D-050 fixed that each organisation runs its own instance, so authentication is self-hosted and there is no shared identity provider to inherit a token policy from. §3.1 left the credential itself open, and B14 (§17) carried everything about a sign-in that shapes the client: how long it lasts, how it is renewed, how it ends, and what a cookie would have required. The MVP has **one client, and it is the native mobile app** (§2.1) — the official Hourly client, whose backend is the server described here (§1); that single fact removes half of the question and changes one of its numbers.
 
 **The case this protects.** A season at the Saturday Pantry: nine volunteers, one coordinator, and one basement with no signal.
 

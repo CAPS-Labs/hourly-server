@@ -1,8 +1,15 @@
 # Hourly — Volunteer Time-Tracking API
 
-Backend API for a mobile app that lets volunteers record time for a volunteer
-organisation. A volunteer submits entries from the phone; a coordinator or
-administrator reviews them according to the organisation's policy.
+Hourly is a volunteer time-tracking product: a mobile app for volunteers and the
+server it talks to. **This repository is the server/API only** — the routes, the
+business rules and the database. It is not the entirety of the Hourly system.
+
+The only mobile client compatible with this server is the official app, also
+named **Hourly**. Where the design doc says "the mobile app" or "the client", it
+means that app; no other client is supported or designed for in the MVP.
+
+A volunteer submits entries from the phone; a coordinator or administrator
+reviews them according to the organisation's policy.
 
 > **Note:** this README was written by Buffy, the Codebuff coding agent, from
 > `DESIGN_DOC.md`. A human-written README will replace it soon.
@@ -46,8 +53,8 @@ is authoritative.
 - **Each organisation runs its own instance and database.** The deployment is the
   tenant: identity is scoped to it and no organisation identifier appears in the
   API (D-050).
-- **The only client is a native mobile app.** Every business route uses a bearer
-  token; no cookies, no CORS, no browser session (D-056).
+- **The only client is the official Hourly mobile app.** Every business route
+  uses a bearer token; no cookies, no CORS, no browser session (D-056).
 - Routes are versioned with a `/v1` prefix.
 
 ## Domain model in one pass
