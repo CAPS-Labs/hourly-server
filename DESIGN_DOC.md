@@ -1179,7 +1179,7 @@ transaction, carrying the actor, the entity, the action, the `requestId`
 and the fields that moved with their before and after; actors survive
 anonymisation and the erasure is itself a row; read scope mirrors the
 entity's; one filtered `GET /v1/audit-log` ordered `at` then `id`; reads,
-refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread (§16.39, D-072). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). **D-072** — retention: a period is the age at which the instance deletes a row itself, distinct from expiry, soft deletion and erasure; the organisational record and the audit trail are never deleted; a session is deleted 30 days after it ends, with its refresh-token hashes; a notification is deleted a month after it is read and, unread, at the organisation's mailbox window, whichever comes first; an organisation may set that window (1–24 months, default 12) and the window for resolved assignment requests (6 months to never, default never), shortening taking effect at the next sweep after a confirmation; nothing else is configurable; and the mechanism that enforces all of it is left open by name (§16.39). **D-073** — the retention sweep: an in-process housekeeping run in the API server, once at boot after the schema guard and daily at 03:00 in the organisation's time zone, guarded by a non-blocking advisory lock of its own so one runner deletes at a time; 500 rows per transaction and at most 10,000 per class per run; the organisation's windows and the deployment's session limits read at the start of each run; a failed batch logged and left for the next run rather than blocking startup; one log line per run and no endpoint, audit row or change-feed entry; and two `notifications` indexes admitted by §16.37 rule 10, which now counts seven (§16.40). **D-074** — the report export: `format=json|csv` on the one report route, the grouped JSON unchanged and CSV carrying the detail rows those totals were summed from, both taken from one read-only `REPEATABLE READ` transaction so the file and the report cannot disagree; synchronous and streamed, capped at 100,000 rows and 60 seconds and refused as `413 EXPORT_TOO_LARGE` before the first byte, with no job queue, no stored artifact and nothing to expire; columns `workDate, memberName, memberId, project, activity, startedAt, durationSeconds, hours, approvalStatus` with `hours` rounded once to two decimals half-up, no address and no notes, and an erased member reading "Former member"; administrators only, coordinators keeping the JSON report; one audit row per started export with `action="export"` and the filters in `changes`, written before the stream, which amends §16.34's "a report leaves no audit row" and adds `export` to its vocabulary; and the import, recommended out of the MVP, put back into scope on the same day as a decision still to be taken (§16.41). **D-075** — the import: one `POST /v1/imports` taking a CSV of time entries against members, projects, activities and assignments that already exist, none of which the import creates; administrators only; every row checked by the routes' own rules (60–86,400 seconds, the five-minute future tolerance, assignment eligibility, the activity belonging to the stated project), the whole file applied or none of it, with `?dryRun=true` reporting the same problems and writing nothing; duplicates refused by the file's SHA-256 (`409 IMPORT_ALREADY_APPLIED`) and by member, work date, start and length, never silently skipped; 10,000 rows and 1 MiB within 60 seconds, refused as `413 IMPORT_TOO_LARGE`; the member is the author and the administrator the actor, with only `approved` and `not_required` rows accepted and the importer recorded as having asserted the approval; one `import` audit row per file and none per imported entry, which amends §16.34 rule 1; and no install-epoch bump, because an import only inserts (§16.42). Gaps not yet raised by any
+refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread (§16.39, D-072). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). **D-072** — retention: a period is the age at which the instance deletes a row itself, distinct from expiry, soft deletion and erasure; the organisational record and the audit trail are never deleted; a session is deleted 30 days after it ends, with its refresh-token hashes; a notification is deleted a month after it is read and, unread, at the organisation's mailbox window, whichever comes first; an organisation may set that window (1–24 months, default 12) and the window for resolved assignment requests (6 months to never, default never), shortening taking effect at the next sweep after a confirmation; nothing else is configurable; and the mechanism that enforces all of it is left open by name (§16.39). **D-073** — the retention sweep: an in-process housekeeping run in the API server, once at boot after the schema guard and daily at 03:00 in the organisation's time zone, guarded by a non-blocking advisory lock of its own so one runner deletes at a time; 500 rows per transaction and at most 10,000 per class per run; the organisation's windows and the deployment's session limits read at the start of each run; a failed batch logged and left for the next run rather than blocking startup; one log line per run and no endpoint, audit row or change-feed entry; and two `notifications` indexes admitted by §16.37 rule 10, which now counts seven (§16.40). **D-074** — the report export: `format=json|csv` on the one report route, the grouped JSON unchanged and CSV carrying the detail rows those totals were summed from, both taken from one read-only `REPEATABLE READ` transaction so the file and the report cannot disagree; synchronous and streamed, capped at 100,000 rows and 60 seconds and refused as `413 EXPORT_TOO_LARGE` before the first byte, with no job queue, no stored artifact and nothing to expire; columns `workDate, memberName, memberId, project, activity, startedAt, durationSeconds, hours, approvalStatus` with `hours` rounded once to two decimals half-up, no address and no notes, and an erased member reading "Former member"; administrators only, coordinators keeping the JSON report; one audit row per started export with `action="export"` and the filters in `changes`, written before the stream, which amends §16.34's "a report leaves no audit row" and adds `export` to its vocabulary; and the import, recommended out of the MVP, put back into scope on the same day as a decision still to be taken (§16.41). **D-075** — the import: one `POST /v1/imports` taking a CSV of time entries against members, projects, activities and assignments that already exist, none of which the import creates; administrators only; every row checked by the routes' own rules (60–86,400 seconds, the five-minute future tolerance, assignment eligibility, the activity belonging to the stated project), the whole file applied or none of it, with `?dryRun=true` reporting the same problems and writing nothing; duplicates refused by the file's SHA-256 (`409 IMPORT_ALREADY_APPLIED`) and by member, work date, start and length, never silently skipped; 10,000 rows and 1 MiB within 60 seconds, refused as `413 IMPORT_TOO_LARGE`; the member is the author and the administrator the actor, with only `approved` and `not_required` rows accepted and the importer recorded as having asserted the approval; one `import` audit row per file and none per imported entry, which amends §16.34 rule 1; and no install-epoch bump, because an import only inserts (§16.42). **D-076** — counting for UI elements: one caller-scoped `GET /v1/me/counts` returning three integers — unread notifications, pending approvals in the caller's scope, and pending assignment requests awaiting the caller — each defined by the same predicate as the list it summarises, computed in one statement at read time and never stored or cached; `computedAt` for freshness; a key absent rather than zero when the caller has no such queue; the coordinator's badge as one number across all their projects; no count in any list body, resource or mutation, and a fourth counter a decision of its own; and no new index, the two queue counters running on the scan §16.36 rule 11 already accepts, so the performance inventory stays at seven (§16.43). Gaps not yet raised by any
 section are tracked as backlog items B1–B20 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -2304,12 +2304,12 @@ Resolved so far: §15.12 item 3 (approval-setting changes, §16.12), item 7 (liv
 Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), an opaque cursor (§16.2), one response body (§16.5). The project lifecycle is closed out: authority (§16.6), effects (§16.9), restore (§16.10). Remaining, in the order they will be taken:
 
 1. ~~**Import/export mechanism**~~ (§16.7, D-036) — **Resolved 28 November 2026.** Export by §16.41 (D-074) and import by §16.42 (D-075). §16.7's six questions are answered in place, B20 is closed, and the import file's requirements are written there in the language of whoever prepares the spreadsheet.
-2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
+2. ~~**Counting for UI elements**~~ — **Resolved 28 November 2026 (§16.43, D-076).** One caller-scoped `GET /v1/me/counts` returns three integers — unread notifications, approvals awaiting the caller, and assignment requests awaiting the caller — computed at read time from the same predicates as the lists they summarise, on existing indexes or on §16.36 rule 11's accepted scan, with no new index and no count anywhere else. The coordinator's badge is one number across all their projects. Every item in this list is now resolved.
 3. ~~**Anonymisation, revisited**~~ — **Resolved 28 November 2026 (§16.38, D-071).** D-052's trade was taken up on its own terms: erasure stays as one administrator act that pseudonymises the user row, the replacement name is "Former member", the address is one sentinel, the mailbox is emptied under the erasure's single row, and what erasure cannot protect is written down instead of promised away.
 4. ~~**Retention policy**~~ — **Resolved 28 November 2026 (§16.39, D-072).** The record and the audit trail are never deleted; a session goes 30 days after it ends; a notification goes a month after it is read or at the organisation's mailbox window, never beyond 24 months; and the organisation sets that window and the window for resolved assignment requests, nothing else. §16.38's legal gap is answered for the record by deciding that it has no period, and remains open for the jurisdiction and the basis.
 5. ~~**The retention sweep**~~ — **Resolved 28 November 2026 (§16.40, D-073).** An in-process run at boot and daily at 03:00 in the organisation's time zone, one runner at a time under its own advisory lock, 500 rows a transaction and 10,000 a class a run, failures logged rather than fatal, one log line per run and no API surface. Two indexes on `notifications` are the only schema it adds.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B20), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24) — and B20, the import, added and resolved on 28 November 2026 by D-075 (§16.42), so nothing in that backlog blocks drafting. The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table, and §16.38 (D-071) closes the anonymisation review; §16.39 (D-072) then sets the retention periods and §16.40 (D-073) the sweep that enforces them. §16.41 (D-074) then decides the report export — one read serialised as grouped JSON or detail CSV, administrator-only, synchronous and capped, and one audit row per file — and puts the import back into the MVP's scope, required and undecided; §16.42 (D-075) then decides it, and the backlog's last item closes.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B20), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24) — and B20, the import, added and resolved on 28 November 2026 by D-075 (§16.42), so nothing in that backlog blocks drafting. The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table, and §16.38 (D-071) closes the anonymisation review; §16.39 (D-072) then sets the retention periods and §16.40 (D-073) the sweep that enforces them. §16.41 (D-074) then decides the report export — one read serialised as grouped JSON or detail CSV, administrator-only, synchronous and capped, and one audit row per file — and puts the import back into the MVP's scope, required and undecided; §16.42 (D-075) then decides it, and the backlog's last item closes; §16.43 (D-076) then settles the counting the head of §16 had deferred, closing that list as well.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2507,7 +2507,7 @@ Every paginated list endpoint returns a flat body with exactly three members:
 
 **Deliberately absent:**
 
-- **No total count.** Counting — unread notifications, pending requests, and other badge figures — is computed in the API business layer and served by the endpoints that ask for it; it is not page metadata. Deferred rather than rejected (§16.7).
+- **No total count.** Counting — unread notifications, pending requests, and other badge figures — is computed in the API business layer and served by the endpoints that ask for it; it is not page metadata. Decided rather than rejected: §16.43 (D-076) gives the badges one caller-scoped route, and no list gains a total.
 - **No page number, and therefore no "page 3 of 25".** A page label needs three things the contract does not provide: a total to divide, a page size fixed for the session, and a set that does not change between requests. "Of 25" is only honest under a stable snapshot, which D-035 rules out for interactive listing, so the denominator would drift mid-scroll and pages could overlap. Position is different and free: "rows 101–150" needs no server support, because the client already knows how many rows it has received.
 - **No navigation links**, no per-page `requestId` (errors carry one, §16.4), no `meta` object.
 
@@ -3984,7 +3984,8 @@ where `group` is `0` for pending and `1` otherwise.
   the two-direction assignment-request order needs its one sentence wherever
   client authors look.
 - No `total` in any list means the unread badge needs its own small endpoint —
-  the counting item deferred in §16.7, not something B8 quietly settles.
+  supplied on 28 November 2026 by §16.43 (D-076) — not something B8 quietly
+  settles, and B8 still does not settle it.
 - The audit list's shape is fixed before B11 decides what it contains and who
   may read it, so B11 inherits a shape rather than choosing one.
 - The users list is administrator-only in the MVP; a coordinator who wants to
@@ -4007,7 +4008,7 @@ for `nextCursor`, so no way to continue).
 **Left open.** Whether an `order` parameter ever arrives, and on which
 collections; free-text search over users; notification retention, which is
 B10 and §15.12 item 25; the audit list's contents and access, which is B11;
-the counting endpoints, already deferred; and whether a coordinator-facing
+~~the counting endpoints, already deferred~~ — decided 28 November 2026 (§16.43, D-076); and whether a coordinator-facing
 directory is wanted, which would be a filter rather than a new shape.
 
 **Resolves:** backlog item B8 (§17). It constrains B10 (notification filters
@@ -6784,7 +6785,9 @@ HTTP/1.1 404 Not Found
 - **No push means a notification can sit unseen for hours.** The badge is only
   as fresh as the last ask, and because no list returns a total (§16.21 rule 6)
   it counts what the app has fetched — the counting endpoint deferred in §16.7
-  is still deferred.
+  **decided 28 November 2026 (§16.43, D-076):** one caller-scoped
+  route returns the unread count beside the other two badges, still only as
+  fresh as the last ask.
 - **The write path fans out.** Every act that names recipients reads the
   recipient set inside its transaction, and rows scale with recipients rather
   than acts: 43 pending requests across four coordinators is 172 rows.
@@ -6985,7 +6988,10 @@ a restore is visible to every client.**
     index and none is added. The coordinator's pending queue filtered by
     project is left out until it is measured — it is a filter over rows already
     scoped to a handful of projects, and an index now would be a guess carrying
-    a write cost on the busiest table. The users list's prefix filter (§16.21)
+    a write cost on the busiest table. **Amended 28 November 2026 (§16.43,
+    D-076):** the counts that summarise a queue run on this same scan and add
+    no index; the two queue counters count exactly the lists this rule declines
+    to index. The users list's prefix filter (§16.21)
     scans one organisation's members, hundreds at most. Reports have no rollup
     table and no index beyond the anchor range (§16.33). The `deleted=true`
     listing is served by the anchor index with a filter on the rows it returns,
@@ -8627,6 +8633,189 @@ row rather than one per row) and rule 8 (`import` joins the vocabulary);
 question (imports write *through* the constraints); §16.4's 409 and 413 rows
 (`IMPORT_ALREADY_APPLIED`, `IMPORT_TOO_LARGE`); §16.41 rule 6 and its left-open
 list; §16 head item 1 and its resolved list; the B20 row in §17; and the §12
+register.
+
+------------------------------------------------------------------------
+
+## 16.43 Counting for UI elements: one caller-scoped route, three integers, no new index
+
+**Confirmed decision (D-076) — 28 November 2026.**
+
+§16.5 deferred counting out of the list envelope, §16.21's accepted costs said
+the unread badge "needs its own small endpoint", and §16.35 said that endpoint
+was still deferred. It was the last open item at the head of §16, and three
+sections were contradicting nothing while pointing at it.
+
+**The case this protects.** A coordinator with four projects opens the app and
+sees one number over the approvals tab. If that number came from paging the
+queue, it would be right only after the client had read every page — and a
+badge of "40" on a queue of 43 is worse than no badge. If each project card
+carried its own count, the four numbers would add up to a fifth number nobody
+computes, and an approval landing between two card reads would make them
+disagree. And if the counter lived in the list body, every scroll page of every
+collection would pay for an aggregate the screen does not show.
+
+**Decision in one line: `GET /v1/me/counts` returns three caller-scoped
+integers — unread notifications, approvals awaiting the caller, and assignment
+requests awaiting the caller — computed at read time from the same predicates
+as the lists they summarise, on existing indexes or on §16.36 rule 11's
+accepted scan, adding no index; the coordinator's badge is one number across
+all their projects; and no list, resource or mutation gains a count.**
+
+**The rules.**
+
+1. **One dedicated route, caller-scoped.** `GET /v1/me/counts`, authenticated,
+   returns the badges for the caller's own scope and nothing else. It sits
+   beside `/v1/me/export` (§16.19 rule 5), so the namespace already exists. It
+   is not a resource field, not list metadata, and not a general aggregate
+   query: each of those would put a counter in a shape that other decisions
+   have already fixed.
+
+2. **Three counters, each the size of a list the caller can open.**
+
+   | Key | What it counts | The list it summarises |
+   |---|---|---|
+   | `unreadNotifications` | the caller's own unread mailbox rows | `GET /v1/notifications?unreadOnly=true` (§16.35) |
+   | `pendingApprovals` | pending entries in the caller's approval scope | `GET /v1/time-entries?approvalStatus=pending` (§16.21, §16.25) |
+   | `pendingAssignmentRequests` | pending requests awaiting the caller's decision | the coordinator's request queue (§16.21) |
+
+   Each is defined by the **same predicate as its list**, not by a separate
+   definition; a badge that counts one thing above a list that shows another is
+   the failure this rule exists to prevent. **The coordinator's badge is one
+   number across all their projects** — exactly the queue the route opens,
+   which a coordinator then filters by project if they want to. There are no
+   per-project counts in the MVP: a second surface would need a second
+   authorization rule, and its numbers would have to agree with this one.
+
+3. **A flat body, `computedAt`, and absence rather than zero.**
+
+```http
+GET /v1/me/counts
+Authorization: Bearer eyJhbGciOi…
+```
+
+```json
+{
+  "unreadNotifications": 3,
+  "pendingApprovals": 12,
+  "pendingAssignmentRequests": 2,
+  "computedAt": "2026-11-28T10:14:00Z"
+}
+```
+
+   A volunteer has no approval queue, so the key is **absent**, not `0`:
+
+```json
+{
+  "unreadNotifications": 0,
+  "pendingAssignmentRequests": 1,
+  "computedAt": "2026-11-28T10:14:03Z"
+}
+```
+
+   Present means "this is your queue and this is its size", including zero.
+   Absent means "there is no such queue for you". `computedAt` follows
+   `GET /v1/projects/{id}/archival-impact` (§16.22 rule 7) and says when the
+   figures were true.
+
+4. **One statement, one snapshot, nothing stored.** The three counts are three
+   scalar subqueries in a single SQL statement, so they are all as of one
+   instant without a transaction wrapper or a `REPEATABLE READ` the route does
+   not need. Nothing is cached, rolled up or written: no counter table, no
+   `changeSeq` entry, no audit row, no notification, no `ETag`. A read that
+   produces an integer has nothing to invalidate.
+
+5. **No new index — stated plainly, because this is the rule the record left
+   open.** All three counters run on indexes that already exist, or on the scan
+   §16.36 rule 11 already accepts. Specifically:
+
+   - `unreadNotifications` reads one person's mailbox rows filtered on
+     `read_at IS NULL`. The mailbox index
+     `notifications (recipient_id, created_at DESC, id DESC)` narrows to that
+     person's rows first, and the filter runs over tens of them. D-073 already
+     rejected a partial index on `read_at IS NULL` for the retention sweep for
+     exactly this reason.
+   - `pendingApprovals` has **no** index that serves it and this decision adds
+     none. It is a count of pending entries across the projects the caller
+     coordinates or administers — the same query the approval queue runs, over
+     the same rows — and §16.36 rule 11's sentence applies to it verbatim: "a
+     filter over rows already scoped to a handful of projects, and an index now
+     would be a guess carrying a write cost on the busiest table".
+   - `pendingAssignmentRequests` is the same case. The existing
+     `assignment_requests (volunteer_id, project_id)` partial unique index is
+     per person, not per coordinator, so it does not serve this count; the
+     count scans the pending rows and filters by project, as the queue does.
+
+   **Therefore the performance inventory stays at seven** (§16.37 rule 10's
+   list, as amended by §16.40) and this decision creates no index. If the
+   pending sets ever grow past rule 11's measurement, the candidate indexes are
+   a partial `time_entries` on the pending rows and a partial
+   `assignment_requests` on the pending rows, ordered for the queues — but they
+   are a later decision's to admit by measurement, not this one's to guess at.
+
+6. **Staleness is stated, not papered over.** The badge is as fresh as the last
+   ask: no push (D-068), no long-poll, no server-side refresh, no promise that
+   a count matches a list read a second later. `computedAt` is the whole
+   freshness story, and it is the client's business how often to ask. **A
+   count never gates an act**: approve, reject, decide and archive each
+   validate their own preconditions, so a stale twelve cannot approve a
+   thirteenth.
+
+7. **Nothing else gains a count, and a fourth counter is a decision.** List
+   bodies keep `items`/`nextCursor`/`pageSize` (D-040, D-054); mutations return
+   no counts (D-055); `archival-impact` remains the one purpose-built count
+   route, because it names an act's consequences rather than a badge; the
+   report's `entryCount` (§16.33) is untouched. A fourth key, a per-project
+   count, or a count on a resource is a contract change recorded in §16, not a
+   field a screen adds.
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **One `GET /v1/me/counts`, three caller-scoped integers, no new index (recommended)** | One authorization rule, one place to add a key, and a badge that counts the list it sits above | A second request per screen, and three aggregates on instances large enough to notice |
+| `total` in every list body | The figure arrives with the page it describes | An aggregate on every scroll page of every collection, and a number that implies a snapshot the design does not promise |
+| Counts as fields on the profile, project and organisation resources | No new route | Each field carries its own authorization question, so an entity's shape changes whenever a screen wants a number |
+| A counter table maintained by writers | Constant-time reads | Every writer must invalidate it, including a coordinator approving someone else's row — the argument §16.33 rule 3 makes against a rollup |
+| Per-project badge counts on the project list | A badge per card | A second surface and a second authorization rule, and the cards cannot add up to the queue's number without a third count |
+| Admit the two partial indexes now | The counts and their queues become range reads at any size | The inventory goes to nine on a guess, against the measurement rule that has kept it at seven |
+| A generic `/v1/counts?of=unread` | One route for every future figure | An ad-hoc query surface with an authorization matrix and a contract entry per counter — the same work, spread thinner |
+| Caching with `ETag`/`If-None-Match` | Cheaper polling | The conditional request still computes the count, and the validator then needs storing to save the one thing that was cheap |
+
+**Accepted costs.**
+
+- **Two requests where a screen shows a count and a list.** The badge and the
+  rows can differ by a second, and nothing reconciles them.
+- **Three aggregates per poll.** On an instance with a large pending set the
+  route and the queue it summarises are equally slow, by §16.36 rule 11's
+  deliberate choice.
+- **A missing key is a contract detail.** Clients branch on presence, and a
+  backend that starts sending `pendingApprovals: 0` to volunteers would change
+  what the field means without breaking a status code.
+- **No number on a project card.** A coordinator running four projects sees one
+  badge and filters after opening the queue, which is fewer taps on a good day
+  and one more on a bad one.
+- **A volunteer cannot see how many of their requests are pending.** They know
+  what they asked for; the badge counts what someone else must act on.
+
+**Left open.** Whether per-project counts ever appear (a second surface, and
+its numbers would have to agree with this one); whether the two queue
+candidates in rule 5 are admitted once §16.36 rule 11's measurement is met;
+whether a fourth key — the caller's own outgoing pending requests — is worth a
+badge, which no index would forbid; whether an `ETag`/`If-None-Match` pair ever
+replaces `computedAt` polling; whether project cards should carry member or
+hours figures, which are counts of something other than a caller's queue; and
+whether push ever moves a badge without a fetch (D-068 rejected push for the
+MVP).
+
+**Resolves and amends.** It resolves the counting item at the head of §16 — the
+last one open there — and the deferral each of three sections was carrying:
+§16.5's deliberately-absent paragraph ("deferred rather than rejected"),
+§16.21's accepted cost about the unread badge and its left-open "counting
+endpoints", and §16.35's note that the counting endpoint was still deferred. It
+leaves §16.36 rule 11's index reasoning intact and records that these counters
+run on the scan it accepts; it does not touch D-040, D-054, D-055 or §16.22,
+and it adds no index — the inventory stays at seven. It also amends the §12
 register.
 
 ------------------------------------------------------------------------
