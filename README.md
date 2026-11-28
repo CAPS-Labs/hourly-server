@@ -17,9 +17,9 @@ reviews them according to the organisation's policy.
 ## Status: design phase
 
 There is no application code yet — no `src/` directory, no routes, no database
-schema in the repo. `DESIGN_DOC.md` (≈8,700 lines) is the project's only source of
+schema in the repo. `DESIGN_DOC.md` (≈8,900 lines) is the project's only source of
 truth: a living decision record, not a finished API specification. It holds
-decisions D-001–D-075, the outstanding-decisions list maintained at the head of
+decisions D-001–D-076, the outstanding-decisions list maintained at the head of
 §16, and a backlog of gaps never yet raised as B1–B20 in §17.
 
 Read the design doc before writing any code. Most of what follows is a summary of
@@ -99,8 +99,9 @@ is authoritative.
   server-minted `X-Request-Id` on every response (D-053).
 - **Also specified**: an insert-only audit trail (`GET /v1/audit-log`, D-067), in-app
   notifications written in the act's own transaction (D-068), a change feed at
-    `GET /v1/sync` keyed by a per-organisation `changeSeq` (D-064), and self-service
-export at `GET /v1/me/export` (D-052).
+    `GET /v1/sync` keyed by a per-organisation `changeSeq` (D-064), self-service
+export at `GET /v1/me/export` (D-052), and caller-scoped badge counts at
+  `GET /v1/me/counts` (D-076).
 - **Import**: `POST /v1/imports` takes a CSV of time entries against members,
   projects, activities and assignments that already exist. Administrators only;
   every row is checked by the routes' own rules; the whole file applies or none of
@@ -124,17 +125,14 @@ export at `GET /v1/me/export` (D-052).
   codes.
 - **B3 — timer semantics**: deferred, not resolved; it returns only if a server timer
   is added back.
-- **§15.12 items still open**: one assignment resource or two (15), assignment-departure
-  effects on in-flight items (16), assignment-boundary timestamps (17), membership
-  revocation and restore (18), project-less description vs. notes (22), required
-  profile fields and email-change verification (23), policy changes on pending
+- **§15.12 items still open**: assignment-departure effects on in-flight items (16),
+  assignment-boundary timestamps (17), membership revocation and restore (18),
+  required profile fields and email-change verification (23), policy changes on pending
   assignment requests (24, partially), the sign-in credential itself (26, partially),
   the first-administrator bootstrap (27), and the `/v1` compatibility and deprecation
   policy (31, partially).
-- **Deliberately deferred**: counting for UI elements (unread notifications, pending
-  requests).
 
 ---
 
 Written by Buffy (the Codebuff coding agent) from `DESIGN_DOC.md` at commit
-`6f226e7`. No code has been reviewed against this summary.
+`3fcbfcb`. No code has been reviewed against this summary.
