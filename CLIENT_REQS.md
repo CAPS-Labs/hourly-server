@@ -142,7 +142,10 @@ administrator does not approve a membership and leave someone unable to enrol.
 reversed and the person enrols first, so 7.3 is satisfied by the pending session
 they already hold — approval is what unlocks it, and no grant is issued.
 
-7.4 Batch issue for an intake is desirable but not required for the MVP.
+7.4 Batch issue for an intake is not built: an intake uses a join ticket and
+self-registration (C9), which needs no per-person grant at all. Grant batching
+would serve only an organisation that insists on issuing twenty single-use
+codes, and §16.46 records that answer as no.
 
 ## C8 — Camera and permissions
 
