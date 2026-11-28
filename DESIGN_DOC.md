@@ -1193,9 +1193,11 @@ time rather than filled in by assumption.
 2.  **Coordinator conflict resolution:** Confirm whether coordinators
     can resolve conflicts for volunteers assigned to their projects, and
     define treatment of project-less entries.
-3.  **Assignment model:** Decide whether coordinator and volunteer
+3.  ~~**Assignment model:** Decide whether coordinator and volunteer
     assignments use one generalized assignment resource or separate
-    concepts.
+    concepts.~~ **Resolved 27 November 2026 --- a coordinator is a
+    `project_coordinators` grant and never an assignment type (§16.37,
+    D-070).**
 4.  **Assignment end boundaries:** Define timestamp/timezone storage and
     exact effective-time semantics, preserving the agreed inclusive
     departure date.
@@ -1218,15 +1220,20 @@ time rather than filled in by assumption.
     organization settings change.~~ **Entries resolved 22 November 2026
     — the policy in force at submission governs (§16.12, D-045). Pending
     assignment requests remain open (§15.12 item 24).**
-9.  Define how invalid but preserved submissions are surfaced,
-    corrected, reviewed, or excluded from totals.
+9.  ~~Define how invalid but preserved submissions are surfaced,
+    corrected, reviewed, or excluded from totals.~~ **Resolved 25 November
+    2026 --- a refusal stores nothing, the client holds the submission in a
+    visible blocked state, and it counts toward nothing until resubmitted
+    (§16.27, D-060).**
 
 ### Priority 3 --- Resource and policy details
 
 10. Finalize profile required/optional fields and email-change
     verification behaviour.
-11. Decide whether project-less activity description is separate from
-    optional notes.
+11. ~~Decide whether project-less activity description is separate from
+    optional notes.~~ **Resolved 27 November 2026 --- the entry's free-text
+    field is `notes`, and a project-less entry carries a `description` in
+    place of an activity (§16.37, D-070).**
 12. ~~Define overlap warning/review behaviour.~~ **Resolved 22 November
     2026 — definition of an overlap (§16.14, D-047).**
 13. Define what assignment departure does to pending time entries and
@@ -2188,6 +2195,8 @@ The exact physical data model was open here and is settled: §16.36 (D-069) fixe
 
 The following items remain unresolved. They should be addressed before or during API contract design, according to their importance.
 
+**Flags (28 November 2026):** every still-open item below now carries the flag §17 defines — *Contract*, *Feature*, *Launch* or *Implementation* — so this list states what blocks drafting rather than leaving it to be inferred from the prose. A numbered item with no flag is settled, and says by which decision.
+
 ### Priority 1 — Time-entry lifecycle and approval
 
 1. ~~Define the complete lifecycle state machine for drafts, submitted
@@ -2236,10 +2245,10 @@ The following items remain unresolved. They should be addressed before or during
     `coordinatorsMayEditOrDeleteEntries` setting is on; a coordinator's scope is the
     entry's project rather than the author's current assignment; project-less
     entries are the author's or an administrator's.
-15. Finalize whether volunteer and coordinator assignments use a generalized resource or separate resources.
-16. Define the consequences of assignment departure for pending time entries and requests, beyond the established historical-work eligibility rule.
-17. Finalize timestamp and timezone semantics for assignment boundaries.
-18. Decide the membership-revocation rules and whether revoked memberships may be restored. **Vocabulary settled 27 November 2026 — a membership's status is `active`, `inactive` or `removed` (§16.37, D-070). The revocation rules and whether a removed membership may be restored remain open.**
+15. ~~Finalize whether volunteer and coordinator assignments use a generalized resource or separate resources.~~ **Resolved 27 November 2026 — a coordinator is a `project_coordinators` grant and never an assignment type, so there is no generalized assignment resource to design (§16.37, D-070).**
+16. **Contract.** Define the consequences of assignment departure for pending time entries and requests, beyond the established historical-work eligibility rule.
+17. **Contract.** Finalize timestamp and timezone semantics for assignment boundaries.
+18. **Contract.** Decide the membership-revocation rules and whether revoked memberships may be restored. **Vocabulary settled 27 November 2026 — a membership's status is `active`, `inactive` or `removed` (§16.37, D-070). The revocation rules and whether a removed membership may be restored remain open.**
 
 ### Priority 4 — Entry deletion and operational details
 
@@ -2255,19 +2264,19 @@ The following items remain unresolved. They should be addressed before or during
     the filter is a boolean, approval warns and proceeds, and no
     notification is stored; the client surfaces it on the create, the
     replay and each bulk-sync result (§16.29, D-062).**
-22. Decide whether project-less activity descriptions are stored separately from optional notes.
-23. Finalize required and optional profile fields and email-change verification behavior.
-24. **Entry submissions settled:** an approval-policy change applies only to submissions received after its effective time (§16.12, D-045). Still open: the effects of policy changes on pending assignment requests and other pending operations.
-25. Define notification retention and whether administrators can manage other users' notifications. **Administrator access settled 26 November 2026 — they cannot: a mailbox is the caller's own and no route takes another person's id (§16.35, D-068). Retention settled 28 November 2026 (§16.39, D-072): a month after reading capped by the organisation's mailbox window, that window when unread, never beyond 24 months, enforced by the in-process sweep D-073 decides (§16.40).**
+22. ~~Decide whether project-less activity descriptions are stored separately from optional notes.~~ **Resolved 27 November 2026 — the entry's free-text field is `notes`, and a project-less entry's `description` stands in place of an activity (§16.37, D-070; §16.42 gives the import file the same shape).**
+23. **Contract.** Finalize required and optional profile fields and email-change verification behavior.
+24. **Contract** (for the part still open). **Entry submissions settled:** an approval-policy change applies only to submissions received after its effective time (§16.12, D-045). Still open: the effects of policy changes on pending assignment requests and other pending operations.
+25. ~~Define notification retention and whether administrators can manage other users' notifications.~~ **Administrator access settled 26 November 2026 — they cannot: a mailbox is the caller's own and no route takes another person's id (§16.35, D-068). Retention settled 28 November 2026 (§16.39, D-072): a month after reading capped by the organisation's mailbox window, that window when unread, never beyond 24 months, enforced by the in-process sweep D-073 decides (§16.40).**
 
 ### Priority 5 — API contract and implementation
 
-26. Choose the authentication method/provider and determine whether authentication is managed or self-hosted. **Hosting resolved 23 November 2026 — each organisation runs its own instance, so authentication is self-hosted per instance (§16.17, D-050). The session layer is settled 24 November 2026 (§16.23, D-056) — bearer tokens, a single-use rotating refresh token, and a mobile-only client, so no cookie and no CORS. The credential itself remains open (§3.1).**
-27. Design the first-administrator bootstrap process. **Now a per-instance installation step (§16.17, D-050); the process is still undesigned.**
+26. **Contract** (for the credential; hosting and sessions are settled). Choose the authentication method/provider and determine whether authentication is managed or self-hosted. **Hosting resolved 23 November 2026 — each organisation runs its own instance, so authentication is self-hosted per instance (§16.17, D-050). The session layer is settled 24 November 2026 (§16.23, D-056) — bearer tokens, a single-use rotating refresh token, and a mobile-only client, so no cookie and no CORS. The credential itself remains open (§3.1).**
+27. **Launch** — and **Contract** if it turns out to be a route rather than an installation step. Design the first-administrator bootstrap process. **Now a per-instance installation step (§16.17, D-050); the process is still undesigned.**
 28. ~~Finalize database schema, constraints, and transaction requirements.~~ **Resolved 27 November 2026 — the engine, the stored anchor, the migrations, the indexes and the transaction boundaries are fixed (§16.36, D-069), and the per-table constraints, the uniqueness rules and the columns each of them fixes are recorded table by table (§16.37, D-070). What no decision has introduced — the assignment interval's types, the profile fields, the anchor's zone column — stays with its own item rather than this one.**
-29. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
+29. **Contract** — this is the drafting work itself, not a gap to close before it. Define endpoint paths, HTTP methods, request/response DTOs, validation rules, and error codes.
 30. ~~Design offline synchronization operations, change tracking, retry/idempotency behavior, and conflict responses.~~ **Resolved 25 November 2026 — retry and idempotency are the entry id as the deduplication record with `version` guarding writes (§16.16, D-049), conflict responses are `409 VERSION_MISMATCH` carrying `current` and `changedFields` (§16.28, D-061), and change tracking is a per-organisation `changeSeq` with a pull feed of the caller's own entries, deletions included (§16.31, D-064).**
-31. Define API versioning, security controls, deployment, backups, and monitoring. **Deployment is per instance (§16.17, D-050), so API version skew between an installed app and an instance that upgrades on its own schedule is a supported state rather than a hypothetical. Versioning is contract-blocking, not operational polish.** **URL versioning settled 24 November 2026: every route is prefixed `/v1`, and every path in this record is written that way.** What remains open is the compatibility and deprecation policy — what an old client does against a `/v2` instance, and for how long `/v1` is served.
+31. **Contract** for the compatibility policy; **Launch** for security controls, deployment, backups and monitoring. Define API versioning, security controls, deployment, backups, and monitoring. **Deployment is per instance (§16.17, D-050), so API version skew between an installed app and an instance that upgrades on its own schedule is a supported state rather than a hypothetical. Versioning is contract-blocking, not operational polish.** **URL versioning settled 24 November 2026: every route is prefixed `/v1`, and every path in this record is written that way.** What remains open is the compatibility and deprecation policy — what an old client does against a `/v2` instance, and for how long `/v1` is served.
 
 Items may be combined or deferred where appropriate. The list is a planning aid, not a requirement to settle every item before drafting any part of the API contract.
 
