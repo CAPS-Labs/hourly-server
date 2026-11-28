@@ -237,7 +237,9 @@ if (inventory) {
 const rule1 = lines.find((l) => /One credential type, one header/.test(l));
 if (rule1) {
   const firstSentence = rule1.split('**Amended')[0];
-  const routes = new Set([...firstSentence.matchAll(/`POST (\/v1\/auth\/[a-z-]+)`/g)].map((m) => m[1]));
+  const routes = new Set(
+    [...firstSentence.matchAll(/`(?:GET|POST|PATCH|DELETE|PUT) (\/v1\/[A-Za-z0-9{}.\/_-]+)`/g)].map((m) => m[1]),
+  );
   for (const m of doc.matchAll(/the (\w+) unauthenticated routes?/gi)) {
     if (isCountWord(m[1]) && num(m[1]) !== routes.size) {
       fail(0, `unauthenticated routes: text says "${m[1]}" but rule 1 names ${routes.size} (${[...routes].join(', ')})`);

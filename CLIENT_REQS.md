@@ -1,6 +1,6 @@
 # Client requirements — enrolment and sessions
 
-**Status:** 28 November 2026. Derived from D-078 (§16.45) and the session model
+**Status:** 28 November 2026. Derived from D-078 (§16.45), D-079 (§16.46) and the session model
 D-056 (§16.23). These are requirements on the native mobile app, which is the
 MVP's only client (§2.1). Where a requirement restates a rule in the design
 record, the rule is the authority and this file is the checklist for whoever
@@ -9,6 +9,10 @@ builds the app.
 ## Scope
 
 The volunteer's app is enrolled once per device and then holds a session. There
+is a second way in, added by D-079: a person with no account at all scans a join
+ticket in a room, registers themselves, and waits for approval on a session that
+reaches nothing until then (C9). The address they type is the only one the
+product ever collects, and the instance still sends nothing to it. There
 is no password field anywhere in the product, no sign-in screen, no "forgot
 password", no email is sent by the instance, and no third-party identity service
 is contacted.
@@ -132,8 +136,11 @@ and the person's name.
 
 7.2 List un-redeemed grants with their expiry and issuer, and cancel one.
 
-7.3 Membership approval and grant issue are one flow: an administrator does not
-approve a membership and leave the person unable to enrol.
+7.3 Membership approval and grant issue are one flow for a known person: an
+administrator does not approve a membership and leave someone unable to enrol.
+**Amended 28 November 2026 (D-079, §16.46):** on the room path the order is
+reversed and the person enrols first, so 7.3 is satisfied by the pending session
+they already hold — approval is what unlocks it, and no grant is issued.
 
 7.4 Batch issue for an intake is desirable but not required for the MVP.
 
@@ -152,16 +159,70 @@ capture, no file access and no other permission added by this feature.
 squattable, and a universal link would require associated domains on a hostname
 the app cannot know in advance — the same constraint that rules out passkeys.
 
-## C9 — Non-requirements
+## C9 — Joining a room
+
+9.1 Three screens: **Join** (organisation name, host and expiry, read from
+`GET /v1/join-tickets/{id}`), **Register** (display name, email, device label),
+and **Waiting** (organisation name, the person's own name, and who they are
+waiting for).
+
+9.2 The scanner accepts both payloads and distinguishes them by scheme:
+`hourly-enrol:1` is a grant for one device, `hourly-join:1` is a door. Sending a
+join ticket to the enrolment route, or a grant to the join route, is an app bug
+and not a message to show.
+
+9.3 The Join screen shows the organisation name and host **before** the form
+appears, under §16.17. A host in the payload that differs from the host actually
+contacted is refused, never confirmed.
+
+9.4 Registration sends `{ticket, displayName, email, deviceLabel}` to
+`POST /v1/auth/join`. The display name is the person's own and may be corrected by
+an administrator afterwards; the app must not prefill it from the device account,
+which on a shared phone belongs to somebody else.
+
+9.5 The email is validated only as non-empty with one `@`. Normalisation and
+uniqueness are the server's, and the app must not apply its own test. A `409
+EMAIL_IN_USE` shows "That address is already registered here. Ask an
+administrator to add you." — and does not immediately invite a second address, so
+a squatter's conflict is read rather than typed past.
+
+9.6 A `403 JOIN_CLOSED` shows "This code has closed. Ask your coordinator for a
+new one." It is a closed door, not an authentication failure, and must not be
+styled as one.
+
+9.7 A `5xx`, a timeout or no network leaves the form populated and offers a retry
+with the same ticket. Admission is counted only when the server answered, so a
+retry either succeeds or reports the door closed.
+
+9.8 The Waiting screen is a real session: it survives a restart, appears in the
+device list, and refreshes on foreground. It must reach no other screen — no
+tabs, no empty lists, no "0 hours" — and must not poll faster than foreground.
+
+9.9 Approval is discovered, not pushed: on the next foreground refresh the app
+sees an active membership and shows the organisation. There is no notification to
+receive and none to wait for.
+
+9.10 A rejected or expired application ends the session with a `401`. The app
+clears storage and returns to the Join screen with a neutral message: the person
+did nothing wrong.
+
+9.11 The form's fields leave memory and logs when the request completes. The
+address is never written to the token store, a file, a log line or a crash
+report; only tokens go to the Keychain (C4).
+
+9.12 The QR an administrator draws for a join ticket uses `hourly-join:1` and
+states the headcount and the expiry on the screen, as C3.3 requires of a grant.
+
+## C10 — Non-requirements
 
 - No password entry, change or reset screen; no credential storage of any kind.
-- No self-registration screen.
+- No open self-registration screen. The Join screen exists only behind a join ticket; an address alone reaches nothing.
 - No email sending or address verification.
 - No second factor, no recovery codes.
 - No WebAuthn, no associated-domains entitlement, no third-party identity SDK.
 - No server-rendered QR images.
 
-## C10 — Acceptance checks
+## C11 — Acceptance checks
 
 These are the assertions that prove the feature, not a substitute for a test
 suite:
@@ -182,3 +243,14 @@ suite:
    its next request.
 10. Issue a grant as an administrator, cancel it, and confirm redemption now
     fails with the same `401`.
+11. From a fresh install, scan a join QR, register, and land on the Waiting
+    screen rather than the app.
+12. Approve the membership from the administrator's device, and confirm the
+    volunteer's next foreground refresh shows the organisation with no re-login
+    and no second scan.
+13. Register a second account with the same address and confirm `409
+    EMAIL_IN_USE` with the message of 9.5.
+14. Let a ticket expire, then register and confirm `403 JOIN_CLOSED`, styled as a
+    closed door rather than a failed sign-in.
+15. Leave an application unapproved past its window and confirm the app is refused
+    on refresh and returns to the Join screen.
