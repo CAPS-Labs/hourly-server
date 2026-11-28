@@ -144,7 +144,7 @@ explicitly confirmed here**.
 
 ------------------------------------------------------------------------
 
-## 3. Authentication, registration, and membership
+## 3. Authentication, enrolment, and membership
 
 ### 3.1 Authentication method
 
@@ -213,12 +213,11 @@ enrolment grant (§16.45). There is no route by which anyone creates their own
 account**, and membership approval and the issue of that grant are one act, so
 a pending membership never coexists with a session.
 
-Conceptual flow: 1. The person registers against a particular
-organization's server. 2. The account/profile is created and any
-required email verification is completed. 3. The organization membership
-remains pending. 4. An administrator approves or rejects the membership.
-5. Approval activates the person's organization access under an assigned
-role.
+~~Conceptual flow: 1. The person registers against a particular
+organization's server. 2. The account/profile is created and any required
+email verification is completed. 3. The organization membership remains
+pending. 4. An administrator approves or rejects the membership. 5. Approval
+activates the person's organization access under an assigned role.~~
 
 **Superseded 28 November 2026 (D-078, §16.45).** Steps 1–4 describe a flow
 that no longer exists. In its place: the administrator creates the account and
@@ -390,8 +389,8 @@ does not apply to that role — and a volunteer may always edit their own.
 ### 4.4 Organization-administrator permissions
 
 Organization administrators have organization-wide authority. The
-discussed responsibilities include: - Approving registrations and
-managing memberships. - Assigning and changing roles. - Managing
+discussed responsibilities include: - Approving memberships and managing
+them. - Assigning and changing roles. - Managing
 organization-level settings. - Managing organization-wide projects,
 activities, and assignments. - Reviewing entries and resolving conflicts
 across the organization.
@@ -1072,7 +1071,7 @@ This is the compact record of major decisions and their current status.
   D-003                   Keep `User` and            Accepted recommendation
                           `Membership` separate      
 
-  D-004                   Open self-registration     Confirmed decision
+  D-004                   Open self-registration     Superseded (D-078)
                           followed by administrator  
                           membership approval        
 
@@ -1222,7 +1221,7 @@ and the fields that moved with their before and after; actors survive
 anonymisation and the erasure is itself a row; read scope mirrors the
 entity's; one filtered `GET /v1/audit-log` ordered `at` then `id`; reads,
 refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread (§16.39, D-072). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). **D-072** — retention: a period is the age at which the instance deletes a row itself, distinct from expiry, soft deletion and erasure; the organisational record and the audit trail are never deleted; a session is deleted 30 days after it ends, with its refresh-token hashes; a notification is deleted a month after it is read and, unread, at the organisation's mailbox window, whichever comes first; an organisation may set that window (1–24 months, default 12) and the window for resolved assignment requests (6 months to never, default never), shortening taking effect at the next sweep after a confirmation; nothing else is configurable; and the mechanism that enforces all of it is left open by name (§16.39), which §16.40 then decides. **D-073** — the retention sweep: an in-process housekeeping run in the API server, once at boot after the schema guard and daily at 03:00 in the organisation's time zone, guarded by a non-blocking advisory lock of its own so one runner deletes at a time; 500 rows per transaction and at most 10,000 per class per run; the organisation's windows and the deployment's session limits read at the start of each run; a failed batch logged and left for the next run rather than blocking startup; one log line per run and no endpoint, audit row or change-feed entry; and two `notifications` indexes admitted by §16.37 rule 10, which now counts seven (§16.40). **D-074** — the report export: `format=json|csv` on the one report route, the grouped JSON unchanged and CSV carrying the detail rows those totals were summed from, both taken from one read-only `REPEATABLE READ` transaction so the file and the report cannot disagree; synchronous and streamed, capped at 100,000 rows and 60 seconds and refused as `413 EXPORT_TOO_LARGE` before the first byte, with no job queue, no stored artifact and nothing to expire; columns `workDate, memberName, memberId, project, activity, startedAt, durationSeconds, hours, approvalStatus` with `hours` rounded once to two decimals half-up, no address and no notes, and an erased member reading "Former member"; administrators only, coordinators keeping the JSON report; one audit row per started export with `action="export"` and the filters in `changes`, written before the stream, which amends §16.34's "a report leaves no audit row" and adds `export` to its vocabulary; and the import, recommended out of the MVP, put back into scope on the same day as a decision still to be taken (§16.41). **D-075** — the import: one `POST /v1/imports` taking a CSV of time entries against members, projects, activities and assignments that already exist, none of which the import creates; administrators only; every row checked by the routes' own rules (60–86,400 seconds, the five-minute future tolerance, assignment eligibility, the activity belonging to the stated project), the whole file applied or none of it, with `?dryRun=true` reporting the same problems and writing nothing; duplicates refused by the file's SHA-256 (`409 IMPORT_ALREADY_APPLIED`) and by member, work date, start and length, never silently skipped; 10,000 rows and 1 MiB within 60 seconds, refused as `413 IMPORT_TOO_LARGE`; the member is the author and the administrator the actor, with only `approved` and `not_required` rows accepted and the importer recorded as having asserted the approval; one `import` audit row per file and none per imported entry, which amends §16.34 rule 1; and no install-epoch bump, because an import only inserts (§16.42). **D-076** — counting for UI elements: one caller-scoped `GET /v1/me/counts` returning three integers — unread notifications, pending approvals in the caller's scope, and pending assignment requests awaiting the caller — each defined by the same predicate as the list it summarises, computed in one statement at read time and never stored or cached; `computedAt` for freshness; a key absent rather than zero when the caller has no such queue; the coordinator's badge as one number across all their projects; no count in any list body, resource or mutation, and a fourth counter a decision of its own; and no new index, the two queue counters running on the scan §16.36 rule 11 already accepts, so the performance inventory stays at seven (§16.43). **D-077** — the first-administrator bootstrap: one installation command run at the instance's own shell before the server first serves, writing the organisation row, one user and one active `administrator` membership in one transaction; it refuses while any active administrator exists and offers no `--force`; it adopts an existing address but refuses an anonymised one; it runs boot's migrator under boot's lock and leaves the credential to D-078 (§16.45); and it writes no audit row, amending §16.34 rule 1, because an installation has no authenticated caller (§16.44). **D-078** — the credential: there is none; an administrator issues a single-use enrolment grant for a named person, shown as a QR code or read aloud as twelve Crockford base32 characters (60 bits, HMAC-SHA256 at rest, unique on `code_hash`), live for 48 hours by default and configurable from 1 hour to 7 days, void after five attempts; redeemed at an unauthenticated `POST /v1/auth/enrol`, which mints a D-056 session and so keeps the token-minting routes at two; issued by an administrator for an approved membership only, by a volunteer for their own additional device, and — for the first administrator that D-077's installation command creates — by a console command rather than by the installation; no password, no email, no third party and no self-registration; sessions now idle out at 180 days and die absolutely at 400; the audit vocabulary gains `enrolment_issued` and `enrolled`; and the client's storage obligations — Keychain `ThisDeviceOnly`, Keystore, backup exclusion, no deep links — are part of the contract (§16.45). Gaps not yet raised by any
-section are tracked as backlog items B1–B20 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
+section are tracked as backlog items B1–B20 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated. **Amended 28 November 2026 (D-078, §16.45):** D-004 is superseded — there is no self-registration — and D-005's credential is settled as an administrator-issued enrolment grant, so both rows read as history.
 
 ## 13. Outstanding decisions and recommended order
 
@@ -3706,8 +3705,9 @@ record kept — is unchanged, but it is pseudonymisation and is now called that.
   legal-flavoured request.
 - The organisation's own terms have to carry a sentence the API cannot
   enforce: hours are retained, identity is not.
-- An anonymised person may re-register with the same address and be treated
-  as new, with no link to the old record. That linkage is a feature, not a
+- An anonymised person may return with the same address and be treated as new —
+  an administrator creates a fresh account, since nobody registers themselves
+  (§16.45, D-078) — with no link to the old record. That linkage is a feature, not a
   leak, and it is also an accepted loss of continuity.
 
 **Rejected alternatives.** Hard deletion of the person with their entries
@@ -7306,7 +7306,7 @@ have accounts. Two volunteers on a flaky connection each send the same
 assignment request twice, and the coordinator's queue shows four rows for two
 people. A restored backup leaves a grant whose `ended_by` is set and whose
 `ended_at` is not. Marisol is erased, and the placeholder address written over
-hers must not collide with a real volunteer who later registers. None of these
+hers must not collide with a real volunteer who later joins. None of these
 is a validation rule the API can be trusted to remember in every route: they
 are shapes. Either the database refuses the state or it keeps it for ever, and
 the difference is decided here, once, rather than in whichever handler was
@@ -7438,6 +7438,11 @@ made by a migration, a console or a future route nobody has written yet.
 | `notifications` | `id`, `recipient_id`, `type`, `subject_id`, `subject_version`, `created_at`, `read_at` | `type` in D-068's eleven; unique `(recipient_id, type, subject_id, subject_version)`; `recipient_id` foreign key `RESTRICT` | exactly once per act (D-068 rule 5), and a mailbox that cannot outlive the person it was addressed to |
 | `audit_log` | `id`, `at`, `actor_id`, `entity_type`, `entity_id`, `action`, `request_id`, `reason`, `changes` | `entity_type` in D-067's seven; `action` in D-067's eleven; `actor_id` foreign key `RESTRICT`; **no** foreign key on `entity_id`; `UPDATE` and `DELETE` revoked from the application role | insert-only is a privilege, not a promise (D-067 rule 3); the entity id is polymorphic, so no key can hold it |
 | `sessions` | as §16.23 sketched them | `user_id` foreign key `RESTRICT`; `revoked_at` as a tombstone; no membership check | a session outlives nothing and ends its own way; whether the membership is still active is a per-request check, not a column |
+| `enrolment_grants` | `id`, `user_id`, `issued_by_user_id`, `code_hash`, `created_at`, `expires_at`, `consumed_at`, `attempt_count` | unique `code_hash`; both user columns foreign key `RESTRICT`; `expires_at > created_at`; `attempt_count` between 0 and 5 | the row is a credential in transit (§16.45, D-078), so the engine holds its shape: a hash cannot repeat, the window must run forwards, and a grant cannot claim more attempts than the five that void it. What it cannot hold — that redemption consumes the row exactly once, and that an expired grant is refused — belongs to the redeeming statement, which does both in one transaction |
+
+**Amended 28 November 2026 (§16.45, D-078):** `enrolment_grants` joins the
+table. It is the one row here that is itself a credential in transit, and the
+one whose emptiness is the normal state — a live instance usually holds none.
 
 `instance_state` (§16.36) keeps the single-row check D-069 gave it and needs
 nothing further: its three columns are the schema version, the change counter
@@ -7897,7 +7902,7 @@ it delivers.
 | A per-row placeholder, `erased+<id>@invalid` | Unique by construction | Claims a uniqueness nothing needs, and puts the stable id in the field D-052 wanted emptied |
 | `NULL` instead of a sentinel | The cleanest semantics | Makes `email` nullable and gives authentication and every lookup a branch to forget |
 | A role-shaped tombstone ("Former volunteer", "Former coordinator") | More informative to a reader | Needs a role the user row does not have, and changes if a removed membership is ever restored |
-| A keyed hash of the destroyed address | Support can spot a re-registration | De-anonymisation under subpoena, and it contradicts D-052's "no link to the old record" |
+| A keyed hash of the destroyed address | Support can spot a return with the same address | De-anonymisation under subpoena, and it contradicts D-052's "no link to the old record" |
 | Audit each notification the erasure deletes | A count in the trail | Copies what she was told into the permanent record, and makes one delete two rules |
 | Keep the mailbox and anonymise `recipientId` | Nothing is destroyed | Personal messages outlive the erasure and the recipient id survives, so D-068 rule 9's reasoning collapses |
 
@@ -8920,10 +8925,10 @@ directory, or shared with another organisation's server.
 database. Three answers are available, and each of them fails in a way that
 is invisible until it matters.
 
-- *The first person to sign up becomes the administrator.* Self-registration
-  is open (§3.2), so the first person to find the host owns the
-  organisation's records — before anyone at the food bank has typed a
-  setting.
+- *The first person to create an account becomes the administrator.* That
+  needs an open registration route, which §3.2 no longer has (D-078, §16.45);
+  while it existed, the first person to find the host owned the organisation's
+  records before anyone at the food bank had typed a setting.
 - *A setup page, reachable until it is used.* The route has to exist on every
   installation and refuse for ever after the first use. It guards exactly one
   act, it is unauthenticated by necessity, and a weakness in it is a
@@ -9002,9 +9007,9 @@ error: this instance is already initialised — 1 active administrator exists.
    settings act, not a re-installation.
 
 4. **An existing address is adopted; an anonymised one is refused.** If a
-   `users` row already holds the address — a self-registration awaiting
-   approval, or someone who signed up before the operator ran the command —
-   its membership is activated with `role = 'administrator'` rather than a
+   `users` row already holds the address — an account created by hand and
+   awaiting approval, or one that predates the command — its membership is
+   activated with `role = 'administrator'` rather than a
    second user being inserted. If that row has `anonymised_at` set, the command
    refuses: §16.38 says an erased person has no credential and their identity
    is not resurrected, and the `erased@invalid` sentinel must never become an
