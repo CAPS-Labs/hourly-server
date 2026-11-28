@@ -1179,7 +1179,7 @@ transaction, carrying the actor, the entity, the action, the `requestId`
 and the fields that moved with their before and after; actors survive
 anonymisation and the erasure is itself a row; read scope mirrors the
 entity's; one filtered `GET /v1/audit-log` ordered `at` then `id`; reads,
-refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread (§16.39, D-072). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). **D-072** — retention: a period is the age at which the instance deletes a row itself, distinct from expiry, soft deletion and erasure; the organisational record and the audit trail are never deleted; a session is deleted 30 days after it ends, with its refresh-token hashes; a notification is deleted a month after it is read and, unread, at the organisation's mailbox window, whichever comes first; an organisation may set that window (1–24 months, default 12) and the window for resolved assignment requests (6 months to never, default never), shortening taking effect at the next sweep after a confirmation; nothing else is configurable; and the mechanism that enforces all of it is left open by name (§16.39). Gaps not yet raised by any
+refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread (§16.39, D-072). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). **D-072** — retention: a period is the age at which the instance deletes a row itself, distinct from expiry, soft deletion and erasure; the organisational record and the audit trail are never deleted; a session is deleted 30 days after it ends, with its refresh-token hashes; a notification is deleted a month after it is read and, unread, at the organisation's mailbox window, whichever comes first; an organisation may set that window (1–24 months, default 12) and the window for resolved assignment requests (6 months to never, default never), shortening taking effect at the next sweep after a confirmation; nothing else is configurable; and the mechanism that enforces all of it is left open by name (§16.39). **D-073** — the retention sweep: an in-process housekeeping run in the API server, once at boot after the schema guard and daily at 03:00 in the organisation's time zone, guarded by a non-blocking advisory lock of its own so one runner deletes at a time; 500 rows per transaction and at most 10,000 per class per run; the organisation's windows and the deployment's session limits read at the start of each run; a failed batch logged and left for the next run rather than blocking startup; one log line per run and no endpoint, audit row or change-feed entry; and two `notifications` indexes admitted by §16.37 rule 10, which now counts seven (§16.40). Gaps not yet raised by any
 section are tracked as backlog items B1–B19 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -2261,7 +2261,7 @@ The following items remain unresolved. They should be addressed before or during
 22. Decide whether project-less activity descriptions are stored separately from optional notes.
 23. Finalize required and optional profile fields and email-change verification behavior.
 24. **Entry submissions settled:** an approval-policy change applies only to submissions received after its effective time (§16.12, D-045). Still open: the effects of policy changes on pending assignment requests and other pending operations.
-25. Define notification retention and whether administrators can manage other users' notifications. **Administrator access settled 26 November 2026 — they cannot: a mailbox is the caller's own and no route takes another person's id (§16.35, D-068). Retention settled 28 November 2026 (§16.39, D-072): a month after reading capped by the organisation's mailbox window, that window when unread, never beyond 24 months, enforced by a sweep whose mechanism is still open.**
+25. Define notification retention and whether administrators can manage other users' notifications. **Administrator access settled 26 November 2026 — they cannot: a mailbox is the caller's own and no route takes another person's id (§16.35, D-068). Retention settled 28 November 2026 (§16.39, D-072): a month after reading capped by the organisation's mailbox window, that window when unread, never beyond 24 months, enforced by the in-process sweep D-073 decides (§16.40).**
 
 ### Priority 5 — API contract and implementation
 
@@ -2307,9 +2307,9 @@ Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), 
 2. **Counting for UI elements** — unread notifications and pending requests, among others. Deferred: figures are calculated in the API business layer and returned to the requests that need them, not derived from paginated list responses. No decision ID assigned yet.
 3. ~~**Anonymisation, revisited**~~ — **Resolved 28 November 2026 (§16.38, D-071).** D-052's trade was taken up on its own terms: erasure stays as one administrator act that pseudonymises the user row, the replacement name is "Former member", the address is one sentinel, the mailbox is emptied under the erasure's single row, and what erasure cannot protect is written down instead of promised away.
 4. ~~**Retention policy**~~ — **Resolved 28 November 2026 (§16.39, D-072).** The record and the audit trail are never deleted; a session goes 30 days after it ends; a notification goes a month after it is read or at the organisation's mailbox window, never beyond 24 months; and the organisation sets that window and the window for resolved assignment requests, nothing else. §16.38's legal gap is answered for the record by deciding that it has no period, and remains open for the jurisdiction and the basis.
-5. **The retention sweep** — the schedule, batching, locking and logging by which the periods in §16.39 are enforced. Deferred: §16.39 sets the policy and leaves the mechanism open by name, so until this item is settled the instance does not yet delete anything. No decision ID assigned yet.
+5. ~~**The retention sweep**~~ — **Resolved 28 November 2026 (§16.40, D-073).** An in-process run at boot and daily at 03:00 in the organisation's time zone, one runner at a time under its own advisory lock, 500 rows a transaction and 10,000 a class a run, failures logged rather than fatal, one log line per run and no API surface. Two indexes on `notifications` are the only schema it adds.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table, and §16.38 (D-071) closes the anonymisation review; §16.39 (D-072) then sets the retention periods, with the sweep that enforces them still open.
+All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B19), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24). The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table, and §16.38 (D-071) closes the anonymisation review; §16.39 (D-072) then sets the retention periods and §16.40 (D-073) the sweep that enforces them.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -6789,7 +6789,7 @@ HTTP/1.1 404 Not Found
 item 25)~~ — settled 28 November 2026 (§16.39, D-072): a read notification is
 deleted a month after it is read or at the organisation's mailbox window,
 whichever comes first, an unread one at that window, and the mechanism that
-enforces both is left open there; whether
+enforces both is D-073's (§16.40); whether
 `since` and `until` bound `createdAt` or `readAt`, which
 §16.21 leaves to the contract; marking a notification unread, deliberately
 absent from the MVP; a "seen in the list" state distinct from read; whether
@@ -6939,11 +6939,14 @@ a restore is visible to every client.**
    can drop a column as easily as a backward one. The real undo is the restore,
    which is why it is rehearsed.
 
-10. **Five performance indexes and four uniqueness rules, and no others.**
+10. **Seven performance indexes and four uniqueness rules, and no others.**
     Each index is named to the query that forces it; the four unique rows are
     rules the engine enforces, not tuning knobs. **Amended 27 November 2026
     (§16.37, D-070):** the inventory gained three uniqueness constraints when
-    the tables were constrained; the performance indexes remain five.
+    the tables were constrained. **Amended 28 November 2026 (§16.40, D-073):**
+    the retention sweep reads the whole of `notifications` on every run, so two
+    indexes are admitted for a full-table scan rather than a guess about a
+    filter — the measurement rule below met in advance, not excepted from.
 
 | Index or constraint | Serves | Why it is forced |
 |---|---|---|
@@ -6952,6 +6955,8 @@ a restore is visible to every client.**
 | `audit_log (entity_type, entity_id, at DESC, id DESC)` | one record's history (§16.34) | the common question is "what happened to this entry", not "what happened in this organisation" |
 | `audit_log (at DESC, id DESC)` | the organisation's trail order (§16.34) | an insert-only table grows without bound; an unfiltered read must not sort it |
 | `notifications (recipient_id, created_at DESC, id DESC)` | the mailbox (§16.35, §16.21) | one person's rows, newest first; `unreadOnly` filters rows this index has already narrowed |
+| `notifications (created_at)` | the retention sweep (§16.40): the unread clock and the window cap | the sweep reads every notification on every run, so this is a full-table range read rather than a filtered list; without it each daily run scans the largest growing table, at any instance size |
+| `notifications (read_at)` **partial** `WHERE read_at IS NOT NULL` | the sweep's read clock (§16.40) | only read rows have that clock, and the partial predicate keeps unread rows — the majority, since most notifications are never opened — out of an index that never needs them |
 | `notifications (recipient_id, type, subject_id, subject_version)` **unique** | exactly once per act (§16.35 rule 5) | the rule is enforced by the engine or it is not enforced. `subject_version` is `0`, never null, for the five request types: a unique index treats nulls as distinct, so a null there would let the same request be announced twice |
 | `memberships (user_id)` **unique, partial** `WHERE status <> 'removed'` | one live membership per person (§16.37 answer 1) | a removed row is retained (D-052) and a rejoin adds a new one, so the predicate, not the column, is what makes a person have one membership at a time |
 | `users (lower(email))` **unique, partial** `WHERE anonymised_at IS NULL` | a real address is never blocked by an anonymised placeholder (D-052's accepted cost) | case-folded because the same address in two cases is one address; partial because the placeholder must be allowed to repeat |
@@ -7902,14 +7907,12 @@ everything else is fixed by the software.
    keep. Lengthening restores nothing — a window that was six months for a
    year leaves a year of gaps, and no setting fills them.
 
-9. **The mechanism is not decided here.** How the sweep runs — its schedule,
-   its batching, the lock it takes (D-069's boot advisory lock is the obvious
-   candidate), where it logs, whether it runs in-process — is left open by
-   name and taken up as its own decision. Until it exists, rules 4 to 6 are
-   policy the instance does not yet enforce, and this section says so rather
-   than implying a job nobody built. One consequence is honest arithmetic: a
-   period is evaluated at the sweep, so a row can outlive its period by up to
-   one sweep interval.
+9. **The mechanism is decided in §16.40.** This rule left it open by name when
+   D-072 was written; D-073 closes it: an in-process run at boot and daily at
+   03:00 in the organisation's time zone, bounded batches, one runner at a time
+   under its own advisory lock. The arithmetic this rule named stands, and is
+   now exact rather than unknown: a row can outlive its period by up to one run
+   interval, and longer if runs fail.
 
 10. **Deletions by retention are not acts.** The sweep writes no `audit_log`
     row and no `changeSeq` entry, because the trail records what people did
@@ -7971,8 +7974,9 @@ everything else is fixed by the software.
   approved holds an address and a name for as long as the instance runs, and
   nothing in this decision ages it out.
 
-**Left open.** How the sweep is built (rule 9; the §16 head carries it as an
-item of its own); the growth answer for a trail that is never deleted, and
+**Left open.** Whether the sweep's schedule and caps should ever be
+configurable, which D-073 decides as constants; the growth answer for a trail
+that is never deleted, and
 whether an archival tier is the same work as an archived-project purge; whether
 the catalogue grows beyond two classes, archived projects being the one
 organisations will name; whether a membership that is never approved should age
@@ -7989,6 +7993,138 @@ retention in part: two classes, with floors, and nothing that carries the
 record. It amends §16.19's matching rejected alternative and its "left open"
 list, §16.35's "left open" list and its B10 note, §16.23 rule 9's device list,
 and the B7 row in §17.
+
+------------------------------------------------------------------------
+
+## 16.40 The retention sweep: one runner, bounded batches, a log line
+
+**Confirmed decision (D-073) — 28 November 2026.**
+
+D-072 set the periods and left the mechanism open by name, because a period
+nobody enforces is a promise about a procedure rather than a fact about the
+data. This decides the procedure: a housekeeping run inside the API server that
+catches up at boot, runs once a day, deletes in bounded batches and cannot run
+twice at once. It adds no deployment unit, no endpoint and no setting — only the
+two indexes its deletes need.
+
+1. **It runs in the API server, at boot and once a day.** Started with the
+   process, after the schema guard and after migrations; it runs once at
+   startup, then every 24 hours at 03:00 in the organisation's time zone
+   (D-050's row carries it). The boot run is the point: a week of downtime
+   costs a week of delay, not a week of retention. Nothing else in the
+   deployment changes — no worker, no cron entry, no second container.
+
+2. **One run at a time, by lock, never by waiting.** A non-blocking
+   `pg_try_advisory_lock` on a key of its own — not D-069's migration key, so a
+   migration and a sweep can never be mistaken for each other — is held for
+   the duration. A second process, or a replica restarting mid-run, fails the
+   try, logs `skipped, lock held` at warn level and keeps serving; a blocking
+   lock would queue request handling behind a delete.
+
+3. **Bounded batches, committed as they go.** 500 rows per transaction,
+   committed between batches, at most 10,000 rows per class per run. A
+   neglected instance therefore converges over a few runs instead of holding
+   one long transaction over its largest table. Rows beyond the cap wait for
+   the next run, and there is no "run now" button to add without reopening
+   this.
+
+4. **Three predicates, no new columns.** A session is deleted when its end
+   instant — the earliest of its revocation and its two limits, computed per
+   row from the columns §16.37 already defines — is 30 days past; sessions are
+   one row per sign-in, so that class is a scan and gets no index. A
+   notification is deleted when `now()` has reached
+   `LEAST(read_at + interval '1 month', created_at + interval 'N months')`,
+   with the second term alone for a row never read. A request that is no
+   longer pending is deleted when `decided_at + interval 'N months'` has
+   passed, and never while `status = 'pending'`.
+
+5. **Month arithmetic is absolute, not local.** Periods are `timestamptz`
+   arithmetic from the stored instants, so a month is 30 or 31 days in its
+   turn and no row's death depends on a daylight-saving transition. The
+   organisation's time zone decides only the 03:00 trigger.
+
+6. **The settings are read at the start of each run.** The organisation's two
+   windows and the deployment's session limits are read when the run begins,
+   not cached at boot, so a confirmed change takes effect at the next sweep by
+   construction, and a shortened session limit cannot leave rows the sweep
+   would never look for. The confirmation text for a shortened window
+   therefore says "by this time tomorrow", never "immediately".
+
+7. **Failures never block startup.** A failed batch logs at error level and
+   abandons that class for the run; the rows remain for the next one, and the
+   boot run's failure is logged and skipped rather than fatal. A delete bug
+   must not become an outage, and the cost is that a permanently failing sweep
+   is indistinguishable from a quiet one until someone reads the log.
+
+8. **Two indexes, and the inventory grows to seven.** `notifications
+   (created_at)` and a partial `notifications (read_at) WHERE read_at IS NOT
+   NULL`. The sweep reads the whole of the largest growing table on every run,
+   so this is not a guess about a filter — it is the difference between a
+   daily full scan and a daily range read at any instance size. §16.37 rule 10
+   is amended to admit them. No session index is added: that table grows by
+   one row per sign-in.
+
+9. **One log line per run, and nothing else reports it.** Started at, counts
+   per class, duration, rows left over the cap, and whether the lock was held —
+   info on a clean run, warn when skipped, error when a class failed. There is
+   no metric endpoint, no administrator screen and no route that reports on
+   housekeeping: retention is an operational fact of the instance, not part of
+   its API.
+
+10. **No contract surface at all.** No setting beyond the two windows D-072
+    already adds, no endpoint, no audit row, no `changeSeq` entry (D-072 rule
+    10). The only visible effect is that rows stop appearing in live lists, and
+    a list never claimed completeness over time to begin with.
+
+11. **It converges; it does not run on time.** A restore resurrects rows the
+    sweep had deleted, and the next run deletes them again. Downtime delays
+    every period by its length, and a row can outlive its period by up to one
+    run interval — more if runs keep failing. The guarantee is eventual
+    enforcement, and the record says so rather than pretending to a timer.
+
+**Considered and rejected.**
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| **In-process run at boot and daily, one runner by lock, bounded batches (recommended)** | No new deployment unit, a boot catch-up that repairs downtime for free, and deletes that never hold a long transaction | Housekeeping that dies with the server, and a stalled ticker visible only in the log |
+| A separate worker, cron entry or systemd timer | The sweep never competes with request traffic, and can be restarted independently | A second thing for every operator to run, and a job that stops is invisible with no boot catch-up |
+| Lazy deletion: filter expired rows out of reads, delete when touched | No job and the least code | Data never leaves storage unless someone touches it, so the periods are cosmetic, and the retention predicate leaks into every session check and notification list |
+| `pg_cron` | The database runs it without the application | An extension on the operator's PostgreSQL that D-069 never promised, and a schedule that becomes database configuration |
+| A blocking advisory lock | The run is guaranteed to happen | A request-serving process queues behind a delete, and a crashed holder stalls startup |
+| One transaction for the whole run | The simplest code | A long lock over the largest table on a live instance, and a failure deletes nothing rather than most of it |
+| A "run now" endpoint | An operator can force convergence | A second path into the same deletes, with its own authorization, rate limit and audit question, for a job that runs tomorrow anyway |
+
+**Accepted costs.**
+
+- **An in-process sweep dies with the server.** An instance that never restarts
+  never notices a ticker that stopped, and nothing alerts on it.
+- **The caps cannot be hurried.** A neglected instance converges over days, and
+  the absence of a forced run is a decision, not an omission.
+- **03:00 is a guess about quiet hours**, and an organisation that changes time
+  zone moves its own schedule silently.
+- **A failed sweep looks exactly like nothing to delete.** The log line is the
+  only witness, and nobody is paged for it.
+- **Deleted requests leave dangling audit references.** The trail keeps rows
+  whose `entity_id` names a request that is gone — already the trail's accepted
+  shape, since `entity_id` has no foreign key, now happening every day.
+- **The first run competes with the boot it shares**, working through the
+  largest table while the instance serves its first requests.
+- **The two indexes cost every notification insert** so that one daily read can
+  be a range instead of a scan.
+
+**Left open.** Whether the schedule and the caps should ever be configurable,
+which this decides as constants; whether an administrator should ever see "last
+ran, deleted N", which would be a contract surface this decision does not
+create; the exact SQL and column names, which are implementation; and whether
+the archival tier D-072 left open needs a runner of its own, which is that
+decision's question rather than this one.
+
+**Resolves and amends.** It closes the sweep item at the head of §16 and the
+deferral in §16.39 rule 9. It amends §16.37 rule 10 and its inventory, from
+five performance indexes to seven; §16.39's "left open" list, whose first item
+is this decision; the B10 row in §17; and the §12 register. It leaves D-072's
+periods untouched: nothing here decides how long anything lives, only who
+deletes it and when.
 
 ------------------------------------------------------------------------
 
@@ -8013,7 +8149,7 @@ Backlog items carry **B** identifiers, not **D** identifiers, because nothing ha
 | **B7** | Retention and erasure: member offboarding, organisation deletion, personal-data export and erasure versus audit retention, archived-project lifetime | **Launch** | **Resolved — D-052 (§16.19).** The record is retained, the person is anonymised: entries and grants are never deleted on erasure, the user row is anonymised in place, archived projects never expire, `GET /v1/me/export` is self-service, and there is no organisation-purge endpoint. Reviewed 28 November 2026 (§16.38, D-071): erasure stays as one administrator act, with the tombstone, the address sentinel and the limits on what it protects now fixed. Retention set 28 November 2026 (§16.39, D-072): the record and the trail are never deleted, sessions go 30 days after they end, notifications a month after reading or at the organisation's mailbox window, and two classes — that window and resolved requests — are the organisation's to set |
 | **B8** | List contract for every other collection: notifications, assignment requests, users, audit log — same `items`/`nextCursor`/`pageSize` shape, their filters and sorts | **Contract** | **Resolved — D-054 (§16.21).** Every collection uses the D-040 envelope with one fixed total order each, cursors bound to their collection and filter set (`CURSOR_QUERY_MISMATCH` otherwise), no `total` in any list body, and prefix-only `q` on users |
 | **B9** | Reporting and totals: which statuses count as hours, period boundaries and week start, reports as endpoints or client aggregation | **Feature** | **Resolved — D-066 (§16.33).** `approved` and `not_required` count; `pending`, `rejected` and deleted entries do not; totals are summed at read time from `workDate` in the organisation's time zone, weeks start on Sunday, and one grouped report route returns `seconds` and `entryCount` per row |
-| **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery. §16.29 (D-062) records that an advisory conflict raises no notification, so this list has one fewer entry, and §16.31 (D-064) keeps notifications out of the change feed. **Resolved — D-068 (§16.35).** In-app only, with rows written in the act's own transaction, one per recipient and none for the actor's own act. Eleven fixed types and an explicit raises-nothing list; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; there is no administrator access; read state is neither audited nor in the change feed. Retention settled 28 November 2026 (§16.39, D-072), with the mechanism that enforces it still open |
+| **B10** | Notification transport: in-app only or also email; delivery on timer stop, request cancellation and restore; read/unread and bulk mark-read semantics | **Feature** | §6.1 covers retention, not delivery. §16.29 (D-062) records that an advisory conflict raises no notification, so this list has one fewer entry, and §16.31 (D-064) keeps notifications out of the change feed. **Resolved — D-068 (§16.35).** In-app only, with rows written in the act's own transaction, one per recipient and none for the actor's own act. Eleven fixed types and an explicit raises-nothing list; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; there is no administrator access; read state is neither audited nor in the change feed. Retention settled 28 November 2026 (§16.39, D-072), and the sweep that enforces it decided 28 November 2026 (§16.40, D-073) |
 | **B11** | Audit trail contract: what is recorded, who may read it, immutability, how it is exposed | **Feature** | **Resolved — D-067 (§16.34).** One insert-only row per accepted write, written in the write's own transaction and never purged: actor, entity, action, `requestId`, an optional `reason` and the fields that moved with their before and after. Actors survive anonymisation and the erasure is itself a row; read scope mirrors the entity's; one filtered `GET /v1/audit-log` orders `at` then `id`; reads, refusals and replays leave no row |
 | **B12** | Mutation response shapes: whether writes return the updated resource, and whether archival returns counts of what it affected | **Contract** | **Resolved — D-055 (§16.22).** Every mutation returns the changed resource in its read shape; creates are `201` + `Location`, replays `200` + `Idempotency-Replay` (by client id or by the uniqueness constraint), `409` keeps D-049's `current` copy, no mutation returns counts, and archival's impact comes from a confirmation read. Deletion is the only `204` |
 | **B13** | Rate limits, payload caps and `requestId` propagation: limits, `details.errors` array caps, where the request ID originates and how it reaches logs | **Contract** | **Resolved — D-053 (§16.20).** Every response carries a server-minted UUIDv7 `X-Request-Id`; an inbound id is never adopted; an optional `X-Client-Request-Id` is logged and echoed only; token buckets of 300/min (burst 60) per user and 60/min (burst 10) per address; a 1 MiB body cap with `413`; `details.errors` capped at 100 with `truncated` |
