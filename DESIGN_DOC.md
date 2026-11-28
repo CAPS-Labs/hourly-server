@@ -3621,7 +3621,7 @@ record kept — is unchanged, but it is pseudonymisation and is now called that.
 
 | Option | What it does for Marisol | What it costs |
 |---|---|---|
-| **Retain the record, anonymise the person (recommended)** | Identity gone, hours and approval trail intact | Not a complete erasure: hours remain, attributable to an anonymous id |
+| **Retain the record, anonymise the person (recommended)** | Identity gone, hours and approval trail intact | Not a complete erasure: hours remain, attributable to a pseudonymous `id` that still marks one person's work (§16.38) |
 | **Hard delete the user and cascade her entries** | Complete removal | Reported hours vanish, the funder's sample no longer reconciles, other people's reviews point at nothing |
 | **Hard delete the user, keep entries with `createdBy` nulled** | Complete removal of the person | The record can no longer say who submitted or approved it, which is the guarantee D-041 and §16.16 exist to give |
 | **Refuse erasure until a retention period expires** | Nothing | Defensible only with a stated period and a legal basis, and the MVP has neither |
@@ -3896,7 +3896,7 @@ mistake is a refused cursor instead of a silent misreading.
 7. **The users list is administrator-only and hides what it need not show.**
    `q` matches a display name by prefix and an email address exactly — no
    free-text search in the MVP. An anonymised person appears under their
-   stable `id` with `anonymisedAt` set, the constant name "Former member" and the email withheld (D-052, §16.38), so history stays coherent without inventing a status value D-052 did not define; the `status` filter is now the three-value list of §16.37 (D-070). Coordinators reach people through their project's
+   stable `id` with `anonymisedAt` set, the constant name "Former member" and the email withheld — rendered `null`, never the stored sentinel (D-052; §16.38) — so history stays coherent without inventing a status value D-052 did not define; the `status` filter is now the three-value list of §16.37 (D-070). Coordinators reach people through their project's
    assignments; a coordinator-facing directory would be a filter on this same
    route, not a fifth shape.
 8. **The audit list's shape is fixed here; its contents and its readers are
@@ -7574,8 +7574,18 @@ supply named as the operator's to decide.**
    that travels with it: **any query that resolves a person by address
    carries `anonymised_at IS NULL`**, the same predicate as the index. With a
    constant, `WHERE email = …` without it can match many rows and return the
-   wrong person. No API response echoes the sentinel: the users list withholds
-   the address and no route returns it for an erased row.
+   wrong person.
+
+   **The sentinel never leaves storage.** A read of an erased user renders
+   `email` as `null`, never as `erased@invalid`, on every route that can see
+   one: the users list, a single-user read and the erasure's own response. The
+   erasure answers `200` with the anonymised user resource and no body of its
+   own (D-055 — erasure changes a resource, it is not one of D-055's
+   deletions), so that answer is simply the user's read shape: `id`,
+   `displayName: "Former member"`, `anonymisedAt` and `email: null`. A client
+   therefore cannot display the filler as an address or write it back as one.
+   This is a rendering rule, not a nullable column: `email` stays `NOT NULL`,
+   and no write path accepts a null address.
 
 3. **The claim is pseudonymisation, and three limits are named.**
    §16.19's case paragraph promises that "nothing left in the instance says
