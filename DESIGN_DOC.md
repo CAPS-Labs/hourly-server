@@ -516,8 +516,7 @@ Illustrative representation:
 }
 ```
 
-This is illustrative only; exact field names and whether both
-`activityDescription` and `notes` exist remain open.
+This is illustrative only. The field names are since settled: the entry's free-text field is `notes`, and a project-less entry carries a `description` in place of an activity (§16.37, D-070).
 
 ### 5.8 Assignment changes and offline devices
 
@@ -940,9 +939,7 @@ This example intentionally does not invent start and end timestamps.
 }
 ```
 
-The separate `activityDescription` field is illustrative. It remains
-undecided whether this is distinct from notes or whether the final
-contract uses a different shape.
+The separate `activityDescription` field is illustrative and did not survive: the entry's free-text field is `notes`, and a project-less entry carries a `description` where an activity would be (§16.37, D-070).
 
 ### 10.4 A pending project assignment
 
@@ -1179,7 +1176,7 @@ transaction, carrying the actor, the entity, the action, the `requestId`
 and the fields that moved with their before and after; actors survive
 anonymisation and the erasure is itself a row; read scope mirrors the
 entity's; one filtered `GET /v1/audit-log` ordered `at` then `id`; reads,
-refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread (§16.39, D-072). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). **D-072** — retention: a period is the age at which the instance deletes a row itself, distinct from expiry, soft deletion and erasure; the organisational record and the audit trail are never deleted; a session is deleted 30 days after it ends, with its refresh-token hashes; a notification is deleted a month after it is read and, unread, at the organisation's mailbox window, whichever comes first; an organisation may set that window (1–24 months, default 12) and the window for resolved assignment requests (6 months to never, default never), shortening taking effect at the next sweep after a confirmation; nothing else is configurable; and the mechanism that enforces all of it is left open by name (§16.39). **D-073** — the retention sweep: an in-process housekeeping run in the API server, once at boot after the schema guard and daily at 03:00 in the organisation's time zone, guarded by a non-blocking advisory lock of its own so one runner deletes at a time; 500 rows per transaction and at most 10,000 per class per run; the organisation's windows and the deployment's session limits read at the start of each run; a failed batch logged and left for the next run rather than blocking startup; one log line per run and no endpoint, audit row or change-feed entry; and two `notifications` indexes admitted by §16.37 rule 10, which now counts seven (§16.40). **D-074** — the report export: `format=json|csv` on the one report route, the grouped JSON unchanged and CSV carrying the detail rows those totals were summed from, both taken from one read-only `REPEATABLE READ` transaction so the file and the report cannot disagree; synchronous and streamed, capped at 100,000 rows and 60 seconds and refused as `413 EXPORT_TOO_LARGE` before the first byte, with no job queue, no stored artifact and nothing to expire; columns `workDate, memberName, memberId, project, activity, startedAt, durationSeconds, hours, approvalStatus` with `hours` rounded once to two decimals half-up, no address and no notes, and an erased member reading "Former member"; administrators only, coordinators keeping the JSON report; one audit row per started export with `action="export"` and the filters in `changes`, written before the stream, which amends §16.34's "a report leaves no audit row" and adds `export` to its vocabulary; and the import, recommended out of the MVP, put back into scope on the same day as a decision still to be taken (§16.41). **D-075** — the import: one `POST /v1/imports` taking a CSV of time entries against members, projects, activities and assignments that already exist, none of which the import creates; administrators only; every row checked by the routes' own rules (60–86,400 seconds, the five-minute future tolerance, assignment eligibility, the activity belonging to the stated project), the whole file applied or none of it, with `?dryRun=true` reporting the same problems and writing nothing; duplicates refused by the file's SHA-256 (`409 IMPORT_ALREADY_APPLIED`) and by member, work date, start and length, never silently skipped; 10,000 rows and 1 MiB within 60 seconds, refused as `413 IMPORT_TOO_LARGE`; the member is the author and the administrator the actor, with only `approved` and `not_required` rows accepted and the importer recorded as having asserted the approval; one `import` audit row per file and none per imported entry, which amends §16.34 rule 1; and no install-epoch bump, because an import only inserts (§16.42). **D-076** — counting for UI elements: one caller-scoped `GET /v1/me/counts` returning three integers — unread notifications, pending approvals in the caller's scope, and pending assignment requests awaiting the caller — each defined by the same predicate as the list it summarises, computed in one statement at read time and never stored or cached; `computedAt` for freshness; a key absent rather than zero when the caller has no such queue; the coordinator's badge as one number across all their projects; no count in any list body, resource or mutation, and a fourth counter a decision of its own; and no new index, the two queue counters running on the scan §16.36 rule 11 already accepts, so the performance inventory stays at seven (§16.43). Gaps not yet raised by any
+refusals and replays are not audited (§16.34). **D-068** — notifications: in-app only; one row per recipient written in the act's own transaction, with the recipient set resolved at write time and the actor never notified; eleven fixed types and an explicit raises-nothing list; exactly once per act by a uniqueness constraint; unread is `readAt`; marking read is one bulk call answering `{"updated": n}` with no rows; deleting is a hard `204` of the caller's own row; no administrator access; reads and deletes are neither audited nor in the change feed; retention settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread (§16.39, D-072). **D-069** — schema, migrations and indexes: PostgreSQL, one stored `local_anchor` (the work's local date and time) replacing the read-time derivation and the two-column projection, so the list order, the date filter and the cursor read one value; migrations that only add, fill and later remove, behind a schema-version guard that refuses to start against a newer database, an advisory lock at boot and a rehearsed restore; five performance indexes, each named to the query that forces it, plus four uniqueness constraints (§16.37 carries the per-table inventory); and an install epoch in every cursor, bumped on a restore, so clients re-sync instead of waiting forever (§16.36). **D-070** — the tables and their constraints: a membership's status is `active`, `inactive` or `removed`, with at most one non-removed membership per person and the role on the membership; a project's name need not be unique; a coordinator is a `project_coordinators` grant and never an assignment type; `time_entries` stores no `project_id`, its activity being its project claim, so `projectId` is derived on read and not accepted on write; the coordinator edit switch defaults off; one person may hold one pending assignment request per project; the entry's field is `notes`; and anonymisation is handed to a review of its own. Its per-table constraints give the engine the ones it can hold — the activity or the project-less description, the two entry shapes, the decision fields agreeing with `approval_status`, the all-or-none deletion triple — plus four uniqueness constraints, and name the rules it cannot (overlap, eligibility, self-approval, the last administrator, notification fan-out, audit immutability by privilege rather than trigger) with the layer that does (§16.37). **D-071** — anonymisation on its own terms: erasure stays as one administrator's act against one person, the user row pseudonymised in place as "Former member" at `erased@invalid`, the work and its attributions intact, the erasure's own row naming the destroyed fields without their values, the mailbox emptied under that row and not audited per notification, the claim corrected from anonymity to pseudonymisation, and the jurisdiction, lawful basis and retention period the record cannot supply written down as the operator's to decide (§16.38). **D-072** — retention: a period is the age at which the instance deletes a row itself, distinct from expiry, soft deletion and erasure; the organisational record and the audit trail are never deleted; a session is deleted 30 days after it ends, with its refresh-token hashes; a notification is deleted a month after it is read and, unread, at the organisation's mailbox window, whichever comes first; an organisation may set that window (1–24 months, default 12) and the window for resolved assignment requests (6 months to never, default never), shortening taking effect at the next sweep after a confirmation; nothing else is configurable; and the mechanism that enforces all of it is left open by name (§16.39), which §16.40 then decides. **D-073** — the retention sweep: an in-process housekeeping run in the API server, once at boot after the schema guard and daily at 03:00 in the organisation's time zone, guarded by a non-blocking advisory lock of its own so one runner deletes at a time; 500 rows per transaction and at most 10,000 per class per run; the organisation's windows and the deployment's session limits read at the start of each run; a failed batch logged and left for the next run rather than blocking startup; one log line per run and no endpoint, audit row or change-feed entry; and two `notifications` indexes admitted by §16.37 rule 10, which now counts seven (§16.40). **D-074** — the report export: `format=json|csv` on the one report route, the grouped JSON unchanged and CSV carrying the detail rows those totals were summed from, both taken from one read-only `REPEATABLE READ` transaction so the file and the report cannot disagree; synchronous and streamed, capped at 100,000 rows and 60 seconds and refused as `413 EXPORT_TOO_LARGE` before the first byte, with no job queue, no stored artifact and nothing to expire; columns `workDate, memberName, memberId, project, activity, startedAt, durationSeconds, hours, approvalStatus` with `hours` rounded once to two decimals half-up, no address and no notes, and an erased member reading "Former member"; administrators only, coordinators keeping the JSON report; one audit row per started export with `action="export"` and the filters in `changes`, written before the stream, which amends §16.34's "a report leaves no audit row" and adds `export` to its vocabulary; and the import, recommended out of the MVP, put back into scope on the same day as a decision still to be taken (§16.41). **D-075** — the import: one `POST /v1/imports` taking a CSV of time entries against members, projects, activities and assignments that already exist, none of which the import creates; administrators only; every row checked by the routes' own rules (60–86,400 seconds, the five-minute future tolerance, assignment eligibility, the activity belonging to the stated project), the whole file applied or none of it, with `?dryRun=true` reporting the same problems and writing nothing; duplicates refused by the file's SHA-256 (`409 IMPORT_ALREADY_APPLIED`) and by member, work date, start and length, never silently skipped; 10,000 rows and 1 MiB within 60 seconds, refused as `413 IMPORT_TOO_LARGE`; the member is the author and the administrator the actor, with only `approved` and `not_required` rows accepted and the importer recorded as having asserted the approval; one `import` audit row per file and none per imported entry, which amends §16.34 rule 1; and no install-epoch bump, because an import only inserts (§16.42). **D-076** — counting for UI elements: one caller-scoped `GET /v1/me/counts` returning three integers — unread notifications, pending approvals in the caller's scope, and pending assignment requests awaiting the caller — each defined by the same predicate as the list it summarises, computed in one statement at read time and never stored or cached; `computedAt` for freshness; a key absent rather than zero when the caller has no such queue; the coordinator's badge as one number across all their projects; no count in any list body, resource or mutation, and a fourth counter a decision of its own; and no new index, the two queue counters running on the scan §16.36 rule 11 already accepts, so the performance inventory stays at seven (§16.43). Gaps not yet raised by any
 section are tracked as backlog items B1–B20 in §17; they carry no D-IDs until decided. The **D-032** row above is now answered: see D-041. This register should be reconciled with §§15–16 when the document is next consolidated.
 
 ## 13. Outstanding decisions and recommended order
@@ -1504,9 +1501,9 @@ Other coordinators do not need to be notified about these changes under the curr
 
 6.4 Notification retention and administration
 
-Users may delete their own notifications, permanently (§16.35, D-068). Whether organization administrators can manage another user's notifications remains undecided. **Resolved 26 November 2026 — no: a mailbox is its owner's, and no route takes another person's id (§16.35, D-068).**
+Users may delete their own notifications, permanently (§16.35, D-068). Whether organization administrators can manage another user's notifications was undecided; **resolved 26 November 2026 — no: a mailbox is its owner's, and no route takes another person's id (§16.35, D-068).**
 
-The notification retention period is settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread, capped at 24 months (§16.39, D-072). The automatic cleanup that enforces it is not: the sweep's schedule and batching are left open by name.
+The notification retention period is settled 28 November 2026 — a month after reading, the organisation's mailbox window when unread, capped at 24 months (§16.39, D-072). The automatic cleanup that enforces it is settled too: an in-process run at boot and daily at 03:00 in the organisation's time zone, bounded batches, one runner under its own advisory lock (§16.40, D-073).
 
 7. Organization settings introduced or clarified
 
@@ -1551,7 +1548,7 @@ Identifying who created or ended an assignment, and recording reasons for assign
 
 The following remain undecided:
 
-- ~~Notification retention period and automatic cleanup.~~ **Retention settled 28 November 2026 (§16.39, D-072); the cleanup mechanism remains open.**
+- ~~Notification retention period and automatic cleanup.~~ **Retention settled 28 November 2026 (§16.39, D-072), and the cleanup mechanism with it (§16.40, D-073).**
 - Whether organization administrators may manage other users' notifications. **Resolved 26 November 2026 — no (§16.35, D-068).**
 - Detailed notification settings and presentation.
 - Whether coordinator notifications for direct volunteer self-assignment and self-removal should be mandatory or configurable.
@@ -2183,7 +2180,7 @@ The existing conceptual resource inventory should account for the following conc
 - **Audit history:** Must preserve relevant edits and prior approval/rejection decisions.
 - **Assignment history:** Ended assignments remain historical records; reassignment creates a new record.
 
-The exact physical data model remains open. In particular, the design has not finalized whether volunteer and coordinator assignments share one generalized assignment resource, whether conflict information is stored as a separate resource, or how audit history is represented in the database.
+The exact physical data model was open here and is settled: §16.36 (D-069) fixes the engine, the tables, the indexes and the migrations, and §16.37 (D-070) the constraints — coordinator assignments are `project_coordinators` grants rather than an assignment type, conflict information is computed rather than stored (§16.29), and audit history is an insert-only table (§16.34).
 
 ---
 
@@ -2309,7 +2306,7 @@ Retrieval is specified end to end: live pages (§16.1), a total order (§16.3), 
 4. ~~**Retention policy**~~ — **Resolved 28 November 2026 (§16.39, D-072).** The record and the audit trail are never deleted; a session goes 30 days after it ends; a notification goes a month after it is read or at the organisation's mailbox window, never beyond 24 months; and the organisation sets that window and the window for resolved assignment requests, nothing else. §16.38's legal gap is answered for the record by deciding that it has no period, and remains open for the jurisdiction and the basis.
 5. ~~**The retention sweep**~~ — **Resolved 28 November 2026 (§16.40, D-073).** An in-process run at boot and daily at 03:00 in the organisation's time zone, one runner at a time under its own advisory lock, 500 rows a transaction and 10,000 a class a run, failures logged rather than fatal, one log line per run and no API surface. Two indexes on `notifications` are the only schema it adds.
 
-All other items in §15.12 remain unchanged and unresolved. Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B20), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24) — and B20, the import, added and resolved on 28 November 2026 by D-075 (§16.42), so nothing in that backlog blocks drafting. The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table, and §16.38 (D-071) closes the anonymisation review; §16.39 (D-072) then sets the retention periods and §16.40 (D-073) the sweep that enforces them. §16.41 (D-074) then decides the report export — one read serialised as grouped JSON or detail CSV, administrator-only, synchronous and capped, and one audit row per file — and puts the import back into the MVP's scope, required and undecided; §16.42 (D-075) then decides it, and the backlog's last item closes; §16.43 (D-076) then settles the counting the head of §16 had deferred, closing that list as well.
+All other items in §15.12 remain unchanged and unresolved, except the ones a §16 decision has since closed: item 25's notification retention and its cleanup (§16.39, §16.40) and item 28's table-by-table schema (§16.37). Gaps that never appeared in §§13–15.12 at all are tracked separately as a decision backlog in §17 (B1–B20), which also flags which of them block the API contract. That backlog is now the active sequence, with B3 deferred by scope (D-048, §16.15) and every contract-blocking item settled: B1 (§16.13), B2 (§16.14), B4–B7 (§16.16–§16.19), B8 (§16.21), B12 (§16.22), B13 (§16.20), B14 (§16.23) and B16 (§16.24) — and B20, the import, added and resolved on 28 November 2026 by D-075 (§16.42), so nothing in that backlog blocks drafting. The entry-lifecycle questions not queued above are closed: the state machine (item 1, §16.25), material change (item 2, §16.26), preserved invalid submissions (item 5, §16.27), concurrent-edit reconciliation (item 6, §16.28), conflict values (item 21, §16.29), deletion (item 20, §16.30) item 14's edit authority (§16.32) and change tracking (item 30, §16.31) are settled, and the audit trail is settled as well (§16.34). §16.36 (D-069) then closes the backlog: B15's schema, migrations and indexes are decided, so every item B1–B19 is either settled or deferred by scope, and §16.37 (D-070) closes §15.12 item 28's table-by-table constraints, so the schema has no undecided table, and §16.38 (D-071) closes the anonymisation review; §16.39 (D-072) then sets the retention periods and §16.40 (D-073) the sweep that enforces them. §16.41 (D-074) then decides the report export — one read serialised as grouped JSON or detail CSV, administrator-only, synchronous and capped, and one audit row per file — and puts the import back into the MVP's scope, required and undecided; §16.42 (D-075) then decides it, and the backlog's last item closes; §16.43 (D-076) then settles the counting the head of §16 had deferred, closing that list as well.
 
 ## 16.1 Retrieval consistency: live results
 
@@ -2661,7 +2658,7 @@ Archiving is reversible. Restoring reverses the project's status only; it does n
 - Reports must show the gap rather than presenting the two active windows as continuous. Totals by work date are unaffected, because entries carry their own dates.
 - The archive event carries its cause for the lifetime of the record, which is extra state every archive path must populate.
 
-**Deferred:** whether restore records a reason (archival's is optional); how long archived projects are kept and whether anything is ever purged; whether a volunteer whose assignment ended by archival may re-request without approval when the organization normally requires it.
+**Deferred:** whether restore records a reason (archival's is optional); ~~how long archived projects are kept and whether anything is ever purged~~ — answered 23 November 2026 (§16.19 rule 4, D-052): never, and nothing purges them; whether a volunteer whose assignment ended by archival may re-request without approval when the organization normally requires it.
 
 ## 16.11 Submission is explicit
 
@@ -2784,7 +2781,7 @@ An entry's length is stored as a **whole number of seconds**. A timestamp entry 
 - Duration is available to every read path without arithmetic, so totals over a range do not recompute subtraction per row.
 - The stored duration is what was claimed at submission, so an approval, an audit entry and a dispute all refer to the same number.
 
-**Deferred:** any daily or weekly maximum (B17), whether a break field is ever added (B18), and how exported hours are rounded (B19), which §16.41 settles on 28 November 2026 at two decimals, half-up, applied once. **Answered 24 November 2026 (D-057, §16.24):** how far back an entry may be dated or submitted — there is no maximum age; eligibility bounds the past, and the future is bounded at five minutes of clock tolerance.
+**Deferred:** any daily or weekly maximum (B17) and whether a break field is ever added (B18). ~~How exported hours are rounded (B19)~~ was deferred with them and is settled: two decimals, half-up, applied once at the export boundary (§16.41, D-074). **Answered 24 November 2026 (D-057, §16.24):** how far back an entry may be dated or submitted — there is no maximum age; eligibility bounds the past, and the future is bounded at five minutes of clock tolerance.
 
 ## 16.14 Definition of an overlap
 
@@ -3188,8 +3185,9 @@ direction and this fixes into a mechanism. §15.12 item 6's detection half
 and item 30's retry/idempotency half. Backlog item B4 (§17). It also
 constrains B12: a create returns the created representation.
 
-**Deferred:** the reconciliation interface for a detected concurrent edit
-(item 6's other half, now settled in §16.28), and whether a submission shortly after a stopwatch
+**Deferred, and partly settled since:** ~~the reconciliation interface for a
+detected concurrent edit (item 6's other half)~~ — settled 25 November 2026 in
+§16.28 (D-061); and whether a submission shortly after a stopwatch
 stop is merged rather than flagged — a repeated submission of one draft can
 no longer duplicate anything, so that is now a merge-UI question alone.
 Also deferred: whether `version` is exposed as `If-Match`, and idempotent
@@ -3908,8 +3906,8 @@ mistake is a refused cursor instead of a silent misreading.
    than being ignored.
 6. **No list returns a total.** A count on every page of the audit log is a
    scan of everything the organisation has ever done, and it implies the
-   frozen view D-035 rejected. Unread and pending figures come from dedicated
-   counting endpoints, deferred in §16.7 and not settled here.
+   frozen view D-035 rejected. Unread and pending figures come from one dedicated
+   counting endpoint, decided in §16.43 (D-076), and never from a list.
 7. **The users list is administrator-only and hides what it need not show.**
    `q` matches a display name by prefix and an email address exactly — no
    free-text search in the MVP. The email match runs with
@@ -4006,9 +4004,10 @@ for a preference nobody has asked for yet), ignoring unknown query parameters
 for `nextCursor`, so no way to continue).
 
 **Left open.** Whether an `order` parameter ever arrives, and on which
-collections; free-text search over users; notification retention, which is
-B10 and §15.12 item 25; the audit list's contents and access, which is B11;
-~~the counting endpoints, already deferred~~ — decided 28 November 2026 (§16.43, D-076); and whether a coordinator-facing
+collections; free-text search over users; ~~notification retention, which is B10 and §15.12 item 25~~ — settled 28
+November 2026 (§16.39, D-072); ~~the audit list's contents and access, which is
+B11~~ — settled 26 November 2026 (§16.34, D-067); ~~the counting endpoints,
+already deferred~~ — decided 28 November 2026 (§16.43, D-076); and whether a coordinator-facing
 directory is wanted, which would be a filter rather than a new shape.
 
 **Resolves:** backlog item B8 (§17). It constrains B10 (notification filters
@@ -5804,7 +5803,7 @@ deletion of one's own entry deserves the same "are you sure" on the device
 that the client already gives it online (a client question, not a contract
 one); whether the counter should also drive unread counts (it must not — a
 count over a paginated list is what §16.21 rule 6 refuses, and the counting
-endpoints deferred in §16.7 are the answer); and whether a conflict detected
+endpoint in §16.43 (D-076) is the answer); and whether a conflict detected
 during a catch-up needs any announcement beyond the response itself (§16.29
 says no, and this decision does not revisit it).
 
@@ -6575,8 +6574,8 @@ refusal and not a separate audit rule:
   the totals (D-063), but its rows remain, so "deleted" is not "gone" for
   anyone who may read it — which is what makes the deletion reviewable.
 
-**Left open.** Whether an organisation may export the trail as CSV (B19's
-rounding does not apply, so it would be the first export that needs no rule);
+**Left open.** Whether an organisation may export the trail as CSV (it would
+need no rounding rule, since §16.41's applies only to hours);
 whether support may search it by `requestId`, which the field allows and the
 filter list above does not yet offer; whether the trail outlives the record on
 an organisation-wide deletion, which D-052 says cannot happen through the API;
@@ -6690,15 +6689,15 @@ is a record and not a message that was either delivered or lost.
    no audit row (D-067) and no `changeSeq` (D-064): a mailbox is per-person, and
    putting it in the feed would force the counter onto the one table D-064
    deliberately kept out.
-9. **Erasure empties the mailbox; retention is still open.** A notification is
+9. **Erasure empties the mailbox; retention is settled elsewhere.** A notification is
    personal rather than organisational, so an erasure under D-052 deletes the
    person's notifications with the rest of their personal data, and no recipient
    id survives. The deletion is not audited row by row: the erasure's single
    row is the record that the act happened, and a per-notification entry would
    copy what she was told into the permanent trail (§16.38, D-071). Automatic retention — how long an unread row lives before it is
-   removed — remains undecided (§6.4, §15.12 item 25), and this decision sets no
-   period: until one is chosen, rows live until their owner deletes them, which
-   is what §6.1 already promised.
+   removed — is decided in §16.39 (D-072) and enforced by the sweep in §16.40
+   (D-073); this decision set no period, and the one that now exists is a month
+   after reading or the organisation's mailbox window, whichever comes first.
 
 **The shapes.** Paths and verbs are illustrative pending §15.12 item 29; the
 bodies and status codes are what this decision fixes.
@@ -6784,10 +6783,10 @@ HTTP/1.1 404 Not Found
 
 - **No push means a notification can sit unseen for hours.** The badge is only
   as fresh as the last ask, and because no list returns a total (§16.21 rule 6)
-  it counts what the app has fetched — the counting endpoint deferred in §16.7
-  **decided 28 November 2026 (§16.43, D-076):** one caller-scoped
-  route returns the unread count beside the other two badges, still only as
-  fresh as the last ask.
+  it counts what the app has fetched — and the counting endpoint deferred then
+  was decided on 28 November 2026 (§16.43, D-076): one caller-scoped route returns
+  the unread count beside the other two badges, still only as fresh as the last
+  ask.
 - **The write path fans out.** Every act that names recipients reads the
   recipient set inside its transaction, and rows scale with recipients rather
   than acts: 43 pending requests across four coordinators is 172 rows.
@@ -7178,9 +7177,9 @@ backup retention and off-instance copies (§15.12 item 31, operational); whether
 the pending-queue and users-list indexes earn their place once there is
 production-shaped data (rule 11 is the test); and whether an import (D-036)
 preserves the source's anchors or re-derives them in the target's zone —
-preserving is the default, because it cannot invent history, but the import
-mechanism is still undecided — and, since 28 November 2026, required in the
-MVP (§16.41, D-074).
+preserving is the default, because it cannot invent history, and the import
+now answers it: an imported row's anchor is re-derived in the organisation's
+time zone, because a CSV carries no source zone (§16.42, D-075).
 
 **Resolves:** backlog item B15 (§17) — database engine, migrations and index
 strategy — and with it the implementation question D-038 left standing. It
@@ -7529,8 +7528,10 @@ semantics (§13 item 4); whether a removed membership may be restored and how
 and optional profile fields (§15.12 item 23), of which only `email`,
 `display_name` and `anonymised_at` are fixed here; whether an entry's anchor
 also keeps the zone name it was written under (D-069); whether a suspension
-route ever ships (§15.2.1); the retention period and legal basis the record
-names nowhere, which §16.38 hands back to the operator (D-071); and ~~whether
+route ever ships (§15.2.1); ~~the retention period and legal basis the record names nowhere, which §16.38
+proposed to hand back to the operator (D-071)~~ — **settled 28 November 2026
+(§16.39, D-072):** the record and the trail have no period, and the
+jurisdiction and lawful basis stay the operator's; and ~~whether
 an import (D-036) writes rows through these constraints or beside them~~ —
 **answered 28 November 2026 (§16.42, D-075):** through them. Every imported
 row is checked by the same constraints and the same routes' rules, which is
@@ -7552,7 +7553,8 @@ requirements. D-069 fixed the engine, the anchor, the migrations, the indexes
 and the transaction boundaries; this fixes the tables and the rules the engine
 holds, and names each rule it cannot with the layer that does. It amends
 §16.36 rule 10 and the inventory beneath it (four uniqueness constraints
-rather than one; the performance indexes stay five), and its "left open" note
+rather than one; the performance indexes then numbered five, raised to seven by
+§16.40, D-073), and its "left open" note
 that the table-by-table DDL was not enumerated. It amends §16.32 rule 6 and its
 rejected table, and settles the default its own organisation read already
 displayed. It corrects §5.1 and
@@ -7844,7 +7846,8 @@ it delivers.
 archived records — now a decision to have none rather than an omission
 (§16.39, D-072) — and the growth answer a never-deleted trail eventually
 needs; the jurisdiction and lawful basis, which belong to the operator; the
-mechanism that enforces the periods §16.39 does set; whether restriction ships as its own feature rather than as a
+mechanism that enforces the periods §16.39 sets — decided 28 November 2026 by
+§16.40 (D-073); whether restriction ships as its own feature rather than as a
 rejected alternative; whether an erased membership's `joined_at`/`removed_at`
 interval should be coarsened, since an employment-shaped interval is a
 pseudonym in its own right; and whether the personal export should carry the
@@ -8824,9 +8827,9 @@ register.
 
 **Status:** planning register, 22 November 2026. Not decisions.
 
-These nineteen gaps were found by reviewing the record against what an API contract and an implementation will actually need. They are not listed in §13 or §15.12. None has been decided; B16–B19 were surfaced while taking up B1 and left open with it. They are recorded here so they are not discovered later, during build, when the cost is a schema migration or a breaking change. **B20 was added on 28 November 2026**, not by that review but out of §16.7's import half; it was the one item here that blocked contract drafting, and it was resolved the same day (§16.42, D-075).
+These nineteen gaps were found by reviewing the record against what an API contract and an implementation will actually need. They are not listed in §13 or §15.12. None had been decided when this table was written; B16–B19 were surfaced while taking up B1 and left open with it, and the rows below record what each has since become — settled, deferred by scope, or still open (B17, B18). They are recorded here so they are not discovered later, during build, when the cost is a schema migration or a breaking change. **B20 was added on 28 November 2026**, not by that review but out of §16.7's import half; it was the one item here that blocked contract drafting, and it was resolved the same day (§16.42, D-075).
 
-Backlog items carry **B** identifiers, not **D** identifiers, because nothing has been decided. When one is taken up it becomes a numbered decision in §16 and the row records the decision ID and section. Rows are never deleted: a closed item stays, marked resolved, so the backlog also shows what was nearly missed.
+Backlog items carry **B** identifiers, not **D** identifiers, because nothing was decided when they were written. When one is taken up it becomes a numbered decision in §16 and the row records the decision ID and section. Rows are never deleted: a closed item stays, marked resolved, so the backlog also shows what was nearly missed.
 
 **Reading the flag.** *Contract* — the API contract cannot be written consistently without it, because it fixes a field type, route shape, enum or validation rule other parts depend on. *Feature* — contract-blocking only if that feature ships in the MVP. *Launch* — does not shape the contract, but must be settled before real data exists. *Implementation* — internal choice with no contract surface.
 
